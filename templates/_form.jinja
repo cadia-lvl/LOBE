@@ -1,0 +1,5 @@
+{% for field in form %}
+    {% if field.type != 'SubmitField' %}
+        {% include '_field.jinja' %}
+    {% endif %}
+{% endfor %}

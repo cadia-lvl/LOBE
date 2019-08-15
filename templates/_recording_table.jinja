@@ -1,0 +1,34 @@
+<div class='table-responsive'>
+    <table class='table table-sm table-no-break'>
+        <thead>
+            <th>Tekið upp þann</th>
+            <th>Lesið þann</th>
+            <th>Auðkenni</th>
+            <th>Lesið af</th>
+            <th></th>
+        </thead>
+        <tbody>
+            {% for recording in recordings %}
+                <tr>
+                    <td>{{recording.created_at | datetime('low')}}</td>
+                    <td>{{recording.created_at | datetime(format='medium')}}</td>
+                    <td><a href={{recording.get_url()}}><code>{{recording.get_file_id()}}</code></a></td>
+                    <td>{{recording.user | default("Óskráð", true)}}</td>
+                    <td class='table-btn-wrapper'>
+                        <div>
+                            <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
+                            <a class='btn btn-secondary btn-sm float-right ml-1' href='{{recording.get_download_url()}}'><i class='fa fa-download'></i></a>
+                            <button type='button' class='btn btn-secondary btn-sm float-right ml-1' onClick="audio = document.getElementById('audio-{{recording.id}}'); audio.pause(); audio.currentTime = 0;"><i class='fa fa-stop'></i></button>
+                            <button type='button' class='btn btn-secondary btn-sm float-right ml-1' onClick="document.getElementById('audio-{{recording.id}}').play()"><i class='fa fa-play'></i></button>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% block scripts %}
+    {{super}}
+    <script src='/static/js/audioControls.js'></script>
+{% endblock %}

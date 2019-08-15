@@ -1,0 +1,21 @@
+<div class='form-group'>
+    {% if field.type != 'HiddenField' and field.type != 'CSRFTokenField' and field.type != 'RecaptchaField' %}
+        {{ field.label }}
+    {% endif %}
+
+    {% if field.type == 'BooleanField' %}
+        {{field}}
+    {% elif field.type == 'MultipleFileField' %}
+        {{field(class_='form-control-file')}}
+    {% else %}
+        {{ field(class_='form-control') }}
+    {% endif %}
+
+    {% for error in field.errors %}
+        <p class='text-danger'>
+            <span class='mr-2'>
+                <i class='fa fa-exclamation-circle'></i>
+            </span>
+            {{ error }}</p>
+    {% endfor %}
+</div>

@@ -1,0 +1,125 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row mb-3'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>
+                {% if single %}
+                    Stakur texti
+                {% else %}
+                    Söfnun: {{collection.name}}
+                {% endif %}
+            </h3>
+        </div>
+        {% if not single %}
+            <div class='col-12 mt-3'>
+                <p class='font-weight-bold'>(<span id='currentIndexSpan'></span>/<span id='totalIndexSpan'></span>)</p>
+                <div class="progress">
+                    <div class="progress-bar bg-success" id='tokenProgress' role="progressbar"></div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    <div class='row'>
+        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 controls mb-3 d-flex justify-content-{% if single %}around{% else%}between{% endif %}'>
+            {% if not single %}
+                <button id='prevButton' class='btn btn-secondary rounded-circle' type='button'><i class='fa fa-arrow-left'></i></button>
+            {% endif %}
+            <button id='recordButton' class='btn btn-secondary rounded-pill' type='button' data-state='initial'>
+                <span>
+                    <span id='recordButtonText' class='mr-2'>byrja</span>
+                    <i id='recordButtonIcon' class='fa fa-microphone text-success'></i>
+                </span>
+            </button>
+            {% if not single %}
+                <button id='nextButton' class='btn btn-secondary rounded-circle' type='button'><i class='fa fa-arrow-right'></i></button>
+            {% endif %}
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12'>
+            <div class="card">
+                <div class="card-body">
+                    <h3 class='card-text' id='tokenText'></h3>
+                    <p class='mb-0'>#<span id="tokenID"></span></p>
+                    <p class='card-text'><a href='#'><code id="tokenFileID"></code></a></p>
+                </div>
+                <ul id='recordingInfoList' class="list-group list-group-flush">
+                    <li id='playerListItem' class='list-group-item'>
+                        <code id='recordingIDSpan'></code>
+                        <audio id="recordingPlayer" src="" type="audio/wav"></audio>
+                        <button id='recordingDeleteButton' type='button' class='btn btn-secondary btn-sm float-right text-danger ml-1'>
+                            <i class='fa fa-trash'></i>
+                        </button>
+                        <a id='recordingDownload' class="btn btn-secondary btn-sm float-right ml-1"><i class='fa fa-download'></i></a>
+                        <button id='playButton' type='button' class='btn btn-secondary btn-sm float-right'
+                            onClick="document.getElementById('recordingPlayer').play()"><i id='playButtonIcon' class='fa fa-play'></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class='row mt-3'>
+        <div class='col-12'>
+            <hr>
+        </div>
+        <div class='col-12'>
+            <button type='submit' id='finishButton' type='button' class='btn btn-success float-right'>
+                Klára
+                <span class='ml-2'>
+                    <i id='finishButtonIcon' class='fa fa-arrow-right'>
+                    </i>
+                </span>
+            </button>
+            {% if not single %}
+                <button type='button' data-toggle='modal' data-target='#reloadTokensModal' class='btn btn-secondary mr-2 float-right text-success'>
+                    {{macros.btn_icon('repeat', '0')}}
+                </button>
+            {% endif %}
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block modals %}
+    {% if not single %}
+    <div class="modal fade" id='reloadTokensModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Hlaða nýjum textum</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Með því að halda áfram muntu hlaða inn nýjum textaskrám og söfnun heldur áfram.
+                    Ef núverandi upptökusett hefur ekki verið klárað mun það ekki vistast við að halda
+                    áfram.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a href="{{url_for('record_session', coll_id=collection.id)}}" class='btn btn-primary'>
+                    Halda áfram
+                </a>
+            </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}
+
+
+{% block scripts %}
+    {{super()}}
+    <script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
+    <script src='/static/js/audio.js'></script>
+{% endblock %}
+
+{% block headscripts %}
+    <script type="text/javascript">
+        var tokens = {{json_tokens}}
+    </script>
+{% endblock %}

@@ -1,0 +1,36 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="/">LOBE</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavDropdown">
+    <ul class="navbar-nav">
+        <li class="nav-item {% if section == 'collection' %}active{% endif %}">
+            <a class="nav-link {% if section == 'collection' %}text-success{% endif %}" href="{{url_for('collection_list')}}">Safnanir</a>
+        </li>
+        <li class="nav-item {% if section == 'token' %}active{% endif %}">
+            <a class="nav-link {% if section == 'token' %}text-success{% endif %}" href="{{url_for('token_list')}}">Textar</a>
+        </li>
+        <li class="nav-item {% if section == 'recording' %}active{% endif %}">
+            <a class="nav-link {% if section == 'recording' %}text-success{% endif %}" href="{{url_for('recording_list')}}">Upptökur</a>
+        </li>
+        <li class="nav-item {% if section == 'user' %}active{% endif %}">
+            <a class="nav-link {% if section == 'user' %}text-success{% endif %}" href="{{url_for('user_list')}}">Notendur</a>
+        </li>
+
+
+
+
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+               {{macros.btn_icon('user-circle', '')}}
+        </a>
+        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+            <a class="dropdown-item" href="#">Mínar upptökur</a>
+            <a class="dropdown-item" href="#">Mín yfirferð</a>
+            <a class="dropdown-item" href="{{ url_for('security.logout') }}">Skrá út</a>
+        </div>
+        </li>
+    </ul>
+    </div>
+</nav>

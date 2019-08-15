@@ -1,0 +1,38 @@
+{% macro btn_icon(type, dir) %}
+    <span class='m{{dir}}-2'>
+        <i class='fa fa-{{type}}'></i>
+    </span>
+{% endmacro %}
+
+{% macro pagination(items, url_name) %}
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if items.has_prev %}
+                <li class="page-item"><a class="page-link" href="{{ url_for(url_name, page=items.prev_num) }}">
+                    {{ btn_icon('arrow-left', 'r')}}
+                    Fyrri
+                </a></li>
+            {% else %}
+                <li class="page-item disabled"><a class="page-link" href="#">
+                    {{ btn_icon('arrow-left', 'r')}}
+                    Fyrri
+                </a></li>
+            {% endif %}
+            <li class='page-item active'>
+                <span class='page-link'>{{items.page}} af {{items.pages}}</span>
+            </li>
+            {% if items.has_next %}
+                <li class="page-item"> <a class="page-link" href="{{ url_for(url_name, page=items.next_num) }}">
+                    Næsta
+                    {{ btn_icon('arrow-right', 'l')}}
+                </a></li>
+            {% else %}
+                <li class="page-item disabled"><a class="page-link" href="#">
+                    Næsta
+                    {{ btn_icon('arrow-right', 'l')}}
+                </a></li>
+            {% endif %}
+
+        </ul>
+    </nav>
+{% endmacro %}

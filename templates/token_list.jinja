@@ -1,0 +1,38 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Textar</h1>
+            <p>Fjöldi : {{tokens.total}}</p>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <div class='table-responsive table-striped table-sm table-no-break'>
+                <table class='table table-hover'>
+                    <thead>
+                        <th>Texti</th>
+                        <th>Auðkenni</th>
+                        <th>Söfnun</th>
+                        <th>Fjöldi upptaka</th>
+                    </thead>
+                    <tbody>
+                        {% for token in tokens.items %}
+                            <tr class='hover-row' onclick='document.location="{{token.get_url()}}"'>
+                                <td>{{token.text}}</td>
+                                <td><code>{{token.get_file_id()}}</code></td>
+                                <td>{{token.get_collection().name}}</td>
+                                <td>{{token.get_recordings().count()}}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class='row mt-3'>
+        <div class='col-12'>
+            {{macros.pagination(tokens, 'token_list')}}
+        </div>
+    </div>
+{% endblock %}

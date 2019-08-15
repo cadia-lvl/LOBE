@@ -1,0 +1,5 @@
+env/
+data/
+.vscode/
+__pycache__/
+settings/production.py

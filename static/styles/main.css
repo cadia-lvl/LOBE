@@ -1,0 +1,15 @@
+.hover-row{
+    cursor: pointer;
+}
+
+#recordButton{
+    width: 100px;
+}
+
+.table-no-break{
+    white-space: nowrap;
+}
+
+.table-btn-wrapper{
+    min-width: 150px;
+}

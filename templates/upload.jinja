@@ -1,0 +1,16 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='container-fluid'>
+        <div class='row'>
+            <div class='col-4 offset-4'>
+
+                <form action="upload_file" method="POST"
+                    enctype = "multipart/form-data">
+                    <input type = "file" name = "file" />
+                    <input type = "submit"/>
+                </form>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}

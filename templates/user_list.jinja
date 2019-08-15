@@ -1,0 +1,38 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Notendur</h1>
+            <p>Fjöldi : {{users.total}}</p>
+            <a href='{{url_for("create_user")}}'>
+            </a>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <div class='table-responsive table-striped'>
+                <table class='table table-hover'>
+                    <thead>
+                        <th>Nafn</th>
+                        <th>Tölvupóstur</th>
+                        <th>Staða</th>
+                    </thead>
+                    <tbody>
+                        {% for user in users.items %}
+                            <tr class='hover-row'>
+                                <td>{{user.name}}</td>
+                                <td>{{user.email}}</td>
+                                <td>{{user.roles}}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            {{macros.pagination(users, 'user_list')}}
+        </div>
+    </div>
+{% endblock %}

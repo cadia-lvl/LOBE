@@ -1,6 +1,6 @@
 #!/bin/bash
 export FLASK_APP=app
-export FLASK_ENV=production
+export FLASK_ENV=development
 export PORT=7331
 export STATIC_URL_PATH='/lobe/static/'
 

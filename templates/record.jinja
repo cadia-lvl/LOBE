@@ -115,8 +115,8 @@
 {% block scripts %}
     {{super()}}
     <script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
-    <script src='/static/js/audio.js'></script>
-{% endblock %}
+    <script src='{{url_for("static", filename="/js/audio.js")}}'></script>
+{% endblock %}f
 
 {% block headscripts %}
     <script type="text/javascript">

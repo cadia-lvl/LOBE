@@ -14,7 +14,7 @@ from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
     ExtendedRegisterForm)
 from models import Collection, Recording, Role, Token, User, db
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path=os.getenv('STATIC_URL_PATH', '/static'))
 app.config.from_pyfile('{}.py'.format(os.path.join('settings/', os.getenv('FLASK_ENV', 'dev'))))
 
 db.init_app(app)
@@ -25,12 +25,12 @@ security = Security(app, user_datastore, login_form=ExtendedLoginForm)
 app.jinja_env.filters['datetime'] = format_date
 
 # GENERAL ROUTES
-@app.route('/')
+@app.route('/lobe/')
 @login_required
 def index():
     return render_template('index.jinja', collections=newest_collections(num=4))
 
-@app.route('/post_recording', methods=['POST'])
+@app.route('/lobe/post_recording', methods=['POST'])
 @login_required
 def post_recording():
     recordings = []
@@ -51,15 +51,17 @@ def post_recording():
 
 # RECORD ROUTES
 
-@app.route('/record/<int:coll_id>')
+@app.route('/lobe/record/<int:coll_id>')
 @login_required
 def record_session(coll_id):
     collection = Collection.query.get(coll_id)
     tokens = Token.query.filter_by(collection=coll_id).order_by(func.random()).limit(50)
+    print(collection)
+    print(json.dumps([t.get_dict() for t in tokens]))
     return render_template('record.jinja', section='record', collection=collection, tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]))
 
-@app.route('/record/token/<tok_id>')
+@app.route('/lobe/record/token/<tok_id>')
 @login_required
 def record_single(tok_id):
     token = Token.query.get(tok_id)
@@ -68,7 +70,7 @@ def record_single(tok_id):
 
 # COLLECTION ROUTES
 
-@app.route('/collections/create', methods=['GET', 'POST'])
+@app.route('/lobe/collections/create', methods=['GET', 'POST'])
 @login_required
 def create_collection():
     form = CollectionForm(request.form)
@@ -80,7 +82,7 @@ def create_collection():
 
     return render_template('collection_create.jinja', form=form, section='collection')
 
-@app.route('/collections/')
+@app.route('/lobe/collections/')
 @login_required
 def collection_list():
     page = int(request.args.get('page', 1))
@@ -88,7 +90,7 @@ def collection_list():
     collections = Collection.query.paginate(page, per_page=app.config['COLLECTION_PAGINATION'])
     return render_template('collection_list.jinja', collections=collections, section='collection')
 
-@app.route('/collections/<int:id>', methods=['GET', 'POST'])
+@app.route('/lobe/collections/<int:id>', methods=['GET', 'POST'])
 @login_required
 def collection(id):
     token_form = BulkTokenForm(request.form)
@@ -104,12 +106,12 @@ def collection(id):
 
 # TOKEN ROUTES
 
-@app.route('/tokens/<int:id>')
+@app.route('/lobe/tokens/<int:id>')
 @login_required
 def token(id):
     return render_template('token.jinja', token=Token.query.get(id), section='token')
 
-@app.route('/tokens/')
+@app.route('/lobe/tokens/')
 @login_required
 def token_list():
     page = int(request.args.get('page', 1))
@@ -118,20 +120,20 @@ def token_list():
 
 
 # RECORDING ROUTES
-@app.route('/recordings/')
+@app.route('/lobe/recordings/')
 @login_required
 def recording_list():
     page = int(request.args.get('page', 1))
     recordings = Recording.query.paginate(page, per_page=app.config['RECORDING_PAGINATION'])
     return render_template('recording_list.jinja', recordings=recordings, section='recording')
 
-@app.route('/recording/<int:id>')
+@app.route('/lobe/recording/<int:id>')
 @login_required
 def recording(id):
     recording = Recording.query.get(id)
     return render_template('recording.jinja', recording=recording, section='recording')
 
-@app.route('/recordings/<int:id>/download')
+@app.route('/lobe/recordings/<int:id>/download')
 @login_required
 def download_recording(id):
     recording = Recording.query.get(id)
@@ -139,7 +141,7 @@ def download_recording(id):
 
 # USER ROUTES
 
-@app.route('/users/')
+@app.route('/lobe/users/')
 @login_required
 def user_list():
     page = int(request.args.get('page', 1))
@@ -148,7 +150,7 @@ def user_list():
     return render_template('user_list.jinja', users=users, section='user')
 
 
-@app.route('/users/create', methods=['GET', 'POST'])
+@app.route('/lobe/users/create', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
 def create_user():

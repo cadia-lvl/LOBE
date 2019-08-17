@@ -15,10 +15,14 @@ from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
 from models import Collection, Recording, Role, Token, User, db
 from middleware import PrefixMiddleware
 
+from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 
-app = Flask(__name__, static_url_path=os.path.join(os.getenv('PATH_PREFIX', ''), '/static/'))
+
+app = Flask(__name__)
 app.config.from_pyfile('{}.py'.format(os.path.join('settings/', os.getenv('FLASK_ENV', 'dev'))))
-app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix=os.getenv('PATH_PREFIX', ''))
+
+if 'REVERSE_PROXY_PATH' in app.config:
+    ReverseProxyPrefixFix(app)
 
 db.init_app(app)
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)

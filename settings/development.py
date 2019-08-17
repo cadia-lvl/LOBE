@@ -25,4 +25,6 @@ RECAPTCHA_DATA_ATTRS = {'theme':'dark'}
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:password@localhost:5432/lobe_dev'
 
+#REVERSE_PROXY_PATH = os.getenv('REVERSE_PROXY_PATH', '')
+
 DEBUG = True

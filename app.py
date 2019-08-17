@@ -14,11 +14,10 @@ from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
     ExtendedRegisterForm)
 from models import Collection, Recording, Role, Token, User, db
 from middleware import PrefixMiddleware
-
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 
 app = Flask(__name__)
-app.config.from_pyfile('{}.py'.format(os.path.join('settings/', os.getenv('FLASK_ENV', 'dev'))))
+app.config.from_pyfile('{}.py'.format(os.path.join('settings/', os.getenv('FLASK_ENV', 'development'))))
 
 if 'REVERSE_PROXY_PATH' in app.config:
     ReverseProxyPrefixFix(app)
@@ -35,6 +34,11 @@ app.jinja_env.filters['datetime'] = format_date
 @login_required
 def index():
     return render_template('index.jinja', collections=newest_collections(num=4))
+
+@app.route('/lobe')
+@login_required
+def index_redirect():
+    return redirect(url_for('index'))
 
 @app.route('/post_recording', methods=['POST'])
 @login_required

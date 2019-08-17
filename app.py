@@ -17,7 +17,6 @@ from middleware import PrefixMiddleware
 
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 
-
 app = Flask(__name__)
 app.config.from_pyfile('{}.py'.format(os.path.join('settings/', os.getenv('FLASK_ENV', 'dev'))))
 

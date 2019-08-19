@@ -3,7 +3,6 @@ import os
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_BASE_DIR = os.path.join(APP_ROOT, 'data/')
 
-DATA_BASE_DIR = '/home/atli/Projects/LOBE/data/'
 TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'tokens/')
 RECORD_DIR = os.path.join(DATA_BASE_DIR, 'records/')
 TOKEN_PAGINATION = 500

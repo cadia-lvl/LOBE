@@ -22,7 +22,7 @@
     <div class='row'>
         <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 controls mb-3 d-flex justify-content-{% if single %}around{% else%}between{% endif %}'>
             {% if not single %}
-                <button id='prevButton' class='btn btn-secondary rounded-circle' type='button'><i class='fa fa-arrow-left'></i></button>
+                <button id='prevButton' class='btn btn-secondary rounded-circle directionButton' type='button'><i class='fa fa-arrow-left'></i></button>
             {% endif %}
             <button id='recordButton' class='btn btn-secondary rounded-pill' type='button' data-state='initial'>
                 <span>
@@ -31,7 +31,7 @@
                 </span>
             </button>
             {% if not single %}
-                <button id='nextButton' class='btn btn-secondary rounded-circle' type='button'><i class='fa fa-arrow-right'></i></button>
+                <button id='nextButton' class='btn btn-secondary rounded-circle directionButton' type='button'><i class='fa fa-arrow-right'></i></button>
             {% endif %}
         </div>
     </div>
@@ -46,18 +46,16 @@
                 <ul id='recordingInfoList' class="list-group list-group-flush">
                     <li id='playerListItem' class='list-group-item'>
                         <code id='recordingIDSpan'></code>
-                        <audio id="recordingPlayer" src="" type="audio/wav"></audio>
+                        <audio id="recordingPlayer" type="audio/wav"></audio>
                         <button id='recordingDeleteButton' type='button' class='btn btn-secondary btn-sm float-right text-danger ml-1'>
                             <i class='fa fa-trash'></i>
                         </button>
                         <a id='recordingDownload' class="btn btn-secondary btn-sm float-right ml-1"><i class='fa fa-download'></i></a>
-                        <button id='playButton' type='button' class='btn btn-secondary btn-sm float-right'
-                            onClick="document.getElementById('recordingPlayer').play()"><i id='playButtonIcon' class='fa fa-play'></i>
+                        <button id='playButton' type='button' class='btn btn-secondary btn-sm float-right'><i id='playButtonIcon' class='fa fa-play'></i>
                         </button>
                     </li>
                     <li id="transcriptionListItem" class="list-group-item" style="font-style: italic;">
                         <p id="transcription" class="mb-0"></p>
-
                         <small class="float-right" style="font-style: initial;">Rafrænt afrit</small>
                     </li>
                 </ul>

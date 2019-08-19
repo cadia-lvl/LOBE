@@ -13,3 +13,8 @@
 .table-btn-wrapper{
     min-width: 150px;
 }
+
+.directionButton{
+    height: 40px;
+    width: 40px;
+}

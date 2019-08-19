@@ -13,7 +13,6 @@
                     <thead>
                         <th>Texti</th>
                         <th>Auðkenni</th>
-                        <th>Söfnun</th>
                         <th>Fjöldi upptaka</th>
                     </thead>
                     <tbody>
@@ -21,8 +20,7 @@
                             <tr class='hover-row' onclick='document.location="{{token.get_url()}}"'>
                                 <td>{{token.text}}</td>
                                 <td><code>{{token.get_file_id()}}</code></td>
-                                <td>{{token.get_collection().name}}</td>
-                                <td>{{token.get_recordings().count()}}</td>
+                                <td>{{token.recordings | length }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>

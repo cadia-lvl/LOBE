@@ -18,6 +18,7 @@
                         <th>Nafn</th>
                         <th>Búin til</th>
                         <th>Fjöldi setninga</th>
+                        <th>Gangur</th>
                     </thead>
                     <tbody>
                         {% for collection in collections.items %}
@@ -25,6 +26,11 @@
                                 <td>{{collection.name}}</td>
                                 <td>{{collection.created_at}}</td>
                                 <td>{{collection.get_tokens().count()}}</td>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
+                                    </div>
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>

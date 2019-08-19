@@ -5,10 +5,16 @@ var rec;
 var input;
 
 var AudioContext = window.AudioContext || window.webkitAudioContext;
-var audioContext
+var audioContext;
+var streamProcessor;
+var sampleRate;
 
 var tokenIndex = 0;
 var numTokens = tokens.length;
+
+var streamingRecognizeResultsElem = document.getElementById(
+	"transcription");
+
 var tokenText = $("#tokenText");
 var tokenIDSpan = $("#tokenID");
 var tokenfileIDSpan = $("#tokenFileID");
@@ -17,6 +23,7 @@ var currentIndexSpan = $('#currentIndexSpan');
 var totalIndexSpan = $('#totalIndexSpan');
 var recordingInfoList = $('#recordingInfoList');
 var playerListItem = $('#playerListItem');
+var transcriptionListItem = $('#transcriptionListItem');
 
 var recordingIDSpan = $('#recordingIDSpan');
 var recordingPlayer = $('#recordingPlayer');
@@ -31,8 +38,6 @@ htmlRecordingPlayer.onpause = function(){
 htmlRecordingPlayer.onended = function(){
 	playAction(isEnded=true);
 }
-
-
 
 var recordingDownload = $('#recordingDownload');
 var recordingDeleteButton = $('#recordingDeleteButton');
@@ -79,16 +84,26 @@ function setRecordingUI(index){
 		recordingIDSpan.text(recording['filename']);
 		recordingPlayer.attr('src', recording['url']);
 		recordingDownload.attr('href', recording['url']).attr('download', recording['filename']);
-		recordingInfoList.show();
-
+		playerListItem.show()
 	} else{
-		recordingInfoList.hide();
+		playerListItem.hide();
 	}
 };
+
+function setTranscriptionUI(index){
+	if("recording" in tokens[index]){
+		streamingRecognizeResultsElem.innerHTML = tokens[index]['recording']['transcript'];
+		transcriptionListItem.show();
+	} else{
+		streamingRecognizeResultsElem.innerHTML = '';
+		transcriptionListItem.hide();
+	}
+}
 
 function updateUI(index, updateRecBtn=true){
 	setTokenUI(index);
 	setRecordingUI(index);
+	setTranscriptionUI(index);
 	if(updateRecBtn){
 		initializeRecordButton();
 	}
@@ -127,12 +142,8 @@ function prevAction(){
 	}
 };
 
-
 playButton.click(function(){playAction()});
 function playAction(isEnded=false){
-	console.log(htmlRecordingPlayer.duration);
-	console.log(htmlRecordingPlayer.paused);
-	console.log(htmlRecordingPlayer.currentTime);
 
 	if(isPlaying || isEnded){
 		htmlRecordingPlayer.pause();
@@ -160,6 +171,7 @@ function recordAction(){
 		recordButtonText.text('lesa');
 
 		startRecording();
+		updateUI(tokenIndex, updateRecBtn=false);
 
 	} else if(recordButton.attr('data-state') == 'recording'){
 		recordButtonIcon.removeClass('fa-spinner')
@@ -176,8 +188,8 @@ function recordAction(){
 		recordButtonText.text('lesa');
 
 		startRecording();
+		updateUI(tokenIndex, updateRecBtn=false);
 	}
-	updateUI(tokenIndex, updateRecBtn=false);
 }
 
 function initializeRecordButton(){
@@ -186,12 +198,10 @@ function initializeRecordButton(){
 	recordButtonText.text('byrja');
 }
 
-
 function startRecording() {
-    var constraints = { audio: true, video:false }
-
-	navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+	navigator.mediaDevices.getUserMedia({audio:true, video:false}).then(function(stream) {
 		audioContext = new AudioContext();
+		sampleRate = audioContext.sampleRate;
 
 		gumStream = stream;
 
@@ -201,7 +211,37 @@ function startRecording() {
 		input.connect(analyser)
 
 		rec = new Recorder(input,{numChannels:2})
-		rec.record()
+		rec.record();
+
+
+		streamProcessor = audioContext.createScriptProcessor(16384, 1, 1);
+		input.connect(streamProcessor);
+		streamProcessor.connect(audioContext.destination);
+
+		ws = new WebSocket("wss://tal.ru.is/v1/speech:streamingrecognize?token=" + talAPIToken);
+
+		ws.onopen = function(e) {
+		ws.send(JSON.stringify({
+			streamingConfig: {
+			config: { sampleRate: sampleRate, encoding: "LINEAR16",
+						maxAlternatives: 1 },
+			interimResults: true
+			}
+		}));
+		};
+		ws.onmessage = handleStreamingResult;
+
+		streamProcessor.onaudioprocess = function(e) {
+		if (!e.inputBuffer.getChannelData(0).every(
+			function(elem) { return elem === 0; })) {
+			var buffer = new ArrayBuffer(e.inputBuffer.length * 2);
+			var view = new DataView(buffer);
+			floatTo16BitPCM(view, 0, e.inputBuffer.getChannelData(0));
+			var encodedContent = base64ArrayBuffer(buffer);
+			ws.send(JSON.stringify({ audioContent: encodedContent }));
+
+		}
+		};
 	})}
 
 function stopRecording() {
@@ -217,71 +257,33 @@ function stopRecording() {
 
 function createAudioFile(blob) {
 	var url = URL.createObjectURL(blob);
-	var au = document.createElement('audio');
-	var li = document.createElement('li');
-	var link = document.createElement('a');
-
 	//name of .wav file to use during upload and download (without extendion)
 	var filename = new Date().toISOString();
-
-	//add controls to the <audio> element
-	au.controls = true;
-	au.src = url;
-
-	//save to disk link
-	link.href = url;
-	link.download = filename+".wav"; //download forces the browser to donwload the file using the  filename
-	link.innerHTML = "Save to disk";
-
-	//add the new audio element to li
-	li.appendChild(au);
-
-	//add the save to disk link to li
-	li.appendChild(link);
-
-	//upload link
-	var upload = document.createElement('a');
-	upload.href="#";
-	upload.innerHTML = "Upload";
-	upload.addEventListener("click", function(event){
-		  var xhr=new XMLHttpRequest();
-		  xhr.onload = function(e) {
-		      if(this.readyState === 4) {
-		          console.log("Server returned: ",e.target.responseText);
-		      }
-		  };
-		  var fd = new FormData();
-		  fd.append('token', $("#token_id").val())
-		  fd.append("file", blob, filename);
-		  xhr.open("POST","/post_recording", true);
-		  xhr.send(fd);
-	})
-	li.appendChild(document.createTextNode (" "))//add a space in between
-	li.appendChild(upload)//add the upload link to li
-
-	//add the li element to the ol
-	//playerListItem.append(li);
-
-	addRecordingToToken(tokenIndex, filename+'.wav', url, audioContext.sampleRate, blob);
-
-	// this is needed here for async reasons
-	updateUI(tokenIndex, updateRecBtn=false);
+	var finalTranscript = getFinalTranscript();
+	addRecordingToToken(tokenIndex, filename+'.wav', url, blob, finalTranscript);
 }
 
-function addRecordingToToken(index, filename, url, sr, blob){
+function addRecordingToToken(index, filename, url, blob, transcript=''){
 	tokens[index]['recording'] = {
 		'filename':filename,
 		'url': url,
-		'sample_rate':sr,
-		'blob': blob
+		'blob': blob,
+		'transcript': transcript
 	}
+}
+
+function getFinalTranscript(){
+	var spans = streamingRecognizeResultsElem.children;
+	var transcript = ''
+	for(var i=0; i< spans.length; i++){
+		transcript += spans[i].innerHTML;
+	}
+	return transcript;
 }
 
 finishButton.click(function(){sendForm()});
 function sendForm(){
 	finishButtonIcon.removeClass('fa-arrow-right').addClass('fa-spinner').addClass('fa-spin');
-
-
 	var xhr = new XMLHttpRequest();
 	xhr.onload = function(e) {
 		if(this.readyState === 4) {
@@ -291,11 +293,58 @@ function sendForm(){
 	var fd = new FormData();
 	for(var i=0; i<numTokens; i++){
 		if('recording' in tokens[i]){
-			fd.append('token_'+tokens[i]['id'], tokens[i]['id']);
+			fd.append(tokens[i]['id'], JSON.stringify(tokens[i]['recording']));
 			fd.append("file_"+tokens[i]['id'], tokens[i]['recording']['blob'], tokens[i]['recording']['filename']);
 		}
 	}
 	xhr.open("POST","/post_recording", true);
 	xhr.send(fd);
+}
+
+// TRANSCRIBE STUFF
+function handleStreamingResult(event) {
+	var response = JSON.parse(event.data);
+	var result = response.result;
+	var res = result.results;
+	if (res !== undefined && res.length > 0) {
+		transcriptionListItem.show();
+		if (res[0].isFinal) {
+			var transcript = res[0].alternatives[0].transcript || "";
+			var segmentId = "streamingResult-" + (result.resultIndex || 0) +
+							"-";
+			var segmentSpan = document.getElementById(segmentId);
+			if (!segmentSpan) {
+				segmentSpan = document.createElement("span");
+				segmentSpan.id = segmentId;
+				segmentSpan.innerHTML = transcript;
+				streamingRecognizeResultsElem.appendChild(segmentSpan);
+			} else {
+				segmentSpan.innerHTML = transcript;
+				segmentSpan.classList.remove("streaming-result-interim");
+			}
+			segmentSpan.classList.add("streaming-result-final");
+		} else if (res[0] !== undefined){
+			var transcript = res[0].alternatives[0].transcript || "";
+			var segmentId = "streamingResult-" + (result.resultIndex || 0) +
+							"-";
+			var segmentSpan = document.getElementById(segmentId);
+			if (!segmentSpan) {
+				segmentSpan = document.createElement("span");
+				segmentSpan.id = segmentId;
+				segmentSpan.classList.add("streaming-result-interim");
+				segmentSpan.innerHTML = transcript;
+				streamingRecognizeResultsElem.appendChild(segmentSpan);
+			} else {
+				segmentSpan.innerHTML = transcript;
+			}
+		}
+	}
+}
+
+function floatTo16BitPCM(output, offset, input) {
+	for (var i = 0; i < input.length; i++, offset += 2) {
+	var s = Math.max(-1, Math.min(1, input[i]));
+	output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+	}
 }
 

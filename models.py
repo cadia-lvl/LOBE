@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_security import UserMixin, RoleMixin
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
+from sqlalchemy import select, func
 
 from datetime import datetime
 
@@ -10,6 +11,9 @@ from flask import current_app as app
 from werkzeug import secure_filename
 
 import os
+import wave
+import contextlib
+
 
 db = SQLAlchemy()
 
@@ -39,8 +43,36 @@ class Collection(BaseModel, db.Model):
         '''
         return Token.query.filter_by(collection=self.id)
 
-    def get_num_tokens(self):
-        return self.get_tokens().count()
+    @hybrid_property
+    def num_tokens(self):
+        return len(self.tokens)
+
+    @num_tokens.expression
+    def num_tokens(cls):
+        return (select([func.count(Token.id)]).
+                where(Token.collection == cls.id).
+                label("num_tokens"))
+
+    @hybrid_property
+    def num_nonrecorded_tokens(self):
+        return len([t for t in self.tokens if not t.has_recording])
+
+    @num_nonrecorded_tokens.expression
+    def num_nonrecorded_tokens(cls):
+        return (select([func.count(Token.id)]).
+                where(Token.collection == cls.id).
+                where(Token.has_recording == False).
+                label("num_tokens"))
+
+    @hybrid_method
+    def get_complete_ratio(self, as_percent=False):
+        if self.num_tokens == 0:
+            ratio = 0
+        else:
+            ratio = (self.num_tokens - self.num_nonrecorded_tokens) / self.num_tokens
+        if as_percent: ratio *= 100
+        return ratio
+
 
     def get_url(self):
         return url_for('collection', id=self.id)
@@ -54,6 +86,8 @@ class Collection(BaseModel, db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
     name = db.Column(db.String, default=str(datetime.now().date()), nullable=False)
+
+    tokens = db.relationship("Token", lazy='joined')
 
 class Token(BaseModel, db.Model):
     __tablename__ = 'Token'
@@ -75,12 +109,16 @@ class Token(BaseModel, db.Model):
     def get_fname(self):
         return self.fname
 
+    '''
     def get_collection(self):
         return Collection.query.get(self.collection)
+    '''
 
+    '''
     def get_recordings(self):
         recs = Recording.query.filter_by(token=self.id)
         return recs
+    '''
 
     def get_length(self):
         return len(self.text)
@@ -100,8 +138,20 @@ class Token(BaseModel, db.Model):
     def get_file_id(self):
         return os.path.splitext(self.fname)[0]
 
+    @hybrid_property
+    def num_recordings(self):
+        return len(self.recordings)
+
+    @num_recordings.expression
+    def num_recordings(cls):
+        return (select([func.count(Recording.id)]).
+                where(Recording.token == cls.id).
+                label("num_recordings")
+                )
+
+    @hybrid_property
     def has_recording(self):
-        return db.session.query(db.exists().where(Recording.token==self.id)).scalar() is not None
+        return self.num_recordings > 0
 
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     text = db.Column(db.String, nullable=False)
@@ -113,14 +163,27 @@ class Token(BaseModel, db.Model):
     fname = db.Column(db.String)
     path = db.Column(db.String)
 
+    recordings = db.relationship("Recording", lazy='joined')
 
 class Recording(BaseModel, db.Model):
     __tablename__ = 'Recording'
 
-    def __init__(self, token, original_fname, user):
+    def __init__(self, token, original_fname, user, transcription):
         self.token = token
         self.original_fname = original_fname
         self.user = user
+        self.transcription = transcription
+
+    def set_wave_params(self):
+        '''
+        Should only be callable after self.save_to_disk() has
+        been called
+        '''
+        with contextlib.closing(wave.open(self.path,'r')) as f:
+            w_params = f.getparams()
+            self.sr = w_params.framerate
+            self.num_frames = w_params.nframes
+            self.duration = self.num_frames / float(self.sr)
 
     def get_url(self):
         return url_for('recording', id=self.id)
@@ -137,7 +200,7 @@ class Recording(BaseModel, db.Model):
     def save_to_disk(self, file_obj):
         self.fname = secure_filename(
             '{}_r{:09d}.wav'.format(os.path.splitext(self.original_fname)[0], self.id))
-        self.path = os.path.join(RECORD_DIR,
+        self.path = os.path.join(app.config['RECORD_DIR'],
             str(Token.query.get(self.token).collection), self.fname)
         file_obj.filename = self.fname
         file_obj.save(self.path)
@@ -150,6 +213,13 @@ class Recording(BaseModel, db.Model):
     original_fname = db.Column(db.String, default='Unknown')
     token = db.Column(db.Integer, db.ForeignKey('Token.id'), nullable=False)
     user = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    sr = db.Column(db.Integer)
+    num_channels = db.Column(db.Integer, default=2)
+    duration = db.Column(db.Float)
+    num_frames = db.Column(db.Integer)
+
+    transcription = db.Column(db.String)
 
     fname = db.Column(db.String)
     path = db.Column(db.String)

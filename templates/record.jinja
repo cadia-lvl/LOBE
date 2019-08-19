@@ -55,14 +55,16 @@
                             onClick="document.getElementById('recordingPlayer').play()"><i id='playButtonIcon' class='fa fa-play'></i>
                         </button>
                     </li>
+                    <li id="transcriptionListItem" class="list-group-item" style="font-style: italic;">
+                        <p id="transcription" class="mb-0"></p>
+
+                        <small class="float-right" style="font-style: initial;">Rafrænt afrit</small>
+                    </li>
                 </ul>
             </div>
         </div>
     </div>
     <div class='row mt-3'>
-        <div class='col-12'>
-            <hr>
-        </div>
         <div class='col-12'>
             <button type='submit' id='finishButton' type='button' class='btn btn-success float-right'>
                 Klára
@@ -76,38 +78,37 @@
                     {{macros.btn_icon('repeat', '0')}}
                 </button>
             {% endif %}
-
         </div>
     </div>
 {% endblock %}
 
 {% block modals %}
     {% if not single %}
-    <div class="modal fade" id='reloadTokensModal' tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Hlaða nýjum textum</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                <span>&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>
-                    Með því að halda áfram muntu hlaða inn nýjum textaskrám og söfnun heldur áfram.
-                    Ef núverandi upptökusett hefur ekki verið klárað mun það ekki vistast við að halda
-                    áfram.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
-                <a href="{{url_for('record_session', coll_id=collection.id)}}" class='btn btn-primary'>
-                    Halda áfram
-                </a>
-            </div>
+        <div class="modal fade" id='reloadTokensModal' tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hlaða nýjum textum</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        Með því að halda áfram muntu hlaða inn nýjum textaskrám og söfnun heldur áfram.
+                        Ef núverandi upptökusett hefur ekki verið klárað mun það ekki vistast við að halda
+                        áfram.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                    <a href="{{url_for('record_session', coll_id=collection.id)}}" class='btn btn-primary'>
+                        Halda áfram
+                    </a>
+                </div>
+                </div>
             </div>
         </div>
-    </div>
     {% endif %}
 {% endblock %}
 
@@ -115,11 +116,13 @@
 {% block scripts %}
     {{super()}}
     <script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
+    <script src='{{url_for("static", filename="js/base64ArrayBuffer.js")}}'></script>
     <script src='{{url_for("static", filename="js/audio.js")}}'></script>
 {% endblock %}f
 
 {% block headscripts %}
     <script type="text/javascript">
-        var tokens = {{json_tokens}}
+        var tokens = {{json_tokens}};
+        var talAPIToken = "{{tal_api_token}}";
     </script>
 {% endblock %}

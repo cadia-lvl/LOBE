@@ -1,5 +1,6 @@
 import json
 import os
+
 from flask import (Flask, Response, flash, redirect, render_template, request,
     send_from_directory, session, url_for)
 from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
@@ -45,16 +46,20 @@ def index_redirect():
 def post_recording():
     recordings = []
     files = []
-    for token in request.form:
-        token_id = request.form[token]
+    print(request.form)
+    for token_id in request.form:
+        item = json.loads(request.form[token_id])
+        transcription = item['transcript']
+        print(transcription)
         file_obj = request.files.get('file_{}'.format(token_id))
-        recording = Recording(token_id, file_obj.filename, session['user_id'])
+        recording = Recording(token_id, file_obj.filename, session['user_id'], transcription)
         db.session.add(recording)
         recordings.append(recording)
         files.append(file_obj)
     db.session.commit()
     for idx, recording in enumerate(recordings):
         recording.save_to_disk(files[idx])
+        recording.set_wave_params()
     db.session.commit()
 
     return Response(status=200)
@@ -65,9 +70,9 @@ def post_recording():
 @login_required
 def record_session(coll_id):
     collection = Collection.query.get(coll_id)
-    tokens = Token.query.filter_by(collection=coll_id).order_by(func.random()).limit(50)
+    tokens = db.session.query(Token).filter_by(collection=coll_id, has_recording=False).order_by(func.random()).limit(5)
     return render_template('record.jinja', section='record', collection=collection, tokens=tokens,
-        json_tokens=json.dumps([t.get_dict() for t in tokens]))
+        json_tokens=json.dumps([t.get_dict() for t in tokens]), tal_api_token=app.config['TAL_API_TOKEN'])
 
 @app.route('/record/token/<tok_id>')
 @login_required
@@ -107,6 +112,7 @@ def collection(id):
 
     page = int(request.args.get('page', 1))
     collection = Collection.query.get(id)
+
     tokens = collection.get_tokens().paginate(page, per_page=app.config['TOKEN_PAGINATION'])
     return render_template('collection.jinja',
         collection=collection, token_form=token_form, tokens=tokens, section='collection')

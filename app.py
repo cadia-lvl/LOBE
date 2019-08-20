@@ -70,8 +70,6 @@ def post_recording():
 def record_session(coll_id):
     collection = Collection.query.get(coll_id)
     tokens = db.session.query(Token).filter_by(collection_id=coll_id, num_recordings=0).order_by(func.random()).limit(50)
-    for token in tokens:
-        print(token.has_recording)
     return render_template('record.jinja', section='record', collection=collection, tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]), tal_api_token=app.config['TAL_API_TOKEN'])
 

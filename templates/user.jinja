@@ -1,0 +1,23 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>{{user.name}}</h1>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Upptökur</h3>
+        </div>
+        <div class='col-12'>
+            {% with recordings=recordings.items %}
+                {% include '_recording_table.jinja'%}
+            {% endwith %}
+        </div>
+    </div>
+    <div class='row mt-3'>
+        <div class='col-12'>
+            {{macros.pagination(recordings, url_for("user", id=user.id))}}
+        </div>
+    </div>
+{% endblock %}

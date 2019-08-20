@@ -14,7 +14,7 @@
 </div>
 <div class='row'>
     <div class='col-12'>
-        {{macros.pagination(recordings, 'recording_list')}}
+        {{macros.pagination(recordings, url_for("recording_list"))}}
     </div>
 </div>
 {% endblock %}

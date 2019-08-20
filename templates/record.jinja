@@ -42,6 +42,9 @@
                     <h3 class='card-text' id='tokenText'></h3>
                     <p class='mb-0'>#<span id="tokenID"></span></p>
                     <p class='card-text'><a href='#'><code id="tokenFileID"></code></a></p>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-success" id='volumeBar' role="progressbar"></div>
+                    </div>
                 </div>
                 <ul id='recordingInfoList' class="list-group list-group-flush">
                     <li id='playerListItem' class='list-group-item'>
@@ -61,6 +64,9 @@
                 </ul>
             </div>
         </div>
+    </div>
+    <div class='row'>
+        <canvas id="meter" width="500" height="50"></canvas>
     </div>
     <div class='row mt-3'>
         <div class='col-12'>
@@ -114,6 +120,7 @@
 {% block scripts %}
     {{super()}}
     <script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
+    <script src='{{url_for("static", filename="js/volume-meter.js")}}'></script>
     <script src='{{url_for("static", filename="js/base64ArrayBuffer.js")}}'></script>
     <script src='{{url_for("static", filename="js/audio.js")}}'></script>
 {% endblock %}f

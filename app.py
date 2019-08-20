@@ -8,7 +8,7 @@ from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
 from flask_security.utils import hash_password
 from sqlalchemy.sql.expression import func, select
 from werkzeug import secure_filename
-from db import (create_tokens, get_paginated, insert_collection,
+from db import (create_tokens, insert_collection,
     newest_collections)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
@@ -16,6 +16,7 @@ from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
 from models import Collection, Recording, Role, Token, User, db
 from middleware import PrefixMiddleware
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
+from ListPagination import ListPagination
 
 app = Flask(__name__)
 app.config.from_pyfile('{}.py'.format(os.path.join('settings/', os.getenv('FLASK_ENV', 'development'))))
@@ -46,11 +47,9 @@ def index_redirect():
 def post_recording():
     recordings = []
     files = []
-    print(request.form)
     for token_id in request.form:
         item = json.loads(request.form[token_id])
         transcription = item['transcript']
-        print(transcription)
         file_obj = request.files.get('file_{}'.format(token_id))
         recording = Recording(token_id, file_obj.filename, session['user_id'], transcription)
         db.session.add(recording)
@@ -70,7 +69,9 @@ def post_recording():
 @login_required
 def record_session(coll_id):
     collection = Collection.query.get(coll_id)
-    tokens = db.session.query(Token).filter_by(collection=coll_id, has_recording=False).order_by(func.random()).limit(5)
+    tokens = db.session.query(Token).filter_by(collection_id=coll_id, num_recordings=0).order_by(func.random()).limit(50)
+    for token in tokens:
+        print(token.has_recording)
     return render_template('record.jinja', section='record', collection=collection, tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]), tal_api_token=app.config['TAL_API_TOKEN'])
 
@@ -112,8 +113,8 @@ def collection(id):
 
     page = int(request.args.get('page', 1))
     collection = Collection.query.get(id)
+    tokens = ListPagination(collection.tokens, page, app.config['TOKEN_PAGINATION'])
 
-    tokens = collection.get_tokens().paginate(page, per_page=app.config['TOKEN_PAGINATION'])
     return render_template('collection.jinja',
         collection=collection, token_form=token_form, tokens=tokens, section='collection')
 
@@ -159,10 +160,16 @@ def download_recording(id):
 @login_required
 def user_list():
     page = int(request.args.get('page', 1))
-    #users = User.query.paginate(page, per_page=RECORDING_PAGINATION)
-    users = get_paginated(User, page, app.config['RECORDING_PAGINATION'], 'name', desc=False)
+    users = User.query.paginate(page, app.config['USER_PAGINATION'])
     return render_template('user_list.jinja', users=users, section='user')
 
+@app.route('/users/<int:id>')
+@login_required
+def user(id):
+    page = int(request.args.get('page', 1))
+    user = User.query.get(id)
+    recordings = ListPagination(user.recordings, page, app.config['RECORDING_PAGINATION'])
+    return render_template("user.jinja", user=user, recordings=recordings, section='user')
 
 @app.route('/users/create', methods=['GET', 'POST'])
 @login_required

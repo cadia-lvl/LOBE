@@ -8,29 +8,14 @@
     </div>
     <div class='row'>
         <div class='col-12'>
-            <div class='table-responsive table-striped table-sm table-no-break'>
-                <table class='table table-hover'>
-                    <thead>
-                        <th>Texti</th>
-                        <th>Auðkenni</th>
-                        <th>Fjöldi upptaka</th>
-                    </thead>
-                    <tbody>
-                        {% for token in tokens.items %}
-                            <tr class='hover-row' onclick='document.location="{{token.get_url()}}"'>
-                                <td>{{token.text}}</td>
-                                <td><code>{{token.get_file_id()}}</code></td>
-                                <td>{{token.recordings | length }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            {% with tokens=tokens.items %}
+                {% include '_token_table.jinja'%}
+            {% endwith %}
         </div>
     </div>
     <div class='row mt-3'>
         <div class='col-12'>
-            {{macros.pagination(tokens, 'token_list')}}
+            {{macros.pagination(tokens, url_for('token_list'))}}
         </div>
     </div>
 {% endblock %}

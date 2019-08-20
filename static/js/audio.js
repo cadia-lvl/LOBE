@@ -45,6 +45,11 @@ var nextButton = $('#nextButton');
 var finishButton = $('#finishButton');
 var finishButtonIcon = $('#finishButtonIcon');
 
+var canvasContext = document.getElementById("meter").getContext("2d");
+var volumeBar = $('#volumeBar');
+var WIDTH=500;
+var HEIGHT=50;
+
 /** ----------------- Listeners ----------------- */
 
 recordingPlayer.onplaying = function(){
@@ -246,11 +251,13 @@ function startRecording() {
 	isRecording = true;
 	navigator.mediaDevices.getUserMedia({audio:true, video:false}).then(function(stream) {
 		audioContext = new AudioContext();
+		meter = createAudioMeter(audioContext);
 		sampleRate = audioContext.sampleRate;
 
 		gumStream = stream;
 
 		input = audioContext.createMediaStreamSource(stream);
+		input.connect(meter);
 		analyser = audioContext.createAnalyser();
 		analyser.fftsize = 1024;
 		input.connect(analyser)
@@ -283,7 +290,23 @@ function startRecording() {
 				ws.send(JSON.stringify({ audioContent: encodedContent }));
 			}
 		};
+
+		onLevelChange();
 	})}
+
+function onLevelChange(time){
+	if(isRecording){
+		if(meter.checkClipping()){
+			volumeBar.removeClass('bg-success').addClass('bg-warning');
+		} else{
+			volumeBar.removeClass('bg-warning').addClass('bg-success');
+		}
+		volumeBar.css({"width":(meter.volume*200).toString()+"%"});
+		rafID = window.requestAnimationFrame( onLevelChange );
+	} else{
+		volumeBar.css({"width": "0%"})
+	}
+}
 
 function stopRecording() {
 	//tell the recorder to stop the recording

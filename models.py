@@ -14,7 +14,6 @@ import os
 import wave
 import contextlib
 
-
 db = SQLAlchemy()
 
 class BaseModel(db.Model):
@@ -34,14 +33,6 @@ class Collection(BaseModel, db.Model):
 
     def __init__(self, name):
         self.name = name
-
-    def get_tokens(self):
-        '''
-        Get all tokens associated with this collection.
-        If only_nonrec is set to True, only tokens without
-        recordings are returned
-        '''
-        return Token.query.filter_by(collection=self.id)
 
     @hybrid_property
     def num_tokens(self):
@@ -84,18 +75,18 @@ class Collection(BaseModel, db.Model):
         return os.path.join(app.config['TOKEN_DIR'], str(self.id))
 
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
-    name = db.Column(db.String, default=str(datetime.now().date()), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    name = db.Column(db.String, default=str(datetime.now().date()))
 
-    tokens = db.relationship("Token", lazy='joined')
+    tokens = db.relationship("Token", lazy='joined', backref='collection')
 
 class Token(BaseModel, db.Model):
     __tablename__ = 'Token'
 
-    def __init__(self, text, original_fname, collection):
+    def __init__(self, text, original_fname, collection_id):
         self.text = text
         self.original_fname = original_fname
-        self.collection = collection
+        self.collection_id = collection_id
 
     def get_url(self):
         return url_for('token', id=self.id)
@@ -109,24 +100,13 @@ class Token(BaseModel, db.Model):
     def get_fname(self):
         return self.fname
 
-    '''
-    def get_collection(self):
-        return Collection.query.get(self.collection)
-    '''
-
-    '''
-    def get_recordings(self):
-        recs = Recording.query.filter_by(token=self.id)
-        return recs
-    '''
-
     def get_length(self):
         return len(self.text)
 
     def save_to_disk(self):
         self.fname = secure_filename("{}_{:09d}.token".format(
             os.path.splitext(self.original_fname)[0], self.id))
-        self.path = os.path.join(app.config['TOKEN_DIR'], str(self.collection), self.fname)
+        self.path = os.path.join(app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
 
         f = open(self.path, 'w')
         f.write(self.text)
@@ -138,6 +118,9 @@ class Token(BaseModel, db.Model):
     def get_file_id(self):
         return os.path.splitext(self.fname)[0]
 
+    def get_printable_id(self):
+        return "T-{:09d}".format(self.id)
+
     @hybrid_property
     def num_recordings(self):
         return len(self.recordings)
@@ -145,31 +128,30 @@ class Token(BaseModel, db.Model):
     @num_recordings.expression
     def num_recordings(cls):
         return (select([func.count(Recording.id)]).
-                where(Recording.token == cls.id).
-                label("num_recordings")
-                )
+                where(Recording.token_id == cls.id).
+                label("num_recordings"))
 
     @hybrid_property
     def has_recording(self):
         return self.num_recordings > 0
 
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
-    text = db.Column(db.String, nullable=False)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
+    text = db.Column(db.String)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     original_fname = db.Column(db.String, default='Unknown')
-    collection = db.Column(db.Integer, db.ForeignKey('Collection.id'), nullable=False)
+    collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
 
     fname = db.Column(db.String)
     path = db.Column(db.String)
 
-    recordings = db.relationship("Recording", lazy='joined')
+    recordings = db.relationship("Recording", lazy='joined', backref='token')
 
 class Recording(BaseModel, db.Model):
     __tablename__ = 'Recording'
 
-    def __init__(self, token, original_fname, user, transcription):
-        self.token = token
+    def __init__(self, token_id, original_fname, user, transcription):
+        self.token_id = token_id
         self.original_fname = original_fname
         self.user = user
         self.transcription = transcription
@@ -201,18 +183,24 @@ class Recording(BaseModel, db.Model):
         self.fname = secure_filename(
             '{}_r{:09d}.wav'.format(os.path.splitext(self.original_fname)[0], self.id))
         self.path = os.path.join(app.config['RECORD_DIR'],
-            str(Token.query.get(self.token).collection), self.fname)
+            str(self.token.collection_id), self.fname)
         file_obj.filename = self.fname
         file_obj.save(self.path)
 
     def get_file_id(self):
         return os.path.splitext(self.fname)[0]
 
-    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
+    def get_user(self):
+        return User.query.get(self.user_id)
+
+    def get_printable_id(self):
+        return "R-{:09d}".format(self.id)
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     original_fname = db.Column(db.String, default='Unknown')
-    token = db.Column(db.Integer, db.ForeignKey('Token.id'), nullable=False)
-    user = db.Column(db.Integer, db.ForeignKey('user.id'))
+    token_id = db.Column(db.Integer, db.ForeignKey('Token.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     sr = db.Column(db.Integer)
     num_channels = db.Column(db.Integer, default=2)
@@ -235,6 +223,9 @@ class Role(db.Model, RoleMixin):
     description = db.Column(db.String(255))
 
 class User(db.Model, UserMixin):
+
+    def get_url(self):
+        return url_for('user', id=self.id)
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
@@ -243,3 +234,5 @@ class User(db.Model, UserMixin):
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     roles = db.relationship('Role', secondary=roles_users,
         backref=db.backref('users', lazy='dynamic'))
+
+    recordings = db.relationship("Recording", lazy='joined', backref='user_relationship')

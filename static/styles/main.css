@@ -18,3 +18,10 @@
     height: 40px;
     width: 40px;
 }
+
+.nowrap-td{
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 100px !important;
+    text-overflow: ellipsis;
+}

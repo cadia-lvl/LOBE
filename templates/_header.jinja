@@ -17,10 +17,6 @@
         <li class="nav-item {% if section == 'user' %}active{% endif %}">
             <a class="nav-link {% if section == 'user' %}text-success{% endif %}" href="{{url_for('user_list')}}">Notendur</a>
         </li>
-
-
-
-
         <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                {{macros.btn_icon('user-circle', '')}}

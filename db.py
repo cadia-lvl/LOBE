@@ -37,11 +37,3 @@ def insert_collection(name):
 def newest_collections(num=3):
     ''' Get the num newest collections '''
     return Collection.query.order_by(Collection.created_at.desc()).limit(num)
-
-
-def get_paginated(model, page, num_items, order_by='created_at', desc=False):
-    ''' return a paginated recording query '''
-    ordering = getattr(model, order_by)
-    if desc:
-        ordering = ordering.desc()
-    return model.query.order_by(ordering).paginate(page, per_page=num_items)

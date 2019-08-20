@@ -4,11 +4,11 @@
     </span>
 {% endmacro %}
 
-{% macro pagination(items, url_name) %}
+{% macro pagination(items, url) %}
     <nav>
         <ul class="pagination justify-content-center">
             {% if items.has_prev %}
-                <li class="page-item"><a class="page-link" href="{{ url_for(url_name, page=items.prev_num) }}">
+                <li class="page-item"><a class="page-link" href="{{url}}?page={{items.prev_num}}">
                     {{ btn_icon('arrow-left', 'r')}}
                     Fyrri
                 </a></li>
@@ -22,7 +22,7 @@
                 <span class='page-link'>{{items.page}} af {{items.pages}}</span>
             </li>
             {% if items.has_next %}
-                <li class="page-item"> <a class="page-link" href="{{ url_for(url_name, page=items.next_num) }}">
+                <li class="page-item"> <a class="page-link" href="{{url}}?page={{items.next_num}}">
                     Næsta
                     {{ btn_icon('arrow-right', 'l')}}
                 </a></li>

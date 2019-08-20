@@ -1,7 +1,6 @@
 <div class='table-responsive'>
     <table class='table table-sm table-no-break'>
         <thead>
-            <th>Tekið upp þann</th>
             <th>Lesið þann</th>
             <th>Auðkenni</th>
             <th>Lesið af</th>
@@ -10,10 +9,9 @@
         <tbody>
             {% for recording in recordings %}
                 <tr>
-                    <td>{{recording.created_at | datetime('low')}}</td>
                     <td>{{recording.created_at | datetime(format='medium')}}</td>
                     <td><a href={{recording.get_url()}}><code>{{recording.get_file_id()}}</code></a></td>
-                    <td>{{recording.user | default("Óskráð", true)}}</td>
+                    <td><a href={{recording.get_user().get_url()}}>{{recording.get_user().name}}</a></td>
                     <td class='table-btn-wrapper'>
                         <div>
                             <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
@@ -27,8 +25,3 @@
         </tbody>
     </table>
 </div>
-
-{% block scripts %}
-    {{super}}
-    <script src='/static/js/audioControls.js'></script>
-{% endblock %}

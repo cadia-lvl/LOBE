@@ -1,0 +1,22 @@
+<div class='table-responsive table-sm'>
+    <table class='table table-no-break'>
+        <thead>
+            <th>Auðkenni</th>
+            <th>Lengd</th>
+            <th>Skráð þann</th>
+            <th># upptökur</th>
+            <th>Texti</th>
+        </thead>
+        <tbody>
+            {% for token in tokens %}
+                <tr>
+                    <td><a href={{token.get_url()}}><code>{{token.get_printable_id()}}</code></a></td>
+                    <td class='text-right'>{{token.get_length()}}</td>
+                    <td>{{token.created_at | datetime('med-low')}}</td>
+                    <td class='text-right'>{{token.recordings | length}}</td>
+                    <td>{{token.text}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -10,8 +10,8 @@
     </div>
     <div class='row'>
         <div class='col-12'>
-            <div class='table-responsive table-striped'>
-                <table class='table table-hover'>
+            <div class='table-responsive'>
+                <table class='table'>
                     <thead>
                         <th>Nafn</th>
                         <th>Tölvupóstur</th>
@@ -19,10 +19,10 @@
                     </thead>
                     <tbody>
                         {% for user in users.items %}
-                            <tr class='hover-row'>
-                                <td>{{user.name}}</td>
+                            <tr>
+                                <td><a href={{user.get_url()}}>{{user.name}}</a></td>
                                 <td>{{user.email}}</td>
-                                <td>{{user.roles}}</td>
+                                <td>{{user.id}}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -32,7 +32,7 @@
     </div>
     <div class='row'>
         <div class='col-12'>
-            {{macros.pagination(users, 'user_list')}}
+            {{macros.pagination(users, url_for('user_list'))}}
         </div>
     </div>
 {% endblock %}

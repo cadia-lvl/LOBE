@@ -11,10 +11,11 @@
     {% endif %}
     <link rel="stylesheet" href="https://kit-free.fontawesome.com/releases/latest/css/free-v4-shims.min.css" media="all">
     <link rel="stylesheet" href="https://kit-free.fontawesome.com/releases/latest/css/free.min.css" media="all">
-    <link rel="stylesheet" href='/static/styles/main.css'>
+    <link rel="stylesheet" href='{{url_for("static", filename="styles/main.css")}}'>
+    <link rel="icon" type="image/png" href="{{url_for('static', filename='favicon.ico')}}" />
     {% block headscripts %}
     {% endblock %}
-    <title>L.O.B.E</title>
+    <title>LOBE</title>
   </head>
   <body>
     {% include '_header.jinja' %}
@@ -29,7 +30,6 @@
       <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
       <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
       <script src="https://kit.fontawesome.com/e72e82d764.js"></script>
-      <!-- see: https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js <script src='https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js'></script>-->
     {% endblock %}
   </body>
 </html>

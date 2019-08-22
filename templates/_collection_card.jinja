@@ -1,8 +1,25 @@
-<div class="card">
+<div class="card mb-3 flex-fill">
   <div class="card-body">
-    <h5 class="card-title">{{collection.name}}</h5>
+    <h5 class="card-title">
+        <a href="{{collection.get_url()}}">
+        {{collection.name}}
+        </a>
+    </h5>
     <h6 class="card-subtitle mb-2 text-muted">{{collection.created_at | datetime}}</h6>
-    <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-    <a href="{{collection.get_url()}}" class="card-link">Skoða</a>
+    <p class='card-text'>
+      Stofnuð þann: {{collection.created_at | datetime(format='low')}}
+      <br>
+      Búið að taka upp {{collection.num_tokens - collection.num_nonrecorded_tokens}} af {{collection.num_tokens}} textum
+    </p>
+    <div class="progress mb-2">
+      <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
+    </div>
+
+    <a class='btn btn-secondary float-right text-success rounded-circle'>
+      <i class='fa fa-microphone'></i>
+    </a>
+  </div>
+  <div class="card-footer">
+    2 days ago
   </div>
 </div>

@@ -150,10 +150,10 @@ class Token(BaseModel, db.Model):
 class Recording(BaseModel, db.Model):
     __tablename__ = 'Recording'
 
-    def __init__(self, token_id, original_fname, user, transcription):
+    def __init__(self, token_id, original_fname, user_id, transcription):
         self.token_id = token_id
         self.original_fname = original_fname
-        self.user = user
+        self.user_id = user_id
         self.transcription = transcription
 
     def set_wave_params(self):

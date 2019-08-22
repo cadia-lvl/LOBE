@@ -113,7 +113,8 @@ class Token(BaseModel, db.Model):
         f.close()
 
     def get_dict(self):
-        return {'id':self.id, 'text':self.text, 'file_id':self.get_file_id()}
+        return {'id':self.id, 'text':self.text, 'file_id':self.get_file_id(),
+            'url':self.get_url()}
 
     def get_file_id(self):
         return os.path.splitext(self.fname)[0]

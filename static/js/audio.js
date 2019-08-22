@@ -22,6 +22,7 @@ var finalTranscriptionElem = $("#finalTranscription");
 
 var tokenText = $("#tokenText");
 var tokenIDSpan = $("#tokenID");
+var tokenHref= $("#tokenHref");
 var tokenfileIDSpan = $("#tokenFileID");
 var tokenProgress = $('#tokenProgress');
 var currentIndexSpan = $('#currentIndexSpan');
@@ -100,6 +101,7 @@ function setTokenUI(index){
 	tokenText.text(tokens[index]['text']);
 	tokenIDSpan.text(tokens[index]['id']);
 	tokenfileIDSpan.text(tokens[index]['file_id']);
+	tokenHref.attr('href', tokens[index]['url'])
 	currentIndexSpan.text(index + 1);
 };
 

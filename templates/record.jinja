@@ -41,7 +41,7 @@
                 <div class="card-body">
                     <h3 class='card-text' id='tokenText'></h3>
                     <p class='mb-0'>#<span id="tokenID"></span></p>
-                    <p class='card-text'><a href='#'><code id="tokenFileID"></code></a></p>
+                    <p class='card-text'><a id="tokenHref" href='#'><code id="tokenFileID"></code></a></p>
                     <div class="progress" style="height: 20px;">
                         <div class="progress-bar bg-success" id='volumeBar' role="progressbar"></div>
                     </div>
@@ -50,12 +50,15 @@
                     <li id='playerListItem' class='list-group-item'>
                         <code id='recordingIDSpan'></code>
                         <audio id="recordingPlayer" type="audio/wav"></audio>
-                        <button id='recordingDeleteButton' type='button' class='btn btn-secondary btn-sm float-right text-danger ml-1'>
-                            <i class='fa fa-trash'></i>
-                        </button>
-                        <a id='recordingDownload' class="btn btn-secondary btn-sm float-right ml-1"><i class='fa fa-download'></i></a>
-                        <button id='playButton' type='button' class='btn btn-secondary btn-sm float-right'><i id='playButtonIcon' class='fa fa-play'></i>
-                        </button>
+
+                        <div class='btn-group float-right' role='group'>
+                            <button id='playButton' type='button' class='btn btn-secondary btn-sm'><i id='playButtonIcon' class='fa fa-play'></i>
+                            </button>
+                            <a id='recordingDownload' class="btn btn-secondary btn-sm"><i class='fa fa-download'></i></a>
+                            <button id='recordingDeleteButton' type='button' class='btn btn-secondary btn-sm text-danger'>
+                                <i class='fa fa-trash'></i>
+                            </button>
+                        </div>
                     </li>
                     <li id="transcriptionListItem" class="list-group-item" style="font-style: italic;">
                         <p id="transcription" class="mb-0"></p>

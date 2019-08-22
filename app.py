@@ -139,7 +139,7 @@ def recording_list():
     recordings = Recording.query.paginate(page, per_page=app.config['RECORDING_PAGINATION'])
     return render_template('recording_list.jinja', recordings=recordings, section='recording')
 
-@app.route('/recording/<int:id>')
+@app.route('/recordings/<int:id>')
 @login_required
 def recording(id):
     recording = Recording.query.get(id)

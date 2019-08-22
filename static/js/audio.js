@@ -241,7 +241,7 @@ function sendAction(){
 			fd.append("file_"+tokens[i]['id'], tokens[i]['recording']['blob'], tokens[i]['recording']['filename']);
 		}
 	}
-	xhr.open("POST","/post_recording", true);
+	xhr.open("POST", postRecordingRoute, true);
 	xhr.send(fd);
 }
 

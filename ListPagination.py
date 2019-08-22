@@ -5,7 +5,7 @@ class ListPagination:
         self.page = page
         self.page_size = page_size
         self.num_items = len(items)
-        self.items = items[page*page_size:min((page+1)*page_size, self.num_items -1)]
+        self.items = items[(page-1)*page_size:min(page*page_size, self.num_items -1)]
 
     @property
     def has_next(self):

@@ -14,7 +14,6 @@ from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
     ExtendedRegisterForm)
 from models import Collection, Recording, Role, Token, User, db
-from middleware import PrefixMiddleware
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 

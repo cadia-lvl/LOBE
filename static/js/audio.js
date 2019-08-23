@@ -384,6 +384,9 @@ function handleStreamingResult(event) {
 			for(var i=0; i< spans.length; i++){
 				transcript += spans[i].innerHTML;
 			}
+			if(transcript === ''){
+				transcript = 'Ekkert til afritunar';
+			}
 			tokens[tokenIndex]['recording']['transcript'] = transcript;
 			updateUI(tokenIndex, updateRecBtn=false);
 		}

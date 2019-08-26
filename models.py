@@ -1,18 +1,15 @@
-from flask_sqlalchemy import SQLAlchemy
-from flask_security import UserMixin, RoleMixin
-from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-from sqlalchemy import select, func
-
-from datetime import datetime
-
-from flask import url_for
-from flask import current_app as app
-
-from werkzeug import secure_filename
-
+import contextlib
 import os
 import wave
-import contextlib
+from datetime import datetime
+
+from flask import current_app as app
+from flask import url_for
+from flask_security import RoleMixin, UserMixin
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func, select
+from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
+from werkzeug import secure_filename
 
 db = SQLAlchemy()
 
@@ -104,13 +101,16 @@ class Token(BaseModel, db.Model):
         return len(self.text)
 
     def save_to_disk(self):
+        self.set_path()
+        f = open(self.path, 'w')
+        f.write(self.text)
+        f.close()
+
+    def set_path(self):
         self.fname = secure_filename("{}_{:09d}.token".format(
             os.path.splitext(self.original_fname)[0], self.id))
         self.path = os.path.join(app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
 
-        f = open(self.path, 'w')
-        f.write(self.text)
-        f.close()
 
     def get_dict(self):
         return {'id':self.id, 'text':self.text, 'file_id':self.get_file_id(),
@@ -181,21 +181,32 @@ class Recording(BaseModel, db.Model):
         return self.path
 
     def save_to_disk(self, file_obj):
+        self.set_path()
+        file_obj.filename = self.fname
+        file_obj.save(self.path)
+
+    def set_path(self):
         self.fname = secure_filename(
             '{}_r{:09d}.wav'.format(os.path.splitext(self.original_fname)[0], self.id))
         self.path = os.path.join(app.config['RECORD_DIR'],
             str(self.token.collection_id), self.fname)
-        file_obj.filename = self.fname
-        file_obj.save(self.path)
 
     def get_file_id(self):
-        return os.path.splitext(self.fname)[0]
-
+        if self.fname is not None:
+            return os.path.splitext(self.fname)[0]
+        else:
+            return "nrpk_{:09d}".format(self.id)
     def get_user(self):
         return User.query.get(self.user_id)
 
     def get_printable_id(self):
         return "R-{:09d}".format(self.id)
+
+    def get_printable_duration(self):
+        if self.duration is not None:
+            return "{:2.2f}s".format(self.duration)
+        else:
+            return "n/a"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
@@ -224,7 +235,6 @@ class Role(db.Model, RoleMixin):
     description = db.Column(db.String(255))
 
 class User(db.Model, UserMixin):
-
     def get_url(self):
         return url_for('user', id=self.id)
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -237,3 +247,8 @@ class User(db.Model, UserMixin):
         backref=db.backref('users', lazy='dynamic'))
 
     recordings = db.relationship("Recording", lazy='joined', backref='user_relationship')
+
+    def __str__(self):
+        if type(self.name) != str:
+            return str("User_{}".format(self.id))
+        return self.name

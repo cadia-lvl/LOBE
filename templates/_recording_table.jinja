@@ -4,6 +4,7 @@
             <th>Lesið þann</th>
             <th>Auðkenni</th>
             <th>Lesið af</th>
+            <th>Lengd</th>
             <th></th>
         </thead>
         <tbody>
@@ -16,8 +17,10 @@
                     {% else %}
                         <td>Ekki skráð</td>
                     {% endif %}
+                    <td>{{recording.get_printable_duration()}}</td>
                     <td class='table-btn-wrapper'>
                         <div>
+                            <p>{{recording.path}}</p>
                             <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
                             <a class='btn btn-secondary btn-sm float-right ml-1' href='{{recording.get_download_url()}}'><i class='fa fa-download'></i></a>
                             <button type='button' class='btn btn-secondary btn-sm float-right ml-1' onClick="audio = document.getElementById('audio-{{recording.id}}'); audio.pause(); audio.currentTime = 0;"><i class='fa fa-stop'></i></button>

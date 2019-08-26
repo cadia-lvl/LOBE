@@ -3,10 +3,10 @@
     <div class='row'>
         <div class='col-xl-6 offset-xl-3 col-md-8 offset-md-2 col-12'>
             <div class='card card-body'>
-                <form method="POST" action="{{ url_for('user_create') }}">
+                <form method="POST" action="{{ url_for('user_edit', id=user.id) }}">
                     {% include '_form.jinja' %}
                     <button type='submit' class='btn btn-success'>
-                        Búa til
+                        Breyta
                         <span class='ml-2'><i class='fa fa-check'></i></span>
                     </button>
                 </form>

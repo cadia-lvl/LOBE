@@ -12,13 +12,14 @@ from db import (create_tokens, insert_collection,
     newest_collections)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
-    ExtendedRegisterForm)
+    ExtendedRegisterForm, UserEditForm, RoleForm)
 from models import Collection, Recording, Role, Token, User, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
 app = Flask(__name__)
-app.config.from_pyfile('{}.py'.format(os.path.join('settings/', os.getenv('FLASK_ENV', 'development'))))
+app.config.from_pyfile('{}.py'.format(os.path.join('settings/',
+    os.getenv('FLASK_ENV', 'development'))))
 
 if 'REVERSE_PROXY_PATH' in app.config:
     ReverseProxyPrefixFix(app)
@@ -36,12 +37,12 @@ app.jinja_env.filters['datetime'] = format_date
 def index():
     return render_template('index.jinja', collections=newest_collections(num=4))
 
-@app.route('/lobe')
+@app.route('/lobe/')
 @login_required
 def index_redirect():
     return redirect(url_for('index'))
 
-@app.route('/post_recording', methods=['POST'])
+@app.route('/post_recording/', methods=['POST'])
 @login_required
 def post_recording():
     recordings = []
@@ -64,7 +65,7 @@ def post_recording():
 
 # RECORD ROUTES
 
-@app.route('/record/<int:coll_id>')
+@app.route('/record/<int:coll_id>/')
 @login_required
 def record_session(coll_id):
     collection = Collection.query.get(coll_id)
@@ -72,7 +73,7 @@ def record_session(coll_id):
     return render_template('record.jinja', section='record', collection=collection, tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]), tal_api_token=app.config['TAL_API_TOKEN'])
 
-@app.route('/record/token/<tok_id>')
+@app.route('/record/token/<tok_id>/')
 @login_required
 def record_single(tok_id):
     token = Token.query.get(tok_id)
@@ -81,7 +82,7 @@ def record_single(tok_id):
 
 # COLLECTION ROUTES
 
-@app.route('/collections/create', methods=['GET', 'POST'])
+@app.route('/collections/create/', methods=['GET', 'POST'])
 @login_required
 def create_collection():
     form = CollectionForm(request.form)
@@ -101,7 +102,7 @@ def collection_list():
     collections = Collection.query.paginate(page, per_page=app.config['COLLECTION_PAGINATION'])
     return render_template('collection_list.jinja', collections=collections, section='collection')
 
-@app.route('/collections/<int:id>', methods=['GET', 'POST'])
+@app.route('/collections/<int:id>/', methods=['GET', 'POST'])
 @login_required
 def collection(id):
     token_form = BulkTokenForm(request.form)
@@ -118,7 +119,7 @@ def collection(id):
 
 # TOKEN ROUTES
 
-@app.route('/tokens/<int:id>')
+@app.route('/tokens/<int:id>/')
 @login_required
 def token(id):
     return render_template('token.jinja', token=Token.query.get(id), section='token')
@@ -139,13 +140,13 @@ def recording_list():
     recordings = Recording.query.paginate(page, per_page=app.config['RECORDING_PAGINATION'])
     return render_template('recording_list.jinja', recordings=recordings, section='recording')
 
-@app.route('/recordings/<int:id>')
+@app.route('/recordings/<int:id>/')
 @login_required
 def recording(id):
     recording = Recording.query.get(id)
     return render_template('recording.jinja', recording=recording, section='recording')
 
-@app.route('/recordings/<int:id>/download')
+@app.route('/recordings/<int:id>/download/')
 @login_required
 def download_recording(id):
     recording = Recording.query.get(id)
@@ -160,7 +161,7 @@ def user_list():
     users = User.query.paginate(page, app.config['USER_PAGINATION'])
     return render_template('user_list.jinja', users=users, section='user')
 
-@app.route('/users/<int:id>')
+@app.route('/users/<int:id>/')
 @login_required
 def user(id):
     page = int(request.args.get('page', 1))
@@ -168,13 +169,49 @@ def user(id):
     recordings = ListPagination(user.recordings, page, app.config['RECORDING_PAGINATION'])
     return render_template("user.jinja", user=user, recordings=recordings, section='user')
 
-@app.route('/users/create', methods=['GET', 'POST'])
+@app.route('/users/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+def user_edit(id):
+    user = User.query.get(id)
+    form = UserEditForm(request.form, obj=user)
+
+    if request.method == 'POST' and form.validate():
+        form.populate_obj(user)
+        db.session.commit()
+
+    return render_template('user_edit.jinja', user=user, form=form, section='user')
+
+@app.route('/users/create/', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
-def create_user():
+def user_create():
     form = ExtendedRegisterForm(request.form)
     if request.method == 'POST' and form.validate():
         user_datastore.create_user(name=form.name.data, email=form.email.data,
             password=hash_password(form.password.data), roles=[form.role.data])
         db.session.commit()
     return render_template('user_create.jinja', form=form, section='user')
+
+@app.route('/roles/create/', methods=['GET', 'POST'])
+@login_required
+#@roles_required('admin')
+def role_create():
+    form = RoleForm(request.form)
+    if request.method == 'POST' and form.validate():
+        role = Role()
+        form.populate_obj(role)
+        db.session.add(role)
+        db.session.commit()
+    return render_template('role_create.jinja', form=form, section='role')
+
+@app.route('/roles/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+def role_edit(id):
+    role = Role.query.get(id)
+    form = RoleForm(request.form, obj=role)
+
+    if request.method == 'POST' and form.validate():
+        form.populate_obj(role)
+        db.session.commit()
+
+    return render_template('role_edit.jinja', role=role, form=form, section='role')

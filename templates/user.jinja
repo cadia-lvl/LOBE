@@ -2,7 +2,12 @@
 {% block body %}
     <div class='row'>
         <div class='col-12'>
-            <h1 class='font-weight-bold'>{{user.name}}</h1>
+            <h1 class='font-weight-bold'>{{user.name if user.name != None else 'Ekki skráð'}}</h1>
+            <p>{{user.email}}</p>
+            <a href="{{url_for('user_edit', id=user.id)}}" class='btn btn-secondary float-right text-success'>
+                Breyta
+                {{macros.btn_icon('edit', 'l')}}
+            </a>
         </div>
     </div>
     <div class='row'>

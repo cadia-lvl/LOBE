@@ -78,7 +78,7 @@ def record_session(coll_id):
 def record_single(tok_id):
     token = Token.query.get(tok_id)
     return render_template('record.jinja', tokens=token, section='record', single=True,
-        json_tokens =json.dumps([token.get_dict()]))
+        json_tokens=json.dumps([token.get_dict()]), tal_api_token=app.config['TAL_API_TOKEN'])
 
 # COLLECTION ROUTES
 

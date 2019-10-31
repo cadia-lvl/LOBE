@@ -18,7 +18,7 @@ var numTokens = tokens.length;
 /** ----------------- DOM elements ----------------- */
 
 var streamResultElem = document.getElementById("transcription");
-var finalTranscriptionElem = $("#finalTranscription");
+var finalTranscriptionElem = $("#finalTrupdateTableUIanscription");
 
 var tokenText = $("#tokenText");
 var tokenIDSpan = $("#tokenID");
@@ -73,13 +73,14 @@ finishButton.click(function(){sendAction()});
 
 $(window).keyup(function (e) {
 	if (e.key === ' ' || e.key === 'Spacebar'  || e.keyCode === 38 || e.keyCode === 87) {
+		// spacebar, arrow-up or "w"
 		e.preventDefault()
 		recordAction();
-	} else if(e.keyCode === 37 || e.keyCode === 65){
+	} else if(e.keyCode === 37 || e.keyCode === 65){ // arrow-left or "a"
 		prevAction();
-	} else if(e.keyCode === 39 || e.keyCode === 68){
+	} else if(e.keyCode === 39 || e.keyCode === 68){ // arrow-right or "d"
 		nextAction();
-	} else if(e.keyCode === 40 || e.keyCode === 83){
+	} else if(e.keyCode === 40 || e.keyCode === 83){ // arrow-down or "s"
 		playAction();
 	}
 });
@@ -255,7 +256,6 @@ function startRecording() {
 		audioContext = new AudioContext();
 		meter = createAudioMeter(audioContext);
 		sampleRate = audioContext.sampleRate;
-
 		gumStream = stream;
 
 		input = audioContext.createMediaStreamSource(stream);
@@ -292,7 +292,6 @@ function startRecording() {
 				ws.send(JSON.stringify({ audioContent: encodedContent }));
 			}
 		};
-
 		onLevelChange();
 	})}
 

@@ -1,18 +1,25 @@
 {% extends "__base.jinja" %}
 {% block body %}
     <div class='row mb-3'>
-        <div class='col-xl-6 offset-xl-3 col-md-8 offset-md-2 col-12'>
-            <div class="card">
-                <div class="card-body">
-                    <h3 class='card-text'>{{token.text}}</h3>
+        <div class='col-12'>
+        <div class='card'>
+            <div class='row no-gutters'>
+                <div class='col-xl-6 col-md-8 col-12'>
+                    <div class='card-body'>
+                        <h3 class='card-text'>{{token.text}}</h3>
+                    </div>
+                </div>
+                <div class='col-xl-6 col-md-4 col-12'>
+                    <div class='card-body'>
+                        <p>Söfnun: {{token.collection.name}}</p>
+                        <p>Bætt við þann {{token.created_at | datetime(format='low')}}</p>
+                        <p>Upprunalegt skjal: <code>{{token.original_fname}}</code></p>
+                        <p>Núverandi skjal: <a href="{{token.get_download_url()}}"><code>{{token.fname}}</code></a></p>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class='col-12'>
-            <p>Söfnun: {{token.collection.name}}</p>
-            <p>Bætt við þann {{token.created_at | datetime(format='low')}}</p>
-            <p>Upprunalegt skjal: <code>{{token.original_fname}}</code></p>
-            <p>Núverandi skjal: <code>{{token.fname}}</code></p>
+
         </div>
     </div>
     <div class='row mb-3'>

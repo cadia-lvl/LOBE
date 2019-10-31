@@ -9,8 +9,19 @@ from sqlalchemy.exc import IntegrityError
 from termcolor import colored
 
 from app import app, db, user_datastore
-from models import Recording, Token, User
+from models import Recording, Token, User, Role
 
+class AddDefaultRoles(Command):
+    def run(self):
+        admin_role = Role()
+        admin_role.name = 'Admin'
+        admin_role.description = 'Umsjónarhlutverk með aðgang að notendastillingum'
+
+        user_role = Role()
+        user_role.name = 'User'
+        user_role.description = 'Venjulegur notandi með grunn aðgang'
+
+        db.session.commit()
 
 class AddUser(Command):
     def run(self):
@@ -18,10 +29,20 @@ class AddUser(Command):
         name = input("Name: ")
         password = get_pw()
 
+        roles = Role.query.all()
+        selected_roles = []
+        if len(roles) > 0:
+            role_select = None
+            while role_select not in [r.id for r in roles]:
+                print(role_select, [r.id for r in roles])
+                print("Select a role")
+                role_select = int(input("".join(["[{}] - {} : {}\n".format(
+                    role.id, role.name, role.description) for role in roles])))
+            selected_roles.append(Role.query.get(role_select).name)
         with app.app_context():
             try:
                 user_datastore.create_user(email=email, password=hash_password(password),
-                    name=name)
+                    name=name, roles=selected_roles)
                 db.session.commit()
                 print("User with email {} has been created".format(email))
             except IntegrityError as e:

@@ -61,7 +61,6 @@ class Collection(BaseModel, db.Model):
         if as_percent: ratio *= 100
         return ratio
 
-
     def get_url(self):
         return url_for('collection', id=self.id)
 
@@ -111,16 +110,21 @@ class Token(BaseModel, db.Model):
             os.path.splitext(self.original_fname)[0], self.id))
         self.path = os.path.join(app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
 
-
     def get_dict(self):
         return {'id':self.id, 'text':self.text, 'file_id':self.get_file_id(),
-            'url':self.get_url()}
+        'url':self.get_url()}
 
     def get_file_id(self):
         return os.path.splitext(self.fname)[0]
 
     def get_printable_id(self):
         return "T-{:09d}".format(self.id)
+
+    def get_directory(self):
+        return os.path.dirname(self.path)
+
+    def get_download_url(self):
+        return url_for('download_token', id=self.id)
 
     @hybrid_property
     def num_recordings(self):
@@ -147,6 +151,20 @@ class Token(BaseModel, db.Model):
     path = db.Column(db.String)
 
     recordings = db.relationship("Recording", lazy='joined', backref='token')
+
+class Rating(BaseModel, db.Model):
+    __tablename__ = 'Rating'
+
+    def __init__(self, recording_id, user_id, value):
+        self.recording_id = recording_id
+        self.user_id = user_id
+        self.value = value
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    value = db.Column(db.Boolean, default=False)
 
 class Recording(BaseModel, db.Model):
     __tablename__ = 'Recording'
@@ -196,6 +214,7 @@ class Recording(BaseModel, db.Model):
             return os.path.splitext(self.fname)[0]
         else:
             return "nrpk_{:09d}".format(self.id)
+
     def get_user(self):
         return User.query.get(self.user_id)
 
@@ -207,6 +226,14 @@ class Recording(BaseModel, db.Model):
             return "{:2.2f}s".format(self.duration)
         else:
             return "n/a"
+
+    def get_dict(self):
+        return {'id':self.id, 'token': self.token.get_dict()}
+
+
+    #@hybrid_property
+    def get_collection(self):
+        return Token.query.get(self.token_id).collection_id
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())

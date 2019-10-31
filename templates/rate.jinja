@@ -1,0 +1,50 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='table-responsive'>
+        <table class='table table-no-break'>
+            <thead>
+                <th>#</th>
+                <th>Texti</th>
+                <th>Lengd</th>
+                <th></th>
+            </thead>
+            <tbody>
+                {% for recording in recordings %}
+                    <tr id='row-{{loop.index}}' class='rate-row'>
+                        <td>{{loop.index}}</td>
+                        <td>{{recording.token.text}}</td>
+                        <td>{{recording.get_printable_duration()}}</td>
+                        <td class='table-btn-wrapper'>
+                            <div>
+                                <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
+                                <a class='btn btn-secondary btn-sm float-right ml-1' href='{{recording.get_download_url()}}'><i class='fa fa-download'></i></a>
+                                <button type='button' class='btn btn-secondary btn-sm float-right ml-1' onClick="play({{recording.id}})">
+                                    <i id='playButtonIcon-{{recording.id}}' class='fa fa-play'></i>
+                                </button>
+                                <button type='button' class='btn btn-secondary btn-sm float-right ml-1' onClick="">
+                                    <i id='downvoteIcon-{{recording.id}}' class='fa fa-thumbs-down text-danger'></i>
+                                </button>
+                                <button type='button' class='btn btn-secondary btn-sm float-right ml-1' onClick="">
+                                    <i id='upvoteIcon-{{recording.id}}' class='fa fa-thumbs-up fa-flip-horizontal text-success'></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script src='{{url_for("static", filename="js/listControls.js")}}'></script>
+    <script src='{{url_for("static", filename="js/rate.js")}}'></script>
+{% endblock %}
+
+{% block headscripts %}
+    <script type="text/javascript">
+        var recordings = {{json_recordings}};
+        var postRecordingRoute = "{{url_for('post_recording')}}";
+    </script>
+{% endblock %}

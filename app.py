@@ -1,8 +1,10 @@
 import json
 import os
+import zipfile
+import tempfile
 
 from flask import (Flask, Response, flash, redirect, render_template, request,
-    send_from_directory, session, url_for)
+    send_from_directory, send_file, session, url_for, after_this_request)
 from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
     roles_required)
 from flask_security.utils import hash_password
@@ -75,7 +77,6 @@ def record_session(coll_id):
     collection = Collection.query.get(coll_id)
     tokens = db.session.query(Token).filter_by(collection_id=coll_id,
         num_recordings=0).order_by(func.random()).limit(SESSION_SZ)
-    print(tokens)
     return render_template('record.jinja', section='record',
         collection=collection,  tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
@@ -140,6 +141,41 @@ def collection(id):
         collection=collection, token_form=token_form, tokens=tokens,
         section='collection')
 
+@app.route('/collections/<int:id>/download/')
+@login_required
+def download_collection(id):
+    collection = Collection.query.get(id)
+
+    tokens = collection.tokens
+    dl_tokens = []
+    for token in tokens:
+        if token.has_recording:
+            dl_tokens.append(token)
+
+    if not os.path.exists('temp'):
+        os.makedirs('temp')
+    zf = zipfile.ZipFile(f'temp/{collection.name}.zip', mode='w')
+    index_f = open('temp/index.tsv', 'w')
+    try:
+        for token in dl_tokens:
+            zf.write(token.get_path(), f'text/{token.get_fname()}')
+            for recording in token.recordings:
+                zf.write(recording.get_path(), f'audio/{recording.get_fname()}')
+                index_f.write(f'{recording.get_fname()}\t{token.get_fname()}\n')
+        zf.write(index_f.name, 'index.tsv')
+    finally:
+        zf.close()
+
+    @after_this_request
+    def remove_file(response):
+        try:
+            os.remove(f'temp/{collection.name}.zip')
+            os.remove('temp/index.tsv')
+        except Exception as error:
+            app.logger.error("Error removing a generated archive", error)
+        return response
+
+    return send_file(f'temp/{collection.name}.zip', as_attachment=True)
 
 # TOKEN ROUTES
 

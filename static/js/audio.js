@@ -1,3 +1,8 @@
+window.onbeforeunload = function() {
+    return "Are you sure?";
+ };
+
+
 URL = window.URL || window.webkitURL;
 
 var gumStream;
@@ -202,7 +207,7 @@ function deleteRecordAction(){
 function recordAction(){
 	if(recordButton.attr('data-state') == 'initial'){
 		recordButtonIcon.removeClass('fa-microphone')
-			.addClass('fa-spinner').addClass('fa-spin')
+			.addClass('fa-spinner fa-spin')
 		recordButton.attr('data-state', 'recording');
 		recordButtonText.text('lesa');
 
@@ -210,22 +215,32 @@ function recordAction(){
 		updateUI(tokenIndex, updateRecBtn=false);
 
 	} else if(recordButton.attr('data-state') == 'recording'){
-		recordButtonIcon.removeClass('fa-spinner')
-		.removeClass('fa-spin').addClass('fa-repeat')
+		recordButtonIcon.removeClass('fa-spinner fa-spin').addClass('fa-repeat')
 		recordButton.attr('data-state', 'done');
+		recordButton.removeClass('recording-button')
 		recordButtonText.text('aftur');
 
 		stopRecording();
 		//updateUI(tokenIndex, updateRecBtn=false);
 
 	} else {
-		recordButtonIcon.removeClass('fa-repeat')
-		.addClass('fa-spinner').addClass('fa-spin')
-		recordButton.attr('data-state', 'recording');
-		recordButtonText.text('lesa');
+		var timeleft = 3;
+		recordButtonText.text(timeleft);
+		recordButton.addClass('pending-button');
 
-		startRecording();
-		updateUI(tokenIndex, updateRecBtn=false);
+		var recordTimer = setInterval(function(){
+			timeleft -= 1;
+			recordButtonText.text(timeleft);
+			if(timeleft <= 0){
+				clearInterval(recordTimer);
+				recordButtonIcon.removeClass('fa-repeat x').addClass('fa-spinner fa-spin')
+				recordButton.attr('data-state', 'recording');
+				recordButton.removeClass('pending-button').addClass('recording-button')
+				recordButtonText.text('lesa');
+				startRecording();
+				updateUI(tokenIndex, updateRecBtn=false);
+			}
+		}, 1000);
 	}
 }
 
@@ -399,3 +414,10 @@ function floatTo16BitPCM(output, offset, input) {
 	}
 }
 
+function wait(ms){
+	var start = new Date().getTime();
+	var end = start;
+	while(end < start + ms) {
+	  end = new Date().getTime();
+   }
+ }

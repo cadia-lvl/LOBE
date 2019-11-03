@@ -64,6 +64,10 @@ class Collection(BaseModel, db.Model):
     def get_url(self):
         return url_for('collection', id=self.id)
 
+
+    def get_download_url(self):
+        return url_for('download_collection', id=self.id)
+
     def get_record_dir(self):
         return os.path.join(app.config['RECORD_DIR'], str(self.id))
 
@@ -75,6 +79,8 @@ class Collection(BaseModel, db.Model):
     name = db.Column(db.String, default=str(datetime.now().date()))
 
     tokens = db.relationship("Token", lazy='joined', backref='collection')
+    #recordings = db.relationship("Recording", lazy='joined', backref='collection')
+
 
 class Token(BaseModel, db.Model):
     __tablename__ = 'Token'
@@ -188,6 +194,9 @@ class Recording(BaseModel, db.Model):
 
     def get_url(self):
         return url_for('recording', id=self.id)
+
+    def get_fname(self):
+        return self.fname
 
     def get_download_url(self):
         return url_for('download_recording', id=self.id)

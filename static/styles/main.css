@@ -25,3 +25,11 @@
     max-width: 100px !important;
     text-overflow: ellipsis;
 }
+
+.pending-button{
+    border: 2px solid orange;
+}
+
+.recording-button{
+    border: 2px solid red;
+}

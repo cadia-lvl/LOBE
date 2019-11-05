@@ -107,7 +107,7 @@ manager = Manager(app)
 manager.add_command('db', MigrateCommand)
 manager.add_command('adduser', AddUser)
 manager.add_command('changepass', changePass)
-manager.add_command('changedd', changeDataRoot)
+manager.add_command('changedataroot', changeDataRoot)
 
 if __name__ == '__main__':
     manager.run()

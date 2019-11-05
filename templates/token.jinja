@@ -15,6 +15,9 @@
                         <p>Bætt við þann {{token.created_at | datetime(format='low')}}</p>
                         <p>Upprunalegt skjal: <code>{{token.original_fname}}</code></p>
                         <p>Núverandi skjal: <a href="{{token.get_download_url()}}"><code>{{token.fname}}</code></a></p>
+                        {% if token.marked_as_bad %}
+                            <p class='text-danger'>Merktur sem slæmur.</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>

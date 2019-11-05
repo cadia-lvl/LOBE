@@ -6,7 +6,7 @@ import tempfile
 from flask import (Flask, Response, flash, redirect, render_template, request,
     send_from_directory, send_file, session, url_for, after_this_request)
 from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
-    roles_required)
+    roles_required, current_user)
 from flask_security.utils import hash_password
 from sqlalchemy.sql.expression import func, select
 from werkzeug import secure_filename
@@ -15,7 +15,7 @@ from db import (create_tokens, insert_collection,
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
     ExtendedRegisterForm, UserEditForm, RoleForm)
-from models import Collection, Recording, Role, Token, User, db
+from models import Collection, Recording, Role, Token, User, Session, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
@@ -54,17 +54,26 @@ def post_recording():
     files = []
     for token_id in request.form:
         item = json.loads(request.form[token_id])
-        transcription = item['transcript']
-        file_obj = request.files.get('file_{}'.format(token_id))
-        recording = Recording(token_id, file_obj.filename, session['user_id'],
-            transcription)
-        db.session.add(recording)
-        recordings.append(recording)
-        files.append(file_obj)
+        if item == 'skipped':
+            token = Token.query.get(int(token_id))
+            token.marked_as_bad = True
+        else:
+            transcription = item['transcript']
+            file_obj = request.files.get('file_{}'.format(token_id))
+            recording = Recording(token_id, file_obj.filename, session['user_id'],
+                transcription)
+            db.session.add(recording)
+            recordings.append(recording)
+            files.append(file_obj)
     db.session.commit()
-    for idx, recording in enumerate(recordings):
-        recording.save_to_disk(files[idx])
-        recording.set_wave_params()
+
+    # only create session if at least one recording
+    if len(recordings) > 0:
+        record_session = Session(session['user_id'])
+        for idx, recording in enumerate(recordings):
+            recording.save_to_disk(files[idx])
+            recording.set_wave_params()
+            recording.set_session_id(record_session.id)
     db.session.commit()
 
     return Response(status=200)

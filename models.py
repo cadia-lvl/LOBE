@@ -64,7 +64,6 @@ class Collection(BaseModel, db.Model):
     def get_url(self):
         return url_for('collection', id=self.id)
 
-
     def get_download_url(self):
         return url_for('download_collection', id=self.id)
 
@@ -89,6 +88,7 @@ class Token(BaseModel, db.Model):
         self.text = text
         self.original_fname = original_fname
         self.collection_id = collection_id
+        self.marked_as_bad = False
 
     def get_url(self):
         return url_for('token', id=self.id)
@@ -155,6 +155,7 @@ class Token(BaseModel, db.Model):
 
     fname = db.Column(db.String)
     path = db.Column(db.String)
+    marked_as_bad = db.Column(db.Boolean)
 
     recordings = db.relationship("Recording", lazy='joined', backref='token')
 
@@ -175,11 +176,16 @@ class Rating(BaseModel, db.Model):
 class Recording(BaseModel, db.Model):
     __tablename__ = 'Recording'
 
-    def __init__(self, token_id, original_fname, user_id, transcription):
+    def __init__(self, token_id, original_fname, user_id,
+        transcription):
+
         self.token_id = token_id
         self.original_fname = original_fname
         self.user_id = user_id
         self.transcription = transcription
+
+    def set_session_id(self, session_id):
+        self.session_id = session_id
 
     def set_wave_params(self):
         '''
@@ -247,8 +253,10 @@ class Recording(BaseModel, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     original_fname = db.Column(db.String, default='Unknown')
+
     token_id = db.Column(db.Integer, db.ForeignKey('Token.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    session_id = db.Column(db.Integer, db.ForeignKey('Session.id'))
 
     sr = db.Column(db.Integer)
     num_channels = db.Column(db.Integer, default=2)
@@ -259,6 +267,17 @@ class Recording(BaseModel, db.Model):
 
     fname = db.Column(db.String)
     path = db.Column(db.String)
+
+class Session(BaseModel, db.Model):
+    __tablename__ = 'Session'
+
+    def __init__(self, user_id):
+        self.user_id = token_id
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    recordings = db.relationship("Recording", lazy='joined', backref='session')
 
 # Define models
 roles_users = db.Table('roles_users',
@@ -277,6 +296,12 @@ class User(db.Model, UserMixin):
     name = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
     password = db.Column(db.String(255))
+
+    sex = db.Column(db.String(255))
+    age = db.Column(db.Integer)
+    dialect = db.Column(db.String(255))
+    pin = db.Column(db.String(4))
+
     active = db.Column(db.Boolean())
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     roles = db.relationship('Role', secondary=roles_users,

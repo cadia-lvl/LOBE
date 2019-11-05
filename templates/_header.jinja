@@ -19,14 +19,15 @@
         </li>
         <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+               <span class='font-weight-bold'>{{current_user.name}}</span>
                {{macros.btn_icon('user-circle', '')}}
-        </a>
+            </a>
+        </li>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
             <a class="dropdown-item" href="#">Mín síða</a>
             <a class="dropdown-item" href="#">Mín yfirferð</a>
             <a class="dropdown-item" href="{{ url_for('security.logout') }}">Skrá út</a>
         </div>
-        </li>
     </ul>
     </div>
 </nav>

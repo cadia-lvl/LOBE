@@ -50,8 +50,8 @@ var prevButton = $('#prevButton');
 var nextButton = $('#nextButton');
 var finishButton = $('#finishButton');
 var finishButtonIcon = $('#finishButtonIcon');
+var skipButton = $('#skipButton');
 
-var canvasContext = document.getElementById("meter").getContext("2d");
 var volumeBar = $('#volumeBar');
 var WIDTH=500;
 var HEIGHT=50;
@@ -75,6 +75,7 @@ playButton.click(function(){playAction()});
 recordingDeleteButton.click(function(){deleteRecordAction()});
 recordButton.click(function(){recordAction()});
 finishButton.click(function(){sendAction()});
+skipButton.click(function(){skipAction()});
 
 $(window).keyup(function (e) {
 	if (e.key === ' ' || e.key === 'Spacebar'  || e.keyCode === 38 || e.keyCode === 87) {
@@ -171,6 +172,12 @@ function updateUI(index, updateRecBtn=true){
 }
 
 /** ----------------- Actions ----------------- */
+function skipAction(){
+	// mark as skipped
+	tokens[tokenIndex].skipped = true;
+	// then go to next
+	nextAction();
+}
 
 function nextAction(){
 	// are we playing or recording?
@@ -257,6 +264,10 @@ function sendAction(){
 		if('recording' in tokens[i]){
 			fd.append(tokens[i]['id'], JSON.stringify(tokens[i]['recording']));
 			fd.append("file_"+tokens[i]['id'], tokens[i]['recording']['blob'], tokens[i]['recording']['filename']);
+		} else if(tokens[i].skipped){
+			console.log("YO");
+			// append as skipped
+			fd.append(tokens[i]['id'], JSON.stringify('skipped'));
 		}
 	}
 	xhr.open("POST", postRecordingRoute, true);

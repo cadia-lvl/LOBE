@@ -163,14 +163,17 @@ def download_collection(id):
 
     if not os.path.exists('temp'):
         os.makedirs('temp')
-    zf = zipfile.ZipFile(f'temp/{collection.name}.zip', mode='w')
+
+    zfname ='temp/{}.zip'.format(collection.name)
+    zf = zipfile.ZipFile(zfname, mode='w')
     index_f = open('temp/index.tsv', 'w')
     try:
         for token in dl_tokens:
-            zf.write(token.get_path(), f'text/{token.get_fname()}')
+            zf.write(token.get_path(), 'text/{}'.format(token.get_fname()))
             for recording in token.recordings:
-                zf.write(recording.get_path(), f'audio/{recording.get_fname()}')
-                index_f.write(f'{recording.get_fname()}\t{token.get_fname()}\n')
+                zf.write(recording.get_path(), 'audio/{}'.format(recording.get_fname()))
+                index_f.write('{}\t{}\n'.format(
+                    recording.get_fname(), token.get_fname()))
         zf.write(index_f.name, 'index.tsv')
     finally:
         zf.close()
@@ -178,13 +181,13 @@ def download_collection(id):
     @after_this_request
     def remove_file(response):
         try:
-            os.remove(f'temp/{collection.name}.zip')
+            os.remove(zfname)
             os.remove('temp/index.tsv')
         except Exception as error:
             app.logger.error("Error removing a generated archive", error)
         return response
 
-    return send_file(f'temp/{collection.name}.zip', as_attachment=True)
+    return send_file(zfname, as_attachment=True)
 
 # TOKEN ROUTES
 

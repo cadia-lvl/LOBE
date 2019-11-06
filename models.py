@@ -208,6 +208,7 @@ class Recording(BaseModel, db.Model):
         return url_for('download_recording', id=self.id)
 
     def get_directory(self):
+        print(self.path)
         return os.path.dirname(self.path)
 
     def get_path(self):
@@ -228,10 +229,14 @@ class Recording(BaseModel, db.Model):
         if self.fname is not None:
             return os.path.splitext(self.fname)[0]
         else:
+            # not registerd, (using) primary key
             return "nrpk_{:09d}".format(self.id)
 
     def get_user(self):
         return User.query.get(self.user_id)
+
+    def get_token(self):
+        return Token.query.get(self.token_id)
 
     def get_printable_id(self):
         return "R-{:09d}".format(self.id)
@@ -268,11 +273,28 @@ class Recording(BaseModel, db.Model):
     fname = db.Column(db.String)
     path = db.Column(db.String)
 
+    '''
+    __mapper_args__ = {
+        "order_by":created_at
+    }
+    '''
+
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
 
     def __init__(self, user_id):
-        self.user_id = token_id
+        self.user_id = user_id
+
+    def get_printable_id(self):
+        return "S-{:09d}".format(self.id)
+
+    def get_url(self):
+        return url_for('rec_session', id=self.id)
+
+    @hybrid_property
+    def num_recordings(self):
+        return len(self.recordings)
+
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))

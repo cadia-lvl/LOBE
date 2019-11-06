@@ -1,0 +1,36 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row mb-3'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Lotur</h1>
+            <p>Fjöldi : {{sessions.total}}</p>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <div class='table-responsive'>
+                <table class='table'>
+                    <thead>
+                        <th>Dagsetning</th>
+                        <th>Auðkenni</th>
+                        <th>Fjöldi upptaka</th>
+                    </thead>
+                    <tbody>
+                        {% for session in sessions.items %}
+                            <tr>
+                                <td>{{session.created_at | datetime(format='medium')}}</td>
+                                <td><a href={{session.get_url()}}>{{session.get_printable_id()}}</a></td>
+                                <td>{{session.num_recordings}}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            {{macros.pagination(sessions, url_for('rec_session_list'))}}
+        </div>
+    </div>
+{% endblock %}

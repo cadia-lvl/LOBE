@@ -33,7 +33,6 @@ security = Security(app, user_datastore, login_form=ExtendedLoginForm)
 # register filters
 app.jinja_env.filters['datetime'] = format_date
 
-
 SESSION_SZ = 50
 
 # GENERAL ROUTES
@@ -70,6 +69,7 @@ def post_recording():
     # only create session if at least one recording
     if len(recordings) > 0:
         record_session = Session(session['user_id'])
+        db.session.add(record_session)
         for idx, recording in enumerate(recordings):
             recording.save_to_disk(files[idx])
             recording.set_wave_params()
@@ -210,11 +210,12 @@ def download_token(id):
         as_attachment=True)
 
 # RECORDING ROUTES
+
 @app.route('/recordings/')
 @login_required
 def recording_list():
     page = int(request.args.get('page', 1))
-    recordings = Recording.query.paginate(page,
+    recordings = Recording.query.order_by(Recording.created_at.desc()).paginate(page,
         per_page=app.config['RECORDING_PAGINATION'])
     return render_template('recording_list.jinja', recordings=recordings,
         section='recording')
@@ -231,6 +232,25 @@ def download_recording(id):
     recording = Recording.query.get(id)
     return send_from_directory(recording.get_directory(), recording.fname,
         as_attachment=True)
+
+
+# SESSION ROUTES
+
+@app.route('/sessions/')
+@login_required
+def rec_session_list():
+    page = int(request.args.get('page', 1))
+    sessions = Session.query.order_by(Recording.created_at.desc()).paginate(page,
+        per_page=app.config['SESSION_PAGINATION'])
+    return render_template('session_list.jinja', sessions=sessions,
+        section='session')
+
+@app.route('/sessions/<int:id>/')
+@login_required
+def rec_session(id):
+    session = Session.query.get(id)
+    return render_template('session.jinja', session=session, section='session')
+
 
 # USER ROUTES
 

@@ -9,16 +9,21 @@
     </div>
     <div class='row'>
         <div class='col-12'>
-            <a href={{recording.get_download_url()}} class='btn btn-secondary float-right ml-2'>
-                <i class='fa fa-download'></i>
-            </a>
-            <div class='float-right'>
-            <audio controls>
-                <source src={{recording.get_download_url()}} type="audio/wav">
-                Your browser does not support the audio element.
-            </audio>
-
+            <p>Texti: {{recording.get_token().text}}</p>
+        </div>
+        <div class='col-12'>
+            <div>
+                <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
+                <a class='btn btn-secondary btn-sm float-right ml-1' href='{{recording.get_download_url()}}'><i class='fa fa-download'></i></a>
+                <button type='button' class='btn btn-secondary btn-sm float-right ml-1' onClick="play({{recording.id}})">
+                    <i id='playButtonIcon-{{recording.id}}' class='fa fa-play'></i>
+                </button>
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script src='{{url_for("static", filename="js/listControls.js")}}'></script>
 {% endblock %}

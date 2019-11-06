@@ -2,9 +2,10 @@ window.onbeforeunload = function() {
     return "Are you sure?";
  };
 
-
 URL = window.URL || window.webkitURL;
 
+
+var recordWaitTime = 1;
 var gumStream;
 var rec;
 var input;
@@ -145,7 +146,7 @@ function setTranscriptionUI(index){
 }
 
 function initializeRecordButton(){
-	recordButtonIcon.removeClass('fa-repeat').addClass('fa-microphone')
+	recordButtonIcon.removeClass('fa-redo').addClass('fa-microphone')
 	recordButton.attr('data-state', 'intial');
 	recordButtonText.text('byrja');
 }
@@ -222,7 +223,7 @@ function recordAction(){
 		updateUI(tokenIndex, updateRecBtn=false);
 
 	} else if(recordButton.attr('data-state') == 'recording'){
-		recordButtonIcon.removeClass('fa-spinner fa-spin').addClass('fa-repeat')
+		recordButtonIcon.removeClass('fa-spinner fa-spin').addClass('fa-redo')
 		recordButton.attr('data-state', 'done');
 		recordButton.removeClass('recording-button')
 		recordButtonText.text('aftur');
@@ -231,7 +232,7 @@ function recordAction(){
 		//updateUI(tokenIndex, updateRecBtn=false);
 
 	} else {
-		var timeleft = 3;
+		var timeleft = recordWaitTime;
 		recordButtonText.text(timeleft);
 		recordButton.addClass('pending-button');
 
@@ -240,7 +241,7 @@ function recordAction(){
 			recordButtonText.text(timeleft);
 			if(timeleft <= 0){
 				clearInterval(recordTimer);
-				recordButtonIcon.removeClass('fa-repeat x').addClass('fa-spinner fa-spin')
+				recordButtonIcon.removeClass('fa-redo x').addClass('fa-spinner fa-spin')
 				recordButton.attr('data-state', 'recording');
 				recordButton.removeClass('pending-button').addClass('recording-button')
 				recordButtonText.text('lesa');

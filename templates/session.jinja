@@ -1,0 +1,20 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Lota : {{session.get_printable_id()}}</h1>
+            <p>Tekin upp þann: {{session.created_at | datetime(format='low')}}</p>
+            <p>Setningar teknar upp: {{session.num_recordings}}
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Upptökur</h3>
+        </div>
+        <div class='col-12'>
+            {% with recordings=session.recordings %}
+                {% include '_recording_table.jinja'%}
+            {% endwith %}
+        </div>
+    </div>
+{% endblock %}

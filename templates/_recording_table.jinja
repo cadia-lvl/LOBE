@@ -5,20 +5,22 @@
             <th>Auðkenni</th>
             <th>Lesið af</th>
             <th>Lengd</th>
+            <th>Texti lesinn</th>
             <th></th>
             <th></th>
         </thead>
         <tbody>
             {% for recording in recordings %}
                 <tr>
-                    <td>{{recording.created_at | datetime(format='medium')}}</td>
-                    <td><a href={{recording.get_url()}}><code>{{recording.get_file_id()}}</code></a></td>
+                    <td>{{recording.created_at | datetime(format='low')}}</td>
+                    <td><a href={{recording.get_url()}}><code>#{{recording.id}}</code></a></td>
                     {% if recording.user_id %}
                         <td><a href={{recording.get_user().get_url()}}>{{recording.get_user().name}}</a></td>
                     {% else %}
                         <td>Ekki skráð</td>
                     {% endif %}
                     <td>{{recording.get_printable_duration()}}</td>
+                    <td>{{recording.get_token().text}}</td>
                     <td class='table-btn-wrapper'>
                         <div>
                             <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>

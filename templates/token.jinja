@@ -18,6 +18,9 @@
                         {% if token.marked_as_bad %}
                             <p class='text-danger'>Merktur sem slæmur.</p>
                         {% endif %}
+                        {% if token.pron %}
+                            <p>{{token.pron | safe}}</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>

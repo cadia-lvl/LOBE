@@ -4,7 +4,7 @@ window.onbeforeunload = function() {
 
 URL = window.URL || window.webkitURL;
 
-
+var startTime = new Date();
 var recordWaitTime = 1;
 var gumStream;
 var rec;
@@ -50,6 +50,7 @@ var playButtonIcon = $('#playButtonIcon');
 var prevButton = $('#prevButton');
 var nextButton = $('#nextButton');
 var finishButton = $('#finishButton');
+finishButton.attr('disabled',true);
 var finishButtonIcon = $('#finishButtonIcon');
 var skipButton = $('#skipButton');
 
@@ -162,11 +163,35 @@ function setDirectionButtonUI(index){
 	}
 }
 
+function setFinishButtonUI(){
+	//only allow if at least one marked token or one recording
+	for(var i=0; i<numTokens; i++){
+		if('recording' in tokens[i] || tokens[i].skipped){
+			finishButton.attr('disabled', false);
+			return true;
+		}
+	}
+	finishButton.attr('disabled', true);
+}
+
+function setSkipButtonUI(index){
+	if(tokens[index].skipped){
+		skipButton.removeClass('border-dark').addClass('border-danger');
+		// also disable the recording button
+		recordButton.attr('disabled', true);
+	} else{
+		skipButton.removeClass('border-danger').addClass('border-dark');
+		recordButton.attr('disabled', false);
+	}
+}
+
 function updateUI(index, updateRecBtn=true){
 	setTokenUI(index);
 	setRecordingUI(index);
 	setTranscriptionUI(index);
 	setDirectionButtonUI(index);
+	setFinishButtonUI();
+	setSkipButtonUI(index);
 	if(updateRecBtn){
 		initializeRecordButton();
 	}
@@ -175,9 +200,18 @@ function updateUI(index, updateRecBtn=true){
 /** ----------------- Actions ----------------- */
 function skipAction(){
 	// mark as skipped
-	tokens[tokenIndex].skipped = true;
-	// then go to next
-	nextAction();
+	if('skipped' in tokens[tokenIndex]){
+		// reverse from marking as skipped
+		delete tokens[tokenIndex].skipped;
+		updateUI(tokenIndex);
+	} else{
+		tokens[tokenIndex].skipped = true;
+		// then go to next
+		if('recording' in tokens[tokenIndex]){
+			delete tokens[tokenIndex].recording;
+		}
+		nextAction();
+	}
 }
 
 function nextAction(){
@@ -232,6 +266,7 @@ function recordAction(){
 		//updateUI(tokenIndex, updateRecBtn=false);
 
 	} else {
+		isRecording = true; // added here to avoid switching while waiting
 		var timeleft = recordWaitTime;
 		recordButtonText.text(timeleft);
 		recordButton.addClass('pending-button');
@@ -256,9 +291,21 @@ function sendAction(){
 	finishButtonIcon.removeClass('fa-arrow-right').addClass('fa-spinner').addClass('fa-spin');
 	var xhr = new XMLHttpRequest();
 	xhr.onload = function(e) {
-		if(this.readyState === 4) {
-			finishButtonIcon.removeClass('fa-spinner').removeClass('fa-spin').addClass('fa-check');
+		if(this.readyState === XMLHttpRequest.DONE) {
+			finishButtonIcon.removeClass('fa-spinner').removeClass('fa-spin');
+			if(xhr.status == '200'){
+				var session_url = xhr.responseText;
+				finishButtonIcon.addClass('fa-check');
+			} else{
+				finishButtonIcon.addClass('fa-times');
+				finishButton.addClass('btn-danger');
+				alert("Something went wrong when submitting the recordings."+
+					" Please try again by either pressing the 'meira' button "+
+					"below or by refreshing this page. Send this error to admins:\n"+
+					xhr.responseText);
+			}
 		}
+		finishButton.attr('disabled',true);
 	};
 	var fd = new FormData();
 	for(var i=0; i<numTokens; i++){
@@ -266,11 +313,14 @@ function sendAction(){
 			fd.append(tokens[i]['id'], JSON.stringify(tokens[i]['recording']));
 			fd.append("file_"+tokens[i]['id'], tokens[i]['recording']['blob'], tokens[i]['recording']['filename']);
 		} else if(tokens[i].skipped){
-			console.log("YO");
 			// append as skipped
 			fd.append(tokens[i]['id'], JSON.stringify('skipped'));
 		}
 	}
+	// append duration to the form
+	var endTime = new Date()
+	var duration = (endTime.getTime() - startTime.getTime())/1000;
+	fd.append('duration', JSON.stringify(duration));
 	xhr.open("POST", postRecordingRoute, true);
 	xhr.send(fd);
 }
@@ -294,7 +344,7 @@ function startRecording() {
 		rec = new Recorder(input,{numChannels:2})
 		rec.record();
 
-		ws = new WebSocket("wss://tal.ru.is/v1/speech:streamingrecognize?token=" + talAPIToken);
+		ws = new WebSocket("wss://tal.ru.is/v1/speech:streamingrecognize?token=" + talAPIToken, );
 		ws.onopen = function(e) {
 			ws.send(JSON.stringify({
 				streamingConfig: {
@@ -303,6 +353,7 @@ function startRecording() {
 				interimResults: true}
 			}));
 		};
+
 		ws.onmessage = handleStreamingResult;
 
 		streamProcessor = audioContext.createScriptProcessor(16384, 1, 1);

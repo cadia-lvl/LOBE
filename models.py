@@ -1,7 +1,7 @@
 import contextlib
 import os
 import wave
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import current_app as app
 from flask import url_for
@@ -78,17 +78,24 @@ class Collection(BaseModel, db.Model):
     name = db.Column(db.String, default=str(datetime.now().date()))
 
     tokens = db.relationship("Token", lazy='joined', backref='collection')
+    sessions = db.relationship("Session", lazy='select', backref='collection')
     #recordings = db.relationship("Recording", lazy='joined', backref='collection')
 
 
 class Token(BaseModel, db.Model):
     __tablename__ = 'Token'
 
-    def __init__(self, text, original_fname, collection_id):
+    def __init__(self, text, original_fname, collection_id,
+        score:float=-1, pron:str=None, source:str=None):
         self.text = text
         self.original_fname = original_fname
         self.collection_id = collection_id
         self.marked_as_bad = False
+        self.score = score
+        if pron is not None:
+            self.pron = pron
+        if source is not None:
+            self.source = source
 
     def get_url(self):
         return url_for('token', id=self.id)
@@ -156,6 +163,14 @@ class Token(BaseModel, db.Model):
     fname = db.Column(db.String)
     path = db.Column(db.String)
     marked_as_bad = db.Column(db.Boolean)
+
+    # a tab seperated string of word pronounciations
+    # where phones in each word is space seperated
+    pron = db.Column(db.String)
+    # default score is -1
+    score = db.Column(db.Float, default=-1)
+    source = db.Column(db.String)
+
 
     recordings = db.relationship("Recording", lazy='joined', backref='token')
 
@@ -250,7 +265,6 @@ class Recording(BaseModel, db.Model):
     def get_dict(self):
         return {'id':self.id, 'token': self.token.get_dict()}
 
-
     #@hybrid_property
     def get_collection(self):
         return Token.query.get(self.token_id).collection_id
@@ -282,8 +296,11 @@ class Recording(BaseModel, db.Model):
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
 
-    def __init__(self, user_id):
+    def __init__(self, user_id, collection_id, duration=None):
         self.user_id = user_id
+        self.collection_id = collection_id
+        if duration is not None:
+            self.duration = duration
 
     def get_printable_id(self):
         return "S-{:09d}".format(self.id)
@@ -291,13 +308,20 @@ class Session(BaseModel, db.Model):
     def get_url(self):
         return url_for('rec_session', id=self.id)
 
+    def get_printable_duration(self):
+        if self.duration is not None:
+            return str(timedelta(seconds=int(self.duration)))
+        else:
+            return 'n/a'
+
     @hybrid_property
     def num_recordings(self):
         return len(self.recordings)
 
-
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
+    duration = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     recordings = db.relationship("Recording", lazy='joined', backref='session')
 
@@ -330,6 +354,12 @@ class User(db.Model, UserMixin):
         backref=db.backref('users', lazy='dynamic'))
 
     recordings = db.relationship("Recording", lazy='joined', backref='user_relationship')
+
+    def get_printable_name(self):
+        if self.name is not None:
+            return self.name
+        else:
+            return "Nafnlaus notandi"
 
     def __str__(self):
         if type(self.name) != str:

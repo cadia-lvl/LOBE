@@ -279,12 +279,24 @@ def recording_list():
     return render_template('recording_list.jinja', recordings=recordings,
         section='recording')
 
+
 @app.route('/recordings/<int:id>/')
 @login_required
 def recording(id):
     app.logger.info(f"{current_user} Requesting recording")
     recording = Recording.query.get(id)
     return render_template('recording.jinja', recording=recording, section='recording')
+
+@app.route('/recordings/<int:id>/mark_bad/', methods=['POST'])
+@login_required
+def toggle_recording_bad(id):
+    app.logger.info(f"{current_user} Requesting toggle_recording_bad")
+
+    recording = Recording.query.get(id)
+    recording.marked_as_bad = not recording.marked_as_bad
+    db.session.commit()
+
+    return redirect(url_for('recording', id=recording.id))
 
 @app.route('/recordings/<int:id>/download/')
 @login_required

@@ -33,3 +33,7 @@
 .recording-button{
     border: 2px solid red;
 }
+
+hr{
+    border-top: 1px solid white !important;
+}

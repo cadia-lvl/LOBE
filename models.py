@@ -198,6 +198,7 @@ class Recording(BaseModel, db.Model):
         self.original_fname = original_fname
         self.user_id = user_id
         self.transcription = transcription
+        self.marked_as_bad = False
 
     def set_session_id(self, session_id):
         self.session_id = session_id
@@ -262,6 +263,12 @@ class Recording(BaseModel, db.Model):
         else:
             return "n/a"
 
+    def get_printable_transcription(self):
+        if self.transcription is not None and len(self.transcription) > 0:
+            return self.transcription
+        else:
+            return "n/a"
+
     def get_dict(self):
         return {'id':self.id, 'token': self.token.get_dict()}
 
@@ -287,11 +294,7 @@ class Recording(BaseModel, db.Model):
     fname = db.Column(db.String)
     path = db.Column(db.String)
 
-    '''
-    __mapper_args__ = {
-        "order_by":created_at
-    }
-    '''
+    marked_as_bad = db.Column(db.Boolean, default=False)
 
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'

@@ -162,7 +162,7 @@ class Token(BaseModel, db.Model):
 
     fname = db.Column(db.String)
     path = db.Column(db.String)
-    marked_as_bad = db.Column(db.Boolean)
+    marked_as_bad = db.Column(db.Boolean, default=False)
 
     # a tab seperated string of word pronounciations
     # where phones in each word is space seperated

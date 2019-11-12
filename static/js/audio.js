@@ -242,12 +242,18 @@ function playAction(isEnded=false){
 }
 
 function deleteRecordAction(){
-	delete tokens[tokenIndex].recording;
-	updateUI(tokenIndex);
+	console.log(tokens[tokenIndex]);
+	if('recording' in tokens[tokenIndex]){
+		delete tokens[tokenIndex].recording;
+		updateUI(tokenIndex);
+	}
 }
 
 function recordAction(){
 	if(recordButton.attr('data-state') == 'initial'){
+		// delete any old recording if there is one
+		deleteRecordAction();
+
 		recordButtonIcon.removeClass('fa-microphone')
 			.addClass('fa-spinner fa-spin')
 		recordButton.attr('data-state', 'recording');
@@ -257,15 +263,28 @@ function recordAction(){
 		updateUI(tokenIndex, updateRecBtn=false);
 
 	} else if(recordButton.attr('data-state') == 'recording'){
-		recordButtonIcon.removeClass('fa-spinner fa-spin').addClass('fa-redo')
-		recordButton.attr('data-state', 'done');
-		recordButton.removeClass('recording-button')
-		recordButtonText.text('aftur');
 
-		stopRecording();
+		//pause for a period to avoid cutting the recording too early
+		var timeleft = recordWaitTime;
+		recordButtonText.text(timeleft);
+		recordButton.removeClass('recording-button').addClass('pending-button');
+
+		var recordTimer = setInterval(function(){
+			timeleft -= 1;
+			recordButtonText.text(timeleft);
+			if(timeleft <= 0){
+				recordButtonIcon.removeClass('fa-spinner fa-spin').addClass('fa-redo')
+				recordButton.attr('data-state', 'done');
+				recordButton.removeClass('pending-button');
+				recordButtonText.text('aftur');
+				clearInterval(recordTimer);
+				stopRecording();
+			}
+		}, 1000);
 		//updateUI(tokenIndex, updateRecBtn=false);
 
 	} else {
+		deleteRecordAction();
 		isRecording = true; // added here to avoid switching while waiting
 		var timeleft = recordWaitTime;
 		recordButtonText.text(timeleft);

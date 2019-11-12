@@ -78,7 +78,7 @@ def post_recording():
                 token = Token.query.get(int(token_id))
                 token.marked_as_bad = True
             else:
-                transcription = item['transcript']
+                transcription = '' #item['transcript']
                 file_obj = request.files.get('file_{}'.format(token_id))
                 recording = Recording(token_id, file_obj.filename, session['user_id'],
                     transcription)
@@ -112,7 +112,8 @@ def record_session(coll_id):
     app.logger.info(f"{current_user} Requesting record_session")
     collection = Collection.query.get(coll_id)
     tokens = db.session.query(Token).filter_by(collection_id=coll_id,
-        num_recordings=0).order_by(func.random()).limit(SESSION_SZ)
+        num_recordings=0, marked_as_bad=False).order_by(func.random()).limit(SESSION_SZ)
+    print(json.dumps([t.get_dict() for t in tokens]))
     return render_template('record.jinja', section='record',
         collection=collection,  tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),

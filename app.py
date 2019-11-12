@@ -287,7 +287,7 @@ def recording(id):
     recording = Recording.query.get(id)
     return render_template('recording.jinja', recording=recording, section='recording')
 
-@app.route('/recordings/<int:id>/mark_bad/', methods=['POST'])
+@app.route('/recordings/<int:id>/mark_bad/')
 @login_required
 def toggle_recording_bad(id):
     app.logger.info(f"{current_user} Requesting toggle_recording_bad")
@@ -297,6 +297,18 @@ def toggle_recording_bad(id):
     db.session.commit()
 
     return redirect(url_for('recording', id=recording.id))
+
+@app.route('/recordings/<int:id>/mark_bad_ajax/')
+@login_required
+def toggle_recording_bad_ajax(id):
+    app.logger.info(f"{current_user} Requesting toggle_recording_bad")
+
+    recording = Recording.query.get(id)
+    state = not recording.marked_as_bad
+    recording.marked_as_bad = state
+    db.session.commit()
+
+    return Response(str(state), 200)
 
 @app.route('/recordings/<int:id>/download/')
 @login_required

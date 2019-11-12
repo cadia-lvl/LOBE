@@ -32,17 +32,17 @@
                 {{macros.btn_icon('trash', 'r')}}
                 Eyða
             </button>
-            <form method="POST" action="{{url_for('toggle_recording_bad', id=recording.id)}}">
+            <form method="POST" action=>
                 {% if recording.marked_as_bad %}
-                    <button type='submit' class='btn btn-success float-right ml-1'>
+                    <a href="{{url_for('toggle_recording_bad', id=recording.id)}}" class='btn btn-success float-right ml-1'>
                         {{macros.btn_icon('check', 'r')}}
                         Merkja sem góð
-                    </button>
+                    </a>
                 {% else %}
-                    <button type='submit' class='btn btn-warning float-right ml-1'>
+                    <a href="{{url_for('toggle_recording_bad', id=recording.id)}}" class='btn btn-warning float-right ml-1'>
                         {{macros.btn_icon('times', 'r')}}
                         Merkja sem léleg
-                    </button>
+                    </a>
                 {% endif%}
             </form>
             <div>

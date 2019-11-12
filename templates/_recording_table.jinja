@@ -7,13 +7,12 @@
             <th>Lengd</th>
             <th>Texti lesinn</th>
             <th></th>
-            <th></th>
         </thead>
         <tbody>
             {% for recording in recordings %}
                 <tr>
                     <td>{{recording.created_at | datetime(format='low')}}</td>
-                    <td><a href={{recording.get_url()}}><code>#{{recording.id}}</code></a></td>
+                    <td><a id="{{recording.id}}-name" href={{recording.get_url()}} class='{% if recording.marked_as_bad %} text-warning {% endif %}'><code>#{{recording.id}}</code></a></td>
                     {% if recording.user_id %}
                         <td><a href={{recording.get_user().get_url()}}>{{recording.get_user().name}}</a></td>
                     {% else %}
@@ -23,11 +22,32 @@
                     <td>{{recording.get_token().text}}</td>
                     <td class='table-btn-wrapper'>
                         <div>
+                            <button class="btn btn-secondary btn-sm float-right ml-1" type="button" data-toggle="dropdown">
+                                    {{macros.btn_icon('ellipsis-h', 0)}}
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <a class='dropdown-item' href='{{recording.get_download_url()}}'><i class='fa fa-download mr-1'></i> Hlaða niður</a>
+                                {% if recording.marked_as_bad %}
+                                    <button id='{{recording.id}}-btn' onClick='toggle_recording_bad("{{recording.get_toggle_bad_ajax()}}", "{{recording.id}}")' class='dropdown-item text-success'>
+                                        {{macros.btn_icon('check', 'r')}}
+                                        Merkja sem góð
+                                    </button>
+                                {% else %}
+                                    <button id='{{recording.id}}}-btn' onClick='toggle_recording_bad("{{recording.get_toggle_bad_ajax()}}", "{{recording.id}}")' class='dropdown-item text-warning'>
+                                        {{macros.btn_icon('times', 'r')}}
+                                        Merkja sem léleg
+                                    </button>
+                                {% endif%}
+                                <a class="dropdown-item text-danger" href="#">
+                                    {{macros.btn_icon('trash', 'r')}}
+                                    Eyða
+                                </a>
+                            </div>
                             <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
-                            <a class='btn btn-secondary btn-sm float-right ml-1' href='{{recording.get_download_url()}}'><i class='fa fa-download'></i></a>
                             <button type='button' class='btn btn-secondary btn-sm float-right ml-1' onClick="play({{recording.id}})">
                                 <i id='playButtonIcon-{{recording.id}}' class='fa fa-play'></i>
                             </button>
+                             <div class="dropdown">
                         </div>
                     </td>
                 </tr>
@@ -37,3 +57,4 @@
 </div>
 <!--Can't be included in the script block here-->
 <script src='{{url_for("static", filename="js/listControls.js")}}'></script>
+

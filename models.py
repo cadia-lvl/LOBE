@@ -223,6 +223,12 @@ class Recording(BaseModel, db.Model):
     def get_download_url(self):
         return url_for('download_recording', id=self.id)
 
+    def get_toggle_bad_url(self):
+        return url_for('toggle_recording_bad', id=self.id)
+
+    def get_toggle_bad_ajax(self):
+        return url_for('toggle_recording_bad_ajax', id=self.id)
+
     def get_directory(self):
         print(self.path)
         return os.path.dirname(self.path)

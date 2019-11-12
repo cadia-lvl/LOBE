@@ -234,15 +234,25 @@ function playAction(isEnded=false){
 			recordingPlayer.pause();
 			recordingPlayer.currentTime = 0;
 			playButtonIcon.removeClass('fa-stop').addClass('fa-play');
+
+			nextButton.attr('disabled', false);
+			prevButton.attr('disabled', false);
+			recordButton.attr('disabled', false);
+			skipButton.attR('disabled', false);
 		} else{
 			recordingPlayer.play();
 			playButtonIcon.removeClass('fa-play').addClass('fa-stop');
+
+			nextButton.attr('disabled', true);
+			prevButton.attr('disabled', true);
+			recordButton.attr('disabled', true);
+			skipButton.attR('disabled', true);
+
 		}
 	}
 }
 
 function deleteRecordAction(){
-	console.log(tokens[tokenIndex]);
 	if('recording' in tokens[tokenIndex]){
 		delete tokens[tokenIndex].recording;
 		updateUI(tokenIndex);

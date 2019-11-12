@@ -251,9 +251,16 @@ def token(id):
 def token_list():
     app.logger.info(f"{current_user} Requesting token_list")
     page = int(request.args.get('page', 1))
-    tokens = Token.query.paginate(page,
-        per_page=app.config['TOKEN_PAGINATION'])
-    return render_template('token_list.jinja', tokens=tokens, section='token')
+    only_bad = bool(request.args.get('only_bad', False))
+
+    if only_bad:
+        tokens = db.session.query(Token).filter_by(marked_as_bad=True).paginate(page,
+            per_page=app.config['TOKEN_PAGINATION'])
+    else:
+        tokens = Token.query.paginate(page,
+            per_page=app.config['TOKEN_PAGINATION'])
+
+    return render_template('token_list.jinja', tokens=tokens, only_bad=only_bad, section='token')
 
 @app.route('/tokens/<int:id>/download/')
 @login_required
@@ -274,11 +281,17 @@ def download_token(id):
 def recording_list():
     app.logger.info(f"{current_user} Requesting recording_list")
     page = int(request.args.get('page', 1))
-    recordings = Recording.query.order_by(Recording.created_at.desc()).paginate(page,
-        per_page=app.config['RECORDING_PAGINATION'])
-    return render_template('recording_list.jinja', recordings=recordings,
-        section='recording')
+    only_bad = bool(request.args.get('only_bad', False))
 
+    if only_bad:
+        recordings = db.session.query(Recording).filter_by(marked_as_bad=True).paginate(page,
+            per_page=app.config['RECORDING_PAGINATION'])
+    else:
+        recordings = Recording.query.order_by(Recording.created_at.desc()).paginate(page,
+            per_page=app.config['RECORDING_PAGINATION'])
+
+    return render_template('recording_list.jinja', recordings=recordings, only_bad=only_bad,
+        section='recording')
 
 @app.route('/recordings/<int:id>/')
 @login_required

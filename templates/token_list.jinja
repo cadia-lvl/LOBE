@@ -4,6 +4,13 @@
         <div class='col-12'>
             <h1 class='font-weight-bold'>Textar</h1>
             <p>Fjöldi : {{tokens.total}}</p>
+            <a href="{{url_for('token_list')}}{% if not only_bad %}?only_bad=True{% endif %}" class='btn btn-secondary float-right mb-1'>
+                {% if only_bad %}
+                    Sjá alla
+                {% else %}
+                    Sjá bara slæma
+                {% endif %}
+            </a>
         </div>
     </div>
     <div class='row'>

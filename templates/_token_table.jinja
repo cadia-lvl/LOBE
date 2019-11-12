@@ -10,7 +10,7 @@
         <tbody>
             {% for token in tokens %}
                 <tr>
-                    <td><a href={{token.get_url()}}><code>{{token.get_printable_id()}}</code></a></td>
+                    <td><a href={{token.get_url()}} class='{% if token.marked_as_bad %} text-warning {% endif %}'><code>{{token.get_printable_id()}}</code></a></td>
                     <td class='text-right'>{{token.get_length()}}</td>
                     <td>{{token.created_at | datetime('med-low')}}</td>
                     <td class='text-right'>{{token.recordings | length}}</td>

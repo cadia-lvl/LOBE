@@ -323,8 +323,12 @@ function sendAction(){
 		if(this.readyState === XMLHttpRequest.DONE) {
 			finishButtonIcon.removeClass('fa-spinner').removeClass('fa-spin');
 			if(xhr.status == '200'){
+				// if we finish we go straight to the session
 				var session_url = xhr.responseText;
 				finishButtonIcon.addClass('fa-check');
+
+				window.onbeforeunload = null;
+				window.location = session_url;
 			} else{
 				finishButtonIcon.addClass('fa-times');
 				finishButton.addClass('btn-danger');
@@ -385,6 +389,10 @@ function startRecording() {
 
 		ws.onmessage = handleStreamingResult;
 
+		/**
+		 * We use the maximum buffersize of 16384 for maximum quality.
+		 * This can cause latency to suffer.
+		 */
 		streamProcessor = audioContext.createScriptProcessor(16384, 1, 1);
 		input.connect(streamProcessor);
 		streamProcessor.connect(audioContext.destination);

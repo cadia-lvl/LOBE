@@ -238,7 +238,7 @@ function playAction(isEnded=false){
 			nextButton.attr('disabled', false);
 			prevButton.attr('disabled', false);
 			recordButton.attr('disabled', false);
-			skipButton.attR('disabled', false);
+			skipButton.attr('disabled', false);
 		} else{
 			recordingPlayer.play();
 			playButtonIcon.removeClass('fa-play').addClass('fa-stop');
@@ -246,7 +246,7 @@ function playAction(isEnded=false){
 			nextButton.attr('disabled', true);
 			prevButton.attr('disabled', true);
 			recordButton.attr('disabled', true);
-			skipButton.attR('disabled', true);
+			skipButton.attr('disabled', true);
 
 		}
 	}

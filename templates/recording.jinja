@@ -2,20 +2,53 @@
 {% block body %}
     <div class='row'>
         <div class='col-12'>
-            <h1 class='font-weight-bold'>Upptaka</h1>
+            <h1 class='font-weight-bold'>Upptaka #{{recording.id}}</h1>
+            {% if recording.marked_as_bad %}
+                <h3 class='text-danger'>Merkt sem léleg.</h3>
+            {% endif %}
+        </div>
+        <div class='col-12'>
+            <hr>
+        </div>
+        <div class='col-md-6 col-12'>
             <p>Tekið upp: {{recording.created_at | datetime(format='medium')}}</p>
             <p>Lesið af: {{recording.user | default("ekki skráð", true)}} </p>
+            <p>Lengd: {{recording.get_printable_duration()}}</p>
+            <p>Texti lesinn: {{recording.token.text}}</p>
+            <p>Rafrænt afrit: {{recording.get_printable_transcription()}}</p>
+        </div>
+        <div class='col-md-6 col-12 text-md-right'>
+            <p>Sample rate: {{recording.sr}}</p>
+            <p>Fjöldi rása: {{recording.num_channels}}</p>
+            <p>Fjöldi ramma: {{recording.num_frames}}</p>
+        </div>
+        <div class='col-12'>
+            <hr>
         </div>
     </div>
     <div class='row'>
         <div class='col-12'>
-            <p>Texti: {{recording.get_token().text}}</p>
-        </div>
-        <div class='col-12'>
+            <button class='btn btn-danger float-right ml-1' href='#' disabled>
+                {{macros.btn_icon('trash', 'r')}}
+                Eyða
+            </button>
+            <form method="POST" action=>
+                {% if recording.marked_as_bad %}
+                    <a href="{{url_for('toggle_recording_bad', id=recording.id)}}" class='btn btn-success float-right ml-1'>
+                        {{macros.btn_icon('check', 'r')}}
+                        Merkja sem góð
+                    </a>
+                {% else %}
+                    <a href="{{url_for('toggle_recording_bad', id=recording.id)}}" class='btn btn-warning float-right ml-1'>
+                        {{macros.btn_icon('times', 'r')}}
+                        Merkja sem léleg
+                    </a>
+                {% endif%}
+            </form>
             <div>
                 <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
-                <a class='btn btn-secondary btn-sm float-right ml-1' href='{{recording.get_download_url()}}'><i class='fa fa-download'></i></a>
-                <button type='button' class='btn btn-secondary btn-sm float-right ml-1' onClick="play({{recording.id}})">
+                <a class='btn btn-secondary float-right ml-1' href='{{recording.get_download_url()}}'><i class='fa fa-download'></i></a>
+                <button type='button' class='btn btn-secondary float-right ml-1' onClick="play({{recording.id}})">
                     <i id='playButtonIcon-{{recording.id}}' class='fa fa-play'></i>
                 </button>
             </div>

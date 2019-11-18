@@ -4,7 +4,7 @@ from flask import current_app as app
 from flask_security.forms import LoginForm, RegisterForm
 from flask_wtf import RecaptchaField
 from wtforms import (FileField, Form, HiddenField, MultipleFileField,
-                     PasswordField, SelectField, TextAreaField, TextField, IntegerField,
+                     PasswordField, SelectField, TextAreaField, TextField, IntegerField, BooleanField,
                      validators, ValidationError)
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms.ext.sqlalchemy.orm import model_form
@@ -27,6 +27,7 @@ class CollectionForm(Form):
 
 
 class BulkTokenForm(Form):
+    is_g2p = BooleanField('Er G2P skjal.', default=False)
     files = MultipleFileField('Textaskjöl')
 
     # TODO add custom validator for files

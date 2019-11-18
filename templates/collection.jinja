@@ -13,6 +13,10 @@
                 {{macros.btn_icon('microphone', 'r')}}
                 Taka upp
             </a>
+            <a href='{{url_for("collection_sessions", id=collection.id)}}' class='btn btn-secondary float-right mr-2'>
+                {{macros.btn_icon('arrow-right', 'r')}}
+                Lotur
+            </a>
             <button type='button' class='btn btn-secondary float-right mr-2' data-toggle='modal', data-target='#addTokensModal'>
                 {{macros.btn_icon('plus', 'r')}}
                 Bæta við
@@ -60,31 +64,6 @@
                         {% with form=token_form %}
                             {% include '_form.jinja' %}
                         {% endwith %}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
-                    <button class='btn btn-primary' type='submit'>
-                        Klára
-                        <span class='ml-1'><i class='fa fa-check'></i></span>
-                    </button>
-                </div>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <div class="modal fade" id='downloadCollectionModal' tabindex="-1">
-        <form method='POST' enctype="multipart/form-data">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Bæta við textum</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    ???
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>

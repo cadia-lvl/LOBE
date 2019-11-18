@@ -22,7 +22,7 @@
                     <tbody>
                         {% for user in users.items %}
                             <tr>
-                                <td><a href={{user.get_url()}}>{{user.name}}</a></td>
+                                <td><a href={{user.get_url()}}>{{user.get_printable_name()}}</a></td>
                                 <td>{{user.email}}</td>
                                 <td>{% for role in user.roles %}{{role.name}}{% endfor %}</td>
                             </tr>

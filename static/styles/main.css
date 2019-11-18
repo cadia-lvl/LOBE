@@ -26,10 +26,14 @@
     text-overflow: ellipsis;
 }
 
-.pending-button{
+.pending-button, .pending-button:hover{
     border: 2px solid orange;
 }
 
-.recording-button{
+.recording-button, .recording-button:hover{
     border: 2px solid red;
+}
+
+hr{
+    border-top: 1px solid white !important;
 }

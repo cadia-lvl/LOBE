@@ -1,6 +1,7 @@
 from models import db, Collection, Token
 import os
 
+
 def create_tokens(collection_id, files, is_g2p):
     tokens = []
     for file in files:

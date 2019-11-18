@@ -175,7 +175,7 @@ def collection(id):
     token_form = BulkTokenForm(request.form)
     if request.method == 'POST':
         tokens = create_tokens(id, request.files.getlist('files'),
-            token_form.is_g2p)
+            token_form.is_g2p.data)
 
     page = int(request.args.get('page', 1))
     collection = Collection.query.get(id)

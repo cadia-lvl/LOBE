@@ -27,7 +27,7 @@ class CollectionForm(Form):
 
 
 class BulkTokenForm(Form):
-    is_g2p = BooleanField('Er G2P skjal.')
+    is_g2p = BooleanField('Er G2P skjal.', default=False)
     files = MultipleFileField('Textaskjöl')
 
     # TODO add custom validator for files

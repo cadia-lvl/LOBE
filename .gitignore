@@ -1,6 +1,7 @@
 env/
 data/
 data_old/
+data_backup/
 temp/
 logs/
 .vscode/

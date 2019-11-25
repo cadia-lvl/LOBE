@@ -54,7 +54,6 @@ SESSION_SZ = 50
 @app.route('/')
 @login_required
 def index():
-    app.logger.info(f"{current_user} Requesting index")
     return render_template('index.jinja', collections=newest_collections(num=4))
 
 @app.route('/lobe/')
@@ -65,7 +64,6 @@ def index_redirect():
 @app.route('/post_recording/', methods=['POST'])
 @login_required
 def post_recording():
-    app.logger.info(f"{current_user} Posting new recordings")
     recordings = []
     files = []
     duration = None
@@ -100,7 +98,7 @@ def post_recording():
                 recording.set_session_id(record_session.id)
         db.session.commit()
     except Exception as error:
-        app.logger.error(f"Error posting recordings: {error}\n{traceback.format_exc()}")
+        app.logger.error("Error posting recordings: {}\n{}".format(error,traceback.format_exc()))
         return Response(str(error), status=500)
 
     if record_session is None:
@@ -113,7 +111,6 @@ def post_recording():
 @app.route('/record/<int:coll_id>/')
 @login_required
 def record_session(coll_id):
-    app.logger.info(f"{current_user} Requesting record_session")
     collection = Collection.query.get(coll_id)
 
     if collection.has_assigned_user():
@@ -130,7 +127,6 @@ def record_session(coll_id):
 @app.route('/record/token/<int:tok_id>/')
 @login_required
 def record_single(tok_id):
-    app.logger.info(f"{current_user} Requesting record_single")
     token = Token.query.get(tok_id)
     return render_template('record.jinja', tokens=token, section='record',
         single=True, json_tokens=json.dumps([token.get_dict()]),
@@ -140,7 +136,6 @@ def record_single(tok_id):
 @app.route('/rate/<int:coll_id>')
 @login_required
 def rate_session(coll_id):
-    app.logger.info(f"{current_user} Requesting rate_session")
     collection = Collection.query.get(coll_id)
     recordings = db.session.query(Recording).order_by(func.random()).limit(SESSION_SZ)
     return render_template('rate.jinja', section='rate',
@@ -152,7 +147,6 @@ def rate_session(coll_id):
 @app.route('/collections/create/', methods=['GET', 'POST'])
 @login_required
 def create_collection():
-    app.logger.info(f"{current_user} Requesting create_collection")
     form = CollectionForm(request.form)
     if request.method == 'POST' and form.validate():
         try:
@@ -161,14 +155,13 @@ def create_collection():
 
             return redirect(url_for('collection', id=collection.id))
         except Exception as error:
-            app.logger.error(f"Error creating collection {error}\n{traceback.format_exc()}")
+            app.logger.error("Error creating collection {}\n{}".format(error,traceback.format_exc()))
     return render_template('collection_create.jinja', form=form,
         section='collection')
 
 @app.route('/collections/')
 @login_required
 def collection_list():
-    app.logger.info(f"{current_user} Requestin collection_list")
     page = int(request.args.get('page', 1))
     sort_by = request.args.get('sort_by', 'name')
     collections = Collection.query.paginate(page,
@@ -179,7 +172,6 @@ def collection_list():
 @app.route('/collections/<int:id>/', methods=['GET', 'POST'])
 @login_required
 def collection(id):
-    app.logger.info(f"{current_user} Requesting collection")
     token_form = BulkTokenForm(request.form)
     if request.method == 'POST':
         tokens = create_tokens(id, request.files.getlist('files'),
@@ -197,7 +189,6 @@ def collection(id):
 @app.route('/collections/<int:id>/sessions', methods=['GET'])
 @login_required
 def collection_sessions(id):
-    app.logger.info(f"{current_user} Requesting collection_sessions")
     page = int(request.args.get('page', 1))
     collection = Collection.query.get(id)
     rec_sessions = ListPagination(collection.sessions, page,
@@ -208,7 +199,6 @@ def collection_sessions(id):
 @app.route('/collections/<int:id>/download/')
 @login_required
 def download_collection(id):
-    app.logger.info(f"{current_user} Requesting download_collection")
     collection = Collection.query.get(id)
 
     tokens = collection.tokens
@@ -243,7 +233,8 @@ def download_collection(id):
             os.remove('temp/index.tsv')
         except Exception as error:
             app.logger.error(
-                f"Error deleting a downloaded archive : {error}\n{traceback.format_exc()}")
+                "Error deleting a downloaded archive : {}\n{}".format(
+                    error,traceback.format_exc()))
         return response
     return send_file('temp/{}.zip'.format(collection.name), as_attachment=True)
 
@@ -265,14 +256,12 @@ def delete_collection(id):
 @app.route('/tokens/<int:id>/')
 @login_required
 def token(id):
-    app.logger.info(f"{current_user} Requesting token")
     return render_template('token.jinja', token=Token.query.get(id),
         section='token')
 
 @app.route('/tokens/')
 @login_required
 def token_list():
-    app.logger.info(f"{current_user} Requesting token_list")
     page = int(request.args.get('page', 1))
     only_bad = bool(request.args.get('only_bad', False))
 
@@ -288,21 +277,19 @@ def token_list():
 @app.route('/tokens/<int:id>/download/')
 @login_required
 def download_token(id):
-    app.logger.info(f"{current_user} Requesting download_token")
     token = Token.query.get(id)
     try:
         return send_from_directory(token.get_directory(), token.fname,
             as_attachment=True)
     except Exception as error:
         app.logger.error(
-            f"Error downloading a token : {error}\n{traceback.format_exc()}")
+            "Error downloading a token : {}\n{}".format(error,traceback.format_exc()))
 
 # RECORDING ROUTES
 
 @app.route('/recordings/')
 @login_required
 def recording_list():
-    app.logger.info(f"{current_user} Requesting recording_list")
     page = int(request.args.get('page', 1))
     only_bad = bool(request.args.get('only_bad', False))
 
@@ -319,15 +306,12 @@ def recording_list():
 @app.route('/recordings/<int:id>/')
 @login_required
 def recording(id):
-    app.logger.info(f"{current_user} Requesting recording")
     recording = Recording.query.get(id)
     return render_template('recording.jinja', recording=recording, section='recording')
 
 @app.route('/recordings/<int:id>/mark_bad/')
 @login_required
 def toggle_recording_bad(id):
-    app.logger.info(f"{current_user} Requesting toggle_recording_bad")
-
     recording = Recording.query.get(id)
     recording.marked_as_bad = not recording.marked_as_bad
     db.session.commit()
@@ -337,8 +321,6 @@ def toggle_recording_bad(id):
 @app.route('/recordings/<int:id>/mark_bad_ajax/')
 @login_required
 def toggle_recording_bad_ajax(id):
-    app.logger.info(f"{current_user} Requesting toggle_recording_bad")
-
     recording = Recording.query.get(id)
     state = not recording.marked_as_bad
     recording.marked_as_bad = state
@@ -349,22 +331,19 @@ def toggle_recording_bad_ajax(id):
 @app.route('/recordings/<int:id>/download/')
 @login_required
 def download_recording(id):
-    app.logger.info(f"{current_user} Requesting download_recording")
-
     recording = Recording.query.get(id)
     try:
         return send_from_directory(recording.get_directory(), recording.fname,
             as_attachment=True)
     except Exception as error:
         app.logger.error(
-            f"Error downloading a recording : {error}\n{traceback.format_exc()}")
+            "Error downloading a recording : {}\n{}".format(error,traceback.format_exc()))
 
 # SESSION ROUTES
 
 @app.route('/sessions/')
 @login_required
 def rec_session_list():
-    app.logger.info(f"{current_user} Requesting rec_session_list")
     page = int(request.args.get('page', 1))
     sessions = Session.query.order_by(Session.created_at.desc()).paginate(page,
         per_page=app.config['SESSION_PAGINATION'])
@@ -374,7 +353,6 @@ def rec_session_list():
 @app.route('/sessions/<int:id>/')
 @login_required
 def rec_session(id):
-    app.logger.info(f"{current_user} Requesting rec_session")
     session = Session.query.get(id)
     return render_template('session.jinja', session=session, section='session')
 
@@ -384,7 +362,6 @@ def rec_session(id):
 @login_required
 @roles_required('admin')
 def user_list():
-    app.logger.info(f"{current_user} Requesting user_list")
     page = int(request.args.get('page', 1))
     users = User.query.paginate(page, app.config['USER_PAGINATION'])
     return render_template('user_list.jinja', users=users, section='user')
@@ -392,7 +369,6 @@ def user_list():
 @app.route('/users/<int:id>/')
 @login_required
 def user(id):
-    app.logger.info(f"{current_user} Requesting user")
     page = int(request.args.get('page', 1))
     user = User.query.get(id)
     recordings = ListPagination(user.recordings, page,
@@ -403,8 +379,6 @@ def user(id):
 @app.route('/users/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
 def user_edit(id):
-    app.logger.info(f"{current_user} Requesting user_edit")
-
     user = User.query.get(id)
     form = UserEditForm(request.form, obj=user)
 
@@ -413,7 +387,7 @@ def user_edit(id):
             form.populate_obj(user)
             db.session.commit()
     except Exception as error:
-        app.logger.error(f'Error updating a user : {error}\n{traceback.format_exc()}')
+        app.logger.error('Error updating a user : {}\n{}'.format(error, traceback.format_exc()))
 
     return render_template('model_form.jinja', user=user, form=form, type='edit',
         action=url_for('user_create', id=id), section='user')
@@ -422,7 +396,6 @@ def user_edit(id):
 @login_required
 @roles_required('admin')
 def user_create():
-    app.logger.info(f"{current_user} Requesting user_create")
     form = ExtendedRegisterForm(request.form)
     if request.method == 'POST' and form.validate():
         try:
@@ -430,15 +403,14 @@ def user_create():
                 password=hash_password(form.password.data), roles=[form.role.data])
             db.session.commit()
         except Exception as error:
-            app.logger.error(f'Error creating a user : {error}\n{traceback.format_exc()}')
+            app.logger.error('Error creating a user : {}\n{}'.format(error,traceback.format_exc()))
     return render_template('model_form.jinja', form=form, type='create',
         action=url_for('user_create'), section='user')
 
 @app.route('/roles/create/', methods=['GET', 'POST'])
 @login_required
-#@roles_required('admin')
+@roles_required('admin')
 def role_create():
-    app.logger.info(f"{current_user} Requesting role_create")
     form = RoleForm(request.form)
     if request.method == 'POST' and form.validate():
         try:
@@ -447,15 +419,13 @@ def role_create():
             db.session.add(role)
             db.session.commit()
         except Exception as error:
-            app.logger.error(f'Error creating a role : {error}\n{traceback.format_exc()}')
+            app.logger.error('Error creating a role : {}\n{}'.format(error,traceback.format_exc()))
     return render_template('model_form.jinja', form=form, type='create',
         action=url_for('role_create'), section='role')
 
 @app.route('/roles/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
 def role_edit(id):
-    app.logger.info(f"{current_user} Requesting role_edit")
-
     role = Role.query.get(id)
     form = RoleForm(request.form, obj=role)
 
@@ -464,14 +434,13 @@ def role_edit(id):
             form.populate_obj(role)
             db.session.commit()
         except Exception as error:
-            app.logger.error(f'Error updating a role : {error}\n{traceback.format_exc()}')
+            app.logger.error('Error updating a role : {}\n{}'.format(error,traceback.format_exc()))
     return render_template('model_form.jinja', role=role, form=form, type='edit',
         action=url_for('role_edit', id=id), section='role')
 
 @app.errorhandler(404)
 def page_not_found(error):
     flash("Við fundum ekki síðuna sem þú baðst um.", category="warning")
-    app.logger.error(f"Page not found {request.path}")
     return redirect(url_for('index'))
 
 @app.errorhandler(500)

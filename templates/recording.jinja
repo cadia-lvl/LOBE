@@ -22,6 +22,15 @@
             <p>Fjöldi rása: {{recording.num_channels}}</p>
             <p>Fjöldi ramma: {{recording.num_frames}}</p>
         </div>
+        <!--
+        <div class='col-12'>
+            <div id='peaks-container'>
+            </div>
+        </div>
+        <div class='col-12'>
+            <div id='overview-container'>
+            </div>
+        </div>-->
         <div class='col-12'>
             <hr>
         </div>
@@ -59,4 +68,5 @@
 {% block scripts %}
     {{super()}}
     <script src='{{url_for("static", filename="js/listControls.js")}}'></script>
+    <script src='{{url_for("static", filename="js/audioViz.js")}}'></script>
 {% endblock %}

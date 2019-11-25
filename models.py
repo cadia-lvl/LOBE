@@ -230,7 +230,6 @@ class Recording(BaseModel, db.Model):
         return url_for('toggle_recording_bad_ajax', id=self.id)
 
     def get_directory(self):
-        print(self.path)
         return os.path.dirname(self.path)
 
     def get_path(self):
@@ -241,9 +240,10 @@ class Recording(BaseModel, db.Model):
         file_obj.filename = self.fname
         file_obj.save(self.path)
 
+
     def set_path(self):
-        self.fname = secure_filename(
-            '{}_r{:09d}.wav'.format(os.path.splitext(self.original_fname)[0], self.id))
+        self.file_id = '{}_r{:09d}'.format(os.path.splitext(self.original_fname)[0], self.id)
+        self.fname = secure_filename('{}.wav'.format(self.file_id))
         self.path = os.path.join(app.config['RECORD_DIR'],
             str(self.token.collection_id), self.fname)
 
@@ -251,7 +251,7 @@ class Recording(BaseModel, db.Model):
         if self.fname is not None:
             return os.path.splitext(self.fname)[0]
         else:
-            # not registerd, (using) primary key
+            # not registered, (using) primary key
             return "nrpk_{:09d}".format(self.id)
 
     def get_user(self):
@@ -294,10 +294,12 @@ class Recording(BaseModel, db.Model):
     num_channels = db.Column(db.Integer, default=2)
     duration = db.Column(db.Float)
     num_frames = db.Column(db.Integer)
+    bit_depth = db.Column(db.Integer)
 
     transcription = db.Column(db.String)
 
     fname = db.Column(db.String)
+    file_id = db.Column(db.String)
     path = db.Column(db.String)
 
     marked_as_bad = db.Column(db.Boolean, default=False)

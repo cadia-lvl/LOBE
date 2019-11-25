@@ -5,3 +5,4 @@ logs/
 .vscode/
 __pycache__/
 settings/production.py
+*.sql

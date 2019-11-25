@@ -113,7 +113,6 @@ def record_session(coll_id):
     collection = Collection.query.get(coll_id)
     tokens = db.session.query(Token).filter_by(collection_id=coll_id,
         num_recordings=0, marked_as_bad=False).order_by(func.random()).limit(SESSION_SZ)
-    print(json.dumps([t.get_dict() for t in tokens]))
     return render_template('record.jinja', section='record',
         collection=collection,  tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),

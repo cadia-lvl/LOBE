@@ -37,8 +37,10 @@ def create_tokens(collection_id, files, is_g2p):
 
     return tokens
 
-def insert_collection(name):
-    collection = Collection(name)
+def insert_collection(form):
+    collection = Collection(form.name.data)
+    if form.assigned_user.data is not None:
+        collection.assigned_user_id = form.assigned_user.data.id
     db.session.add(collection)
     db.session.commit()
 

@@ -3,6 +3,9 @@
     <div class='row'>
         <div class='col-12'>
             <h1 class='font-weight-bold'>{{collection.name}}</h1>
+            {% if collection.has_assigned_user() %}
+                <h3 class='font-weight-bold'>Rödd: {{collection.get_assigned_user()}}</h3>
+            {% endif %}
             <p>Stofnuð þann: {{collection.created_at | datetime(format='low')}}</p>
             <p>Búið að taka upp {{collection.num_tokens - collection.num_nonrecorded_tokens}} af {{collection.num_tokens}} textum</p>
             <div class="progress mb-3">
@@ -17,14 +20,20 @@
                 {{macros.btn_icon('arrow-right', 'r')}}
                 Lotur
             </a>
-            <button type='button' class='btn btn-secondary float-right mr-2' data-toggle='modal', data-target='#addTokensModal'>
-                {{macros.btn_icon('plus', 'r')}}
-                Bæta við
-            </button>
-            <a href='{{collection.get_download_url()}}' class='btn btn-secondary float-right mr-2'>
-                {{macros.btn_icon('download', 'r')}}
-                Sækja söfnun
-            </a>
+            {% if current_user.is_admin() %}
+                <button type='button' class='btn btn-secondary float-right mr-2' data-toggle='modal', data-target='#addTokensModal'>
+                    {{macros.btn_icon('plus', 'r')}}
+                    Bæta við
+                </button>
+                <a href='{{collection.get_download_url()}}' class='btn btn-secondary float-right mr-2'>
+                    {{macros.btn_icon('download', 'r')}}
+                    Sækja söfnun
+                </a>
+                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-danger float-right mr-2'>
+                    {{macros.btn_icon('times', 'r')}}
+                    Eyða söfnun
+                </a>
+            {% endif %}
         </div>
     </div>
     <div class='row'>
@@ -75,5 +84,37 @@
                 </div>
             </div>
         </form>
+    </div>
+
+    <div class="modal fade" id='deleteModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú ert við það að eyða söfnun!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                Með því að eyða söfnun eyðast allar upptökur og allar setningar
+                sem settar hafa verið inn fyrir söfnunina: {{collection.name}}.
+                <br><br>
+                Þessi söfnun hefur {{collection.num_tokens}} setningar og búið er
+                að taka upp {{collection.get_complete_ratio(as_percent=True)}}% af þeim.
+                <br><br>
+                Ertu viss um að þú viljir eyða þessari söfnun?
+                </p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a href='{{url_for("delete_collection", id=collection.id)}}' class='btn btn-danger'>
+                    Eyða
+                    <span class='ml-1'><i class='fa fa-times'></i></span>
+                </a>
+            </div>
+            </div>
+        </div>
     </div>
 {% endblock %}

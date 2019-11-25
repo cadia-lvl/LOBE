@@ -24,7 +24,8 @@ dialect_choices = [('Linmæli', 'Linmæli'),
 
 class CollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])
-
+    assigned_user = QuerySelectField('Rödd', query_factory=lambda: User.query,
+        get_label='name', allow_blank=True)
 
 class BulkTokenForm(Form):
     is_g2p = BooleanField('Er G2P skjal.', default=False)

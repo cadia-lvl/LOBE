@@ -3,9 +3,10 @@ import os
 import zipfile
 import tempfile
 import traceback
+import shutil
 
 from flask import (Flask, Response, flash, redirect, render_template, request,
-    send_from_directory, send_file, session, url_for, after_this_request)
+    send_from_directory, send_file, session, url_for, after_this_request, flash)
 import logging
 from logging.handlers import RotatingFileHandler
 from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
@@ -68,6 +69,7 @@ def post_recording():
     recordings = []
     files = []
     duration = None
+    record_session = None
     try:
         for token_id in request.form:
             item = json.loads(request.form[token_id])
@@ -86,7 +88,6 @@ def post_recording():
                 recordings.append(recording)
                 files.append(file_obj)
         db.session.commit()
-
         # only create session if at least one recording
         if len(recordings) > 0:
             collection_id = recordings[0].get_collection()
@@ -102,7 +103,10 @@ def post_recording():
         app.logger.error(f"Error posting recordings: {error}\n{traceback.format_exc()}")
         return Response(str(error), status=500)
 
-    return Response(url_for('rec_session', id=record_session.id), status=200)
+    if record_session is None:
+        return Response(url_for('index'), status=200)
+    else:
+        return Response(url_for('rec_session', id=record_session.id), status=200)
 
 # RECORD ROUTES
 
@@ -111,13 +115,18 @@ def post_recording():
 def record_session(coll_id):
     app.logger.info(f"{current_user} Requesting record_session")
     collection = Collection.query.get(coll_id)
-    tokens = db.session.query(Token).filter_by(collection_id=coll_id,
-        num_recordings=0, marked_as_bad=False).order_by(func.random()).limit(SESSION_SZ)
+
+    if collection.has_assigned_user():
+        if current_user.id != collection.assigned_user_id:
+            flash("Aðeins skráð rödd getur tekið upp í þessari söfnun", category="danger")
+            return redirect(url_for('index'))#+'?msg="Aðeins skráð rödd getur tekið upp í þessari söfnun"&type=danger&icn=times')
+
+    tokens = Token.query.filter(Token.collection_id==coll_id,
+        Token.num_recordings==0, Token.marked_as_bad==True).order_by(func.random()).limit(SESSION_SZ)
     return render_template('record.jinja', section='record',
         collection=collection,  tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         tal_api_token=app.config['TAL_API_TOKEN'])
-
 @app.route('/record/token/<int:tok_id>/')
 @login_required
 def record_single(tok_id):
@@ -148,7 +157,7 @@ def create_collection():
     if request.method == 'POST' and form.validate():
         try:
             # add collection to database
-            collection = insert_collection(form.name.data)
+            collection = insert_collection(form)
 
             return redirect(url_for('collection', id=collection.id))
         except Exception as error:
@@ -216,10 +225,12 @@ def download_collection(id):
         for token in dl_tokens:
             zf.write(token.get_path(), 'text/{}'.format(token.get_fname()))
             for recording in token.recordings:
+                app.logger.info(recording.get_path())
                 zf.write(recording.get_path(), 'audio/{}'.format(recording.get_fname()))
                 index_f.write('{}\t{}\n'.format(recording.get_fname(), token.get_fname()))
         index_f.close()
-        zf.write(os.path.abspath(index_f.name), 'index.tsv')
+        app.logger.info(os.path.abspath(index_f.name))
+        zf.write('./temp/index.tsv', 'index.tsv')
     except Exception as error:
         app.logger.error(
             "Error creating a collection .zip : {}\n{}".format(error, traceback.format_exc()))
@@ -228,13 +239,26 @@ def download_collection(id):
     @after_this_request
     def remove_file(response):
         try:
-            os.remove(zfname)
+            os.remove('temp/{}.zip'.format(collection.name))
             os.remove('temp/index.tsv')
         except Exception as error:
             app.logger.error(
                 f"Error deleting a downloaded archive : {error}\n{traceback.format_exc()}")
         return response
     return send_file('temp/{}.zip'.format(collection.name), as_attachment=True)
+
+@app.route('/collections/<int:id>/delete/')
+@login_required
+@roles_required('admin')
+def delete_collection(id):
+    collection = db.session.query(Collection).get(id)
+    name = collection.name
+    shutil.rmtree(collection.get_record_dir())
+    shutil.rmtree(collection.get_token_dir())
+    db.session.delete(collection)
+    db.session.commit()
+    flash("{} var eytt".format(name), category='success')
+    return redirect(url_for('index'))
 
 # TOKEN ROUTES
 
@@ -358,6 +382,7 @@ def rec_session(id):
 
 @app.route('/users/')
 @login_required
+@roles_required('admin')
 def user_list():
     app.logger.info(f"{current_user} Requesting user_list")
     page = int(request.args.get('page', 1))
@@ -445,17 +470,12 @@ def role_edit(id):
 
 @app.errorhandler(404)
 def page_not_found(error):
+    flash("Við fundum ekki síðuna sem þú baðst um.", category="warning")
     app.logger.error(f"Page not found {request.path}")
-    # TODO: Maybe add some message about this here to show the user
     return redirect(url_for('index'))
 
 @app.errorhandler(500)
 def internal_server_error(error):
+    flash("Alvarleg villa kom upp, vinsamlega reynið aftur", category="danger")
     app.logger.error('Server Error: %s', (error))
     return redirect(url_for('index'))
-'''
-@app.errorhandler(Exception)
-def unhandled_exception(e):
-    app.logger.error('Unhandled Exception: %s', (e))
-    return redirect(url_for('index'))
-'''

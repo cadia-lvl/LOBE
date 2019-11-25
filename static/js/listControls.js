@@ -38,15 +38,17 @@ function play(id){
 
 function toggle_recording_bad(url, id){
     $.get(url, function(data, status){
+        console.log(data);
+        console.log(data=='True');
         if(data=='True'){
             $('#'+id+"-name").removeClass('text-success').addClass('text-warning');
             $('#'+id+"-btn").removeClass('text-warning').addClass('text-success');
             $('#'+id+"-btn").html('<span class="mr-2"><i class="fa fa-check"></i></span>Merkja sem góð');
+            console.log($('#'+id+"-btn"));
         } else{
             $('#'+id+"-name").removeClass('text-warning').addClass('text-success');
             $('#'+id+"-btn").removeClass('text-success').addClass('text-warning');
-            $('#'+id+"-btn").html('<span class="mr-2"><i class="fa fa-times"></i></span>Merkja sem slæm');
-
+            $('#'+id+"-btn").html('<span class="mr-2"><i class="fa fa-times"></i></span>Merkja sem léleg');
         }
     });
 }

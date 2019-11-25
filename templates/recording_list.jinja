@@ -4,7 +4,6 @@
     <div class='col-12'>
         <h1 class='font-weight-bold'>Upptökur</h1>
         <p>Fjöldi: {{recordings.total}}</p>
-        <div class="dropdown">
         <a href="{{url_for('recording_list')}}{% if not only_bad %}?only_bad=True{% endif %}" class='btn btn-secondary float-right mb-1'>
             {% if only_bad %}
                 Sjá alla

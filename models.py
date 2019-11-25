@@ -12,6 +12,7 @@ from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug import secure_filename
 
 db = SQLAlchemy()
+ADMIN_ROLE_ID = 1
 
 class BaseModel(db.Model):
     """Base data model for all objects"""
@@ -58,7 +59,7 @@ class Collection(BaseModel, db.Model):
             ratio = 0
         else:
             ratio = (self.num_tokens - self.num_nonrecorded_tokens) / self.num_tokens
-        if as_percent: ratio *= 100
+        if as_percent: ratio = round(ratio*100, 3)
         return ratio
 
     def get_url(self):
@@ -73,12 +74,22 @@ class Collection(BaseModel, db.Model):
     def get_token_dir(self):
         return os.path.join(app.config['TOKEN_DIR'], str(self.id))
 
+    def has_assigned_user(self):
+        return self.assigned_user_id is not None
+
+    def get_assigned_user(self):
+        if self.has_assigned_user():
+            return User.query.get(self.assigned_user_id)
+
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     name = db.Column(db.String, default=str(datetime.now().date()))
 
-    tokens = db.relationship("Token", lazy='joined', backref='collection')
-    sessions = db.relationship("Session", lazy='select', backref='collection')
+    # the assigned user
+    assigned_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    tokens = db.relationship("Token", lazy='joined', backref='collection', cascade='all, delete, delete-orphan')
+    sessions = db.relationship("Session", lazy='select', backref='collection', cascade='all, delete, delete-orphan')
     #recordings = db.relationship("Recording", lazy='joined', backref='collection')
 
 
@@ -334,7 +345,7 @@ class Session(BaseModel, db.Model):
     collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
     duration = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    recordings = db.relationship("Recording", lazy='joined', backref='session')
+    recordings = db.relationship("Recording", lazy='joined', backref='session', cascade='all, delete, delete-orphan')
 
 # Define models
 roles_users = db.Table('roles_users',
@@ -364,13 +375,17 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary=roles_users,
         backref=db.backref('users', lazy='dynamic'))
 
-    recordings = db.relationship("Recording", lazy='joined', backref='user_relationship')
+    assigned_collections = db.relationship("Collection")
+    recordings = db.relationship("Recording")
 
     def get_printable_name(self):
         if self.name is not None:
             return self.name
         else:
             return "Nafnlaus notandi"
+
+    def is_admin(self):
+        return self.roles[0].id == ADMIN_ROLE_ID
 
     def __str__(self):
         if type(self.name) != str:

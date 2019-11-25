@@ -17,20 +17,23 @@
         <li class="nav-item {% if section == 'session' %}active{% endif %}">
             <a class="nav-link {% if section == 'session' %}text-success{% endif %}" href="{{url_for('rec_session_list')}}">Lotur</a>
         </li>
-        <li class="nav-item {% if section == 'user' %}active{% endif %}">
-            <a class="nav-link {% if section == 'user' %}text-success{% endif %}" href="{{url_for('user_list')}}">Notendur</a>
-        </li>
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-               <span class='font-weight-bold'>{{current_user.name}}</span>
-               {{macros.btn_icon('user-circle', '')}}
-            </a>
-        </li>
-        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-            <a class="dropdown-item" href="#">Mín síða</a>
-            <a class="dropdown-item" href="#">Mín yfirferð</a>
-            <a class="dropdown-item" href="{{ url_for('security.logout') }}">Skrá út</a>
-        </div>
+        {% if not current_user.is_anonymous and current_user.is_admin() %}
+            <li class="nav-item {% if section == 'user' %}active{% endif %}">
+                <a class="nav-link {% if section == 'user' %}text-success{% endif %}" href="{{url_for('user_list')}}">Notendur</a>
+            </li>
+        {% endif %}
+        {% if not current_user.is_anonymous %}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown">
+                <span class='font-weight-bold'>{{current_user.name}}</span>
+                {{macros.btn_icon('user-circle', '')}}
+                </a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{{url_for('user',id=current_user.id)}}">Mín síða</a>
+                    <a class="dropdown-item" href="{{url_for('security.logout') }}">Skrá út</a>
+                </div>
+            </li>
+        {% endif %}
     </ul>
     </div>
 </nav>

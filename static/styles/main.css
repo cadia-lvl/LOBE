@@ -37,3 +37,10 @@
 hr{
     border-top: 1px solid white !important;
 }
+
+#notification{
+	position: fixed !important;
+	left: -350px;
+	bottom:20px;
+	z-index:3;
+}

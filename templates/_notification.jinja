@@ -1,0 +1,11 @@
+<div class='card card-body' id='notification'>
+	<p class='font-weight-bold card-text'>{{message}}
+		<i class='fa
+            fa-{% if category=="danger" or category=="error" %}times
+            {% elif category=="success"%}check
+            {% else %}question{% endif %}
+
+            text-{% if category=="error" %}danger
+            {% else %}{{category|default("warning")}}{% endif %} ml-4'></i>
+	</p>
+</div>

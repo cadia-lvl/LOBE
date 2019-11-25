@@ -38,10 +38,12 @@
                                         Merkja sem léleg
                                     </button>
                                 {% endif%}
-                                <a class="dropdown-item text-danger" href="#">
-                                    {{macros.btn_icon('trash', 'r')}}
-                                    Eyða
-                                </a>
+                                {% if current_user.is_admin() %}
+                                    <a class="dropdown-item text-danger" href="#">
+                                        {{macros.btn_icon('trash', 'r')}}
+                                        Eyða
+                                    </a>
+                                {% endif %}
                             </div>
                             <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
                             <button type='button' class='btn btn-secondary btn-sm float-right ml-1' onClick="play({{recording.id}})">

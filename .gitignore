@@ -1,8 +1,12 @@
 env/
 data/
+data_old/
 temp/
 logs/
 .vscode/
 __pycache__/
 settings/production.py
 *.sql
+settings/semi_production.py
+gunicorn.log
+semi_prod.sh

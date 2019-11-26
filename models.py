@@ -53,12 +53,25 @@ class Collection(BaseModel, db.Model):
                 where(Token.has_recording == False).
                 label("num_tokens"))
 
+    @hybrid_property
+    def num_nonrecorded_valid_tokens(self):
+        return len([t for t in self.tokens if not t.has_recording and not t.marked_as_bad])
+
+    @num_nonrecorded_valid_tokens.expression
+    def num_nonrecorded_valid_tokens(cls):
+        return (select([func.count(Token.id)]).
+                where(Token.collection == cls.id).
+                where(Token.has_recording == False).
+                where(Token.marked_as_bad == False).
+                label("num_tokens"))
+
     @hybrid_method
     def get_complete_ratio(self, as_percent=False):
         if self.num_tokens == 0:
             ratio = 0
         else:
-            ratio = (self.num_tokens - self.num_nonrecorded_tokens) / self.num_tokens
+            print(self.num_nonrecorded_valid_tokens)
+            ratio = (self.num_tokens - self.num_nonrecorded_valid_tokens) / self.num_tokens
         if as_percent: ratio = round(ratio*100, 3)
         return ratio
 
@@ -196,7 +209,7 @@ class Rating(BaseModel, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     value = db.Column(db.Boolean, default=False)
 
 class Recording(BaseModel, db.Model):
@@ -298,7 +311,7 @@ class Recording(BaseModel, db.Model):
     original_fname = db.Column(db.String, default='Unknown')
 
     token_id = db.Column(db.Integer, db.ForeignKey('Token.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     session_id = db.Column(db.Integer, db.ForeignKey('Session.id'))
 
     sr = db.Column(db.Integer)
@@ -341,7 +354,7 @@ class Session(BaseModel, db.Model):
         return len(self.recordings)
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
     duration = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
@@ -375,7 +388,7 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary=roles_users,
         backref=db.backref('users', lazy='dynamic'))
 
-    assigned_collections = db.relationship("Collection")
+    assigned_collections = db.relationship("Collection", cascade='all, delete, delete-orphan')
     recordings = db.relationship("Recording")
 
     def get_printable_name(self):

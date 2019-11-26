@@ -7,7 +7,7 @@
                 <h3 class='font-weight-bold'>Rödd: {{collection.get_assigned_user()}}</h3>
             {% endif %}
             <p>Stofnuð þann: {{collection.created_at | datetime(format='low')}}</p>
-            <p>Búið að taka upp {{collection.num_tokens - collection.num_nonrecorded_tokens}} af {{collection.num_tokens}} textum</p>
+            <p>Búið að taka upp {{collection.num_tokens - collection.num_nonrecorded_tokens}} af {{collection.num_tokens - (collection.num_nonrecorded_tokens - collection.num_nonrecorded_valid_tokens)}} textum</p>
             <div class="progress mb-3">
                 <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
             </div>
@@ -32,7 +32,7 @@
                 <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-danger float-right mr-2'>
                     {{macros.btn_icon('times', 'r')}}
                     Eyða söfnun
-                </a>
+                </button>
             {% endif %}
         </div>
     </div>

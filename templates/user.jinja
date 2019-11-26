@@ -4,10 +4,16 @@
         <div class='col-12'>
             <h1 class='font-weight-bold'>{{user.name if user.name != None else 'Ekki skráð'}}</h1>
             <p>{{user.email}}</p>
-            <a href="{{url_for('user_edit', id=user.id)}}" class='btn btn-secondary float-right text-success'>
-                Breyta
-                {{macros.btn_icon('edit', 'l')}}
-            </a>
+            {% if current_user.is_admin() %}
+                <a href="{{url_for('user_edit', id=user.id)}}" class='btn btn-secondary float-right text-success'>
+                    Breyta
+                    {{macros.btn_icon('edit', 'l')}}
+                </a>
+                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-danger float-right mr-2'>
+                    {{macros.btn_icon('times', 'r')}}
+                    Eyða notanda
+                </button>
+            {% endif %}
         </div>
     </div>
     <div class='row'>
@@ -23,6 +29,46 @@
     <div class='row mt-3'>
         <div class='col-12'>
             {{macros.pagination(recordings, url_for("user", id=user.id))}}
+        </div>
+    </div>
+{% endblock %}
+
+{% block modals %}
+    <div class="modal fade" id='deleteModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú ert við það að eyða söfnun!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                Með því að eyða notanda eyðast allar safnanir sem notandi er skráður sem
+                rödd fyrir. Þetta inniheldur allar upptökur og allar setningar sem eru skráðar
+                á eftirfarandi safnanir:
+                <br><br>
+                <ul>
+                    {% for collection in user.assigned_collections %}
+                        <li>
+                            <a target="_blank" rel="noopener noreferrer" href="{{url_for('collection', id=collection.id)}}">{{collection.name}}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <br><br>
+                Ertu viss um að þú viljir eyða þessum notanda?
+                </p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a href='{{url_for("delete_user", id=user.id)}}' class='btn btn-danger'>
+                    Eyða
+                    <span class='ml-1'><i class='fa fa-times'></i></span>
+                </a>
+            </div>
+            </div>
         </div>
     </div>
 {% endblock %}

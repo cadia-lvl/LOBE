@@ -21,6 +21,7 @@
             <p>Sample rate: {{recording.sr}}</p>
             <p>Fjöldi rása: {{recording.num_channels}}</p>
             <p>Fjöldi ramma: {{recording.num_frames}}</p>
+            <p>Bitadjúp: {% if recording.bit_depth %}{{recording.bit_depth}}{% else %}Ekki skráð{% endif %}</p>
         </div>
         <!--
         <div class='col-12'>
@@ -68,5 +69,5 @@
 {% block scripts %}
     {{super()}}
     <script src='{{url_for("static", filename="js/listControls.js")}}'></script>
-    <script src='{{url_for("static", filename="js/audioViz.js")}}'></script>
+    <!--<script src='{{url_for("static", filename="js/audioViz.js")}}'></script>-->
 {% endblock %}

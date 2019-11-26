@@ -14,13 +14,15 @@ from models import Recording, Token, User, Role
 class AddDefaultRoles(Command):
     def run(self):
         admin_role = Role()
-        admin_role.name = 'Admin'
+        admin_role.name = 'admin'
         admin_role.description = 'Umsjónarhlutverk með aðgang að notendastillingum'
 
         user_role = Role()
-        user_role.name = 'User'
+        user_role.name = 'Notandi'
         user_role.description = 'Venjulegur notandi með grunn aðgang'
 
+        db.session.add(admin_role)
+        db.session.add(user_role)
         db.session.commit()
 
 class AddUser(Command):
@@ -108,6 +110,7 @@ manager.add_command('db', MigrateCommand)
 manager.add_command('adduser', AddUser)
 manager.add_command('changepass', changePass)
 manager.add_command('changedataroot', changeDataRoot)
+manager.add_command('adddefaultroles', AddDefaultRoles)
 
 if __name__ == '__main__':
     manager.run()

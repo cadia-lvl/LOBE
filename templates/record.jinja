@@ -132,7 +132,12 @@
 {% block scripts %}
     {{super()}}
     <script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
-    <script src='{{url_for("static", filename="js/volume-meter.js")}}'></script>
+    <!-- TODO: I unplugged this because of bad performance
+        To reactivate, uncomment this line in audio.js as well:
+        //meter = createAudioMeter(audioContext);
+        As well as other meter related code.
+    -->
+    <!--<script src='{{url_for("static", filename="js/volume-meter.js")}}'></script>-->
     <script src='{{url_for("static", filename="js/base64ArrayBuffer.js")}}'></script>
     <script src='{{url_for("static", filename="js/audio.js")}}'></script>
 {% endblock %}

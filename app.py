@@ -23,6 +23,9 @@ from models import Collection, Recording, Role, Token, User, Session, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
+from settings.common import RECORDING_BIT_DEPTH
+
+
 # initialize the logger
 logHandler = RotatingFileHandler('logs/info.log', maxBytes=1000,
     backupCount=1)
@@ -84,6 +87,7 @@ def post_recording():
                 file_obj = request.files.get('file_{}'.format(token_id))
                 recording = Recording(token_id, file_obj.filename, session['user_id'],
                     transcription)
+                recording.bit_depth = RECORDING_BIT_DEPTH
                 db.session.add(recording)
                 recordings.append(recording)
                 files.append(file_obj)
@@ -104,6 +108,7 @@ def post_recording():
         return Response(str(error), status=500)
 
     if record_session is None:
+        flash("Engar upptökur, bara setningar merktar", category='success')
         return Response(url_for('index'), status=200)
     else:
         return Response(url_for('rec_session', id=record_session.id), status=200)
@@ -131,6 +136,7 @@ def record_session(coll_id):
         collection=collection,  tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         tal_api_token=app.config['TAL_API_TOKEN'])
+
 @app.route('/record/token/<int:tok_id>/')
 @login_required
 def record_single(tok_id):
@@ -256,7 +262,7 @@ def delete_collection(id):
     db.session.delete(collection)
     db.session.commit()
     flash("{} var eytt".format(name), category='success')
-    return redirect(url_for('index'))
+    return redirect(url_for('collection_list'))
 
 # TOKEN ROUTES
 
@@ -409,10 +415,23 @@ def user_create():
             user_datastore.create_user(name=form.name.data, email=form.email.data,
                 password=hash_password(form.password.data), roles=[form.role.data])
             db.session.commit()
+            flash("Nýr notandi var búinn til", category='success')
+            return redirect(url_for('user_list'))
         except Exception as error:
             app.logger.error('Error creating a user : {}\n{}'.format(error,traceback.format_exc()))
     return render_template('model_form.jinja', form=form, type='create',
         action=url_for('user_create'), section='user')
+
+@app.route('/users/<int:id>/delete/')
+@login_required
+@roles_required('admin')
+def delete_user(id):
+    user = db.session.query(User).get(id)
+    name = user.name
+    db.session.delete(user)
+    db.session.commit()
+    flash("{} var eytt".format(name), category='success')
+    return redirect(url_for('user_list'))
 
 @app.route('/roles/create/', methods=['GET', 'POST'])
 @login_required

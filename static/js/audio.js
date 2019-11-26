@@ -364,12 +364,12 @@ function startRecording() {
 	isRecording = true;
 	navigator.mediaDevices.getUserMedia({audio:true, video:false}).then(function(stream) {
 		audioContext = new AudioContext();
-		meter = createAudioMeter(audioContext);
+		//meter = createAudioMeter(audioContext);
 		sampleRate = audioContext.sampleRate;
 		gumStream = stream;
 
 		input = audioContext.createMediaStreamSource(stream);
-		input.connect(meter);
+		//input.connect(meter);
 		analyser = audioContext.createAnalyser();
 		analyser.fftsize = 1024;
 		input.connect(analyser)
@@ -391,7 +391,7 @@ function startRecording() {
 
 		/**
 		 * We use the maximum buffersize of 16384 for maximum quality.
-		 * This can cause latency to suffer.
+		 * This can cause latency.
 		 */
 		streamProcessor = audioContext.createScriptProcessor(16384, 1, 1);
 		input.connect(streamProcessor);
@@ -402,15 +402,16 @@ function startRecording() {
 				function(elem) { return elem === 0; })) {
 				var buffer = new ArrayBuffer(e.inputBuffer.length * 2);
 				var view = new DataView(buffer);
+				// We use 16 BIT PCM like LJSPeech
 				floatTo16BitPCM(view, 0, e.inputBuffer.getChannelData(0));
 				var encodedContent = base64ArrayBuffer(buffer);
 				ws.send(JSON.stringify({ audioContent: encodedContent }));
 			}
 		};
-		onLevelChange();
+		//onLevelChange();
 	})}
 
-function onLevelChange(time){
+/**function onLevelChange(time){
 	if(isRecording){
 		if(meter.checkClipping()){
 			volumeBar.removeClass('bg-success').addClass('bg-warning');
@@ -422,7 +423,7 @@ function onLevelChange(time){
 	} else{
 		volumeBar.css({"width": "0%"})
 	}
-}
+}**/
 
 function stopRecording() {
 	//tell the recorder to stop the recording

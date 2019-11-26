@@ -31,10 +31,12 @@ logHandler.setFormatter(logging.Formatter(
     '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
 ))
 
-
 app = Flask(__name__)
-app.config.from_pyfile('{}.py'.format(os.path.join('settings/',
-    os.getenv('FLASK_ENV', 'development'))))
+if os.getenv('SEMI_PROD', False):
+    app.config.from_pyfile('{}.py'.format(os.path.join('settings/','semi_production')))
+else:
+    app.config.from_pyfile('{}.py'.format(os.path.join('settings/',
+        os.getenv('FLASK_ENV', 'development'))))
 app.logger.setLevel(logging.DEBUG)
 app.logger.addHandler(logHandler)
 
@@ -119,7 +121,12 @@ def record_session(coll_id):
             return redirect(url_for('index'))#+'?msg="Aðeins skráð rödd getur tekið upp í þessari söfnun"&type=danger&icn=times')
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
-        Token.num_recordings==0, Token.marked_as_bad==True).order_by(func.random()).limit(SESSION_SZ)
+        Token.num_recordings==0, Token.marked_as_bad==False).order_by(func.random()).limit(SESSION_SZ)
+
+    if tokens.count() == 0:
+        flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun", category="warning")
+        return redirect(url_for("collection", id=coll_id))
+
     return render_template('record.jinja', section='record',
         collection=collection,  tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),

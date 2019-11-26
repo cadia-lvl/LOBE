@@ -4,10 +4,12 @@
         <div class='col-12'>
             <h1 class='font-weight-bold'>Notendur</h1>
             <p>Fjöldi : {{users.total}}</p>
-            <a href='{{url_for("user_create")}}' class='btn btn-success float-right'>
-                {{macros.btn_icon('plus', 'r')}}
-                Búa til
-            </a>
+            {% if current_user.is_admin() %}
+                <a href='{{url_for("user_create")}}' class='btn btn-success float-right'>
+                    {{macros.btn_icon('plus', 'r')}}
+                    Búa til
+                </a>
+            {% endif %}
         </div>
     </div>
     <div class='row'>

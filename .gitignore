@@ -2,6 +2,7 @@ env/
 data/
 data_old/
 data_backup/
+migrations_old/
 temp/
 logs/
 .vscode/

@@ -128,10 +128,10 @@ def record_session(coll_id):
     if collection.has_assigned_user():
         if current_user.id != collection.assigned_user_id:
             flash("Aðeins skráð rödd getur tekið upp í þessari söfnun", category="danger")
-            return redirect(url_for('index'))#+'?msg="Aðeins skráð rödd getur tekið upp í þessari söfnun"&type=danger&icn=times')
+            return redirect(url_for('index'))
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
-        Token.num_recordings==0, Token.marked_as_bad==False).order_by(func.random()).limit(SESSION_SZ)
+        Token.num_recordings==0, Token.marked_as_bad!=True).order_by(func.random()).limit(SESSION_SZ)
 
     if tokens.count() == 0:
         flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun", category="warning")

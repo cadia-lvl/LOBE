@@ -70,7 +70,6 @@ class Collection(BaseModel, db.Model):
         if self.num_tokens == 0:
             ratio = 0
         else:
-            print(self.num_nonrecorded_valid_tokens)
             ratio = (self.num_tokens - self.num_nonrecorded_valid_tokens) / self.num_tokens
         if as_percent: ratio = round(ratio*100, 3)
         return ratio
@@ -80,6 +79,9 @@ class Collection(BaseModel, db.Model):
 
     def get_download_url(self):
         return url_for('download_collection', id=self.id)
+
+    def get_download_index_url(self):
+        return url_for('download_collection_index', id=self.id)
 
     def get_record_dir(self):
         return os.path.join(app.config['RECORD_DIR'], str(self.id))

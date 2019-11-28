@@ -34,24 +34,29 @@ logHandler.setFormatter(logging.Formatter(
     '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
 ))
 
-app = Flask(__name__)
-if os.getenv('SEMI_PROD', False):
-    app.config.from_pyfile('{}.py'.format(os.path.join('settings/','semi_production')))
-else:
-    app.config.from_pyfile('{}.py'.format(os.path.join('settings/',
-        os.getenv('FLASK_ENV', 'development'))))
-app.logger.setLevel(logging.DEBUG)
-app.logger.addHandler(logHandler)
+def create_app():
+    app = Flask(__name__)
+    if os.getenv('SEMI_PROD', False):
+        app.config.from_pyfile('{}.py'.format(os.path.join('settings/','semi_production')))
+    else:
+        app.config.from_pyfile('{}.py'.format(os.path.join('settings/',
+            os.getenv('FLASK_ENV', 'development'))))
+    app.logger.setLevel(logging.DEBUG)
+    app.logger.addHandler(logHandler)
 
-if 'REVERSE_PROXY_PATH' in app.config:
-    ReverseProxyPrefixFix(app)
+    if 'REVERSE_PROXY_PATH' in app.config:
+        ReverseProxyPrefixFix(app)
 
-db.init_app(app)
-user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-security = Security(app, user_datastore, login_form=ExtendedLoginForm)
+    db.init_app(app)
+    user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+    security = Security(app, user_datastore, login_form=ExtendedLoginForm)
 
-# register filters
-app.jinja_env.filters['datetime'] = format_date
+    # register filters
+    app.jinja_env.filters['datetime'] = format_date
+
+    return app
+
+app = create_app()
 
 SESSION_SZ = 50
 
@@ -250,6 +255,37 @@ def download_collection(id):
                     error,traceback.format_exc()))
         return response
     return send_file('temp/{}.zip'.format(collection.name), as_attachment=True)
+
+@app.route('/collections/<int:id>/download/index')
+@login_required
+def download_collection_index(id):
+    collection = Collection.query.get(id)
+
+    tokens = collection.tokens
+    dl_tokens = []
+    for token in tokens:
+        if token.has_recording:
+            dl_tokens.append(token)
+
+    if not os.path.exists('temp'):
+        os.makedirs('temp')
+    index_f = open('./temp/index.tsv', 'w')
+    for token in dl_tokens:
+        for recording in token.recordings:
+            app.logger.info(recording.get_path())
+            index_f.write('{}\t{}\n'.format(recording.get_fname(), token.get_fname()))
+    index_f.close()
+    @after_this_request
+    def remove_file(response):
+        try:
+            os.remove('temp/index.tsv')
+        except Exception as error:
+            app.logger.error(
+                "Error deleting a downloaded a index : {}\n{}".format(
+                    error,traceback.format_exc()))
+        return response
+    return send_file('temp/index.tsv', as_attachment=True)
+
 
 @app.route('/collections/<int:id>/delete/')
 @login_required

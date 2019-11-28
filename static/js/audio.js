@@ -309,6 +309,7 @@ function recordAction(){
 				recordButton.attr('data-state', 'recording');
 				recordButton.removeClass('pending-button').addClass('recording-button')
 				recordButtonText.text('lesa');
+				// TODO : MOVE THIS TO OUTSIDE
 				startRecording();
 				updateUI(tokenIndex, updateRecBtn=false);
 			}
@@ -374,6 +375,8 @@ function startRecording() {
 		analyser.fftsize = 1024;
 		input.connect(analyser)
 
+
+		// TODO: CHANGE TO MONO
 		rec = new Recorder(input,{numChannels:2})
 		rec.record();
 

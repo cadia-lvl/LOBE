@@ -68,7 +68,7 @@ class changeDataRoot(Command):
     to reflect changes in app.settings.DATA_BASE_DIR updates
     '''
     def run(self):
-        change_all_recordings, change_all_tokens = False, False
+        change_all_recordings, change_all_tokens, skip_recording_exceptions = False, False, False
         rec_rxp = re.compile("{}\d+".format(app.config["RECORD_DIR"]))
         tkn_rxp = re.compile("{}/d+".format(app.config["TOKEN_DIR"]))
 
@@ -80,21 +80,35 @@ class changeDataRoot(Command):
         for recording in recordings:
             if recording.path is None or not rec_rxp.match(os.path.dirname(recording.path)):
                 print(colored("Updating path for {}".format(recording.get_printable_id()), 'red'))
-                if change_all_recordings:
-                    recording.set_path()
-                else:
-                    cont = input("{} will be changed to {} [y/n/all/cancel]?".format(
-                        colored(recording.path, 'red'), colored(recording.get_configured_path(), 'green')))
-                    if cont == 'y':
+                try:
+                    if change_all_recordings:
                         recording.set_path()
-                    elif cont == 'all':
-                        recording.set_path()
-                        change_all_recordings = True
-                    elif cont == 'cancel':
-                        print("Quitting, no recording has beeb committed to database")
-                        sys.exit()
                     else:
-                        print("skipping")
+                        cont = input("{} will be changed to {} [y/n/all/cancel]?".format(
+                            colored(recording.path, 'red'), colored(recording.get_configured_path(), 'green')))
+                        if cont == 'y':
+                            recording.set_path()
+                        elif cont == 'all':
+                            recording.set_path()
+                            change_all_recordings = True
+                        elif cont == 'cancel':
+                            print("Quitting, no recording has been committed to database")
+                            sys.exit()
+                        else:
+                            print("skipping")
+                except Exception:
+                    if not skip_recording_exceptions:
+                        cont = input("""
+                            This recording does not have collection set in the database and therefore
+                            the path is also wrong. We cannot update this recording in the database. [continue/all/cancel] """)
+                        if cont == 'cancel':
+                            print("Quitting, no recording has been committed to database")
+                            sys.exit()
+                        elif cont =='all':
+                            print("Will skip all exceptions and recordings will be unchanged in DB.")
+                            skip_recording_exceptions = True
+                    else:
+                        print(colored("Skipping exception", 'red'))
             else:
                 print(colored("Path correct", 'green'))
         db.session.commit()
@@ -114,7 +128,7 @@ class changeDataRoot(Command):
                         token.set_path()
                         change_all_tokens = True
                     elif cont == 'cancel':
-                        print("Quitting, no token has beeb committed to database but recording paths have possibly been changed")
+                        print("Quitting, no token has been committed to database but recording paths have possibly been changed")
                         sys.exit()
                     else:
                         print("skipping")

@@ -1,6 +1,7 @@
 import getpass
 import os
 import re
+import sys
 
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Command, Manager
@@ -67,6 +68,7 @@ class changeDataRoot(Command):
     to reflect changes in app.settings.DATA_BASE_DIR updates
     '''
     def run(self):
+        change_all_recordings, change_all_tokens = False, False
         rec_rxp = re.compile("{}\d+".format(app.config["RECORD_DIR"]))
         tkn_rxp = re.compile("{}/d+".format(app.config["TOKEN_DIR"]))
 
@@ -78,7 +80,21 @@ class changeDataRoot(Command):
         for recording in recordings:
             if recording.path is None or not rec_rxp.match(os.path.dirname(recording.path)):
                 print(colored("Updating path for {}".format(recording.get_printable_id()), 'red'))
-                recording.set_path()
+                if change_all_recordings:
+                    recording.set_path()
+                else:
+                    cont = input("{} will be changed to {} [y/n/all/cancel]?".format(
+                        colored(recording.path, 'red'), colored(recording.get_configured_path(), 'green')))
+                    if cont == 'y':
+                        recording.set_path()
+                    elif cont == 'all':
+                        recording.set_path()
+                        change_all_recordings = True
+                    elif cont == 'cancel':
+                        print("Quitting, no recording has beeb committed to database")
+                        sys.exit()
+                    else:
+                        print("skipping")
             else:
                 print(colored("Path correct", 'green'))
         db.session.commit()
@@ -87,7 +103,21 @@ class changeDataRoot(Command):
         for token in tokens:
             if token.path is None or not tkn_rxp.match(os.path.dirname(token.path)):
                 print(colored("Updating path for {}".format(token.get_printable_id()), 'red'))
-                token.set_path()
+                if change_all_tokens:
+                    token.set_path()
+                else:
+                    cont = input("{} will be changed to {} [y/n/all/cancel]: ".format(
+                        colored(token.path, 'red'), colored(token.get_configured_path(), 'green')))
+                    if cont == 'y':
+                        token.set_path()
+                    elif cont == 'all':
+                        token.set_path()
+                        change_all_tokens = True
+                    elif cont == 'cancel':
+                        print("Quitting, no token has beeb committed to database but recording paths have possibly been changed")
+                        sys.exit()
+                    else:
+                        print("skipping")
             else:
                 print(colored("Path correct", 'green'))
         db.session.commit()

@@ -54,15 +54,14 @@ class Collection(BaseModel, db.Model):
                 label("num_tokens"))
 
     @hybrid_property
-    def num_nonrecorded_valid_tokens(self):
-        return len([t for t in self.tokens if not t.has_recording and not t.marked_as_bad])
+    def num_invalid_tokens(self):
+        return len([t for t in self.tokens if t.marked_as_bad])
 
-    @num_nonrecorded_valid_tokens.expression
+    @num_invalid_tokens.expression
     def num_nonrecorded_valid_tokens(cls):
         return (select([func.count(Token.id)]).
                 where(Token.collection == cls.id).
-                where(Token.has_recording == False).
-                where(Token.marked_as_bad == False).
+                where(Token.marked_as_bad == True).
                 label("num_tokens"))
 
     @hybrid_method
@@ -70,7 +69,16 @@ class Collection(BaseModel, db.Model):
         if self.num_tokens == 0:
             ratio = 0
         else:
-            ratio = (self.num_tokens - self.num_nonrecorded_valid_tokens) / self.num_tokens
+            ratio = (self.num_tokens - self.num_nonrecorded_tokens) / self.num_tokens
+        if as_percent: ratio = round(ratio*100, 3)
+        return ratio
+
+    @hybrid_method
+    def get_invalid_ratio(self, as_percent=False):
+        if self.num_tokens == 0:
+            ratio = 0
+        else:
+            ratio = (self.num_invalid_tokens) / self.num_tokens
         if as_percent: ratio = round(ratio*100, 3)
         return ratio
 
@@ -105,6 +113,7 @@ class Collection(BaseModel, db.Model):
 
     tokens = db.relationship("Token", lazy='joined', backref='collection', cascade='all, delete, delete-orphan')
     sessions = db.relationship("Session", lazy='select', backref='collection', cascade='all, delete, delete-orphan')
+    active = db.Column(db.Boolean, default=True)
     #recordings = db.relationship("Recording", lazy='joined', backref='collection')
 
 
@@ -149,6 +158,16 @@ class Token(BaseModel, db.Model):
             os.path.splitext(self.original_fname)[0], self.id))
         self.path = os.path.join(app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
 
+    def get_configured_path(self):
+        '''
+        Get the path the program believes the token should be stored at
+        w.r.t. the current TOKEN_DIR environment variable
+        '''
+        fname = secure_filename("{}_{:09d}.token".format(
+            os.path.splitext(self.original_fname)[0], self.id))
+        path = os.path.join(app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
+        return path
+
     def get_dict(self):
         return {'id':self.id, 'text':self.text, 'file_id':self.get_file_id(),
         'url':self.get_url()}
@@ -189,7 +208,6 @@ class Token(BaseModel, db.Model):
     fname = db.Column(db.String)
     path = db.Column(db.String)
     marked_as_bad = db.Column(db.Boolean, default=False)
-
     # a tab seperated string of word pronounciations
     # where phones in each word is space seperated
     pron = db.Column(db.String)
@@ -272,6 +290,18 @@ class Recording(BaseModel, db.Model):
         self.fname = secure_filename('{}.wav'.format(self.file_id))
         self.path = os.path.join(app.config['RECORD_DIR'],
             str(self.token.collection_id), self.fname)
+
+    def get_configured_path(self):
+        '''
+        Get the path the program believes the token should be stored at
+        w.r.t. the current TOKEN_DIR environment variable
+        '''
+        file_id = '{}_r{:09d}'.format(os.path.splitext(self.original_fname)[0], self.id)
+        fname = secure_filename('{}.wav'.format(self.file_id))
+        path = os.path.join(app.config['RECORD_DIR'],
+            str(self.token.collection_id), self.fname)
+        return path
+
 
     def get_file_id(self):
         if self.fname is not None:

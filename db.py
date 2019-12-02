@@ -1,6 +1,8 @@
 from models import db, Collection, Token
+from concurrent.futures import ProcessPoolExecutor
+from functools import partialmethod
+import multiprocessing
 import os
-
 
 def create_tokens(collection_id, files, is_g2p):
     tokens = []
@@ -37,17 +39,28 @@ def create_tokens(collection_id, files, is_g2p):
 
     return tokens
 
+
 def insert_collection(form):
     collection = Collection(form.name.data)
     if form.assigned_user.data is not None:
         collection.assigned_user_id = form.assigned_user.data.id
     db.session.add(collection)
-    db.session.commit()
+    db.session.flush()
+
 
     # create dirs for tokens and records
     for dir in [collection.get_record_dir(), collection.get_token_dir()]:
         if not os.path.exists(dir): os.makedirs(dir)
+        else:
+            raise ValueError("""
+                For some reason, we are about to create a collection with the
+                same primary key as a previous collection. This could happen
+                for example if 2 databases are used on the same machine. If
+                this error occurs, the current environment has to change the
+                DATA_BASE_DIR, TOKEN_DIR, RECORD_DIR flask environment variables
+                to point to some other place.""")
 
+    db.session.commit()
     return collection
 
 def newest_collections(num=3):

@@ -34,6 +34,7 @@ logHandler.setFormatter(logging.Formatter(
     '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
 ))
 
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 def create_app():
     app = Flask(__name__)
     if os.getenv('SEMI_PROD', False):
@@ -48,7 +49,6 @@ def create_app():
         ReverseProxyPrefixFix(app)
 
     db.init_app(app)
-    user_datastore = SQLAlchemyUserDatastore(db, User, Role)
     security = Security(app, user_datastore, login_form=ExtendedLoginForm)
 
     # register filters
@@ -173,6 +173,7 @@ def create_collection():
 
             return redirect(url_for('collection', id=collection.id))
         except Exception as error:
+            flash("Error creating collection.", category="danger")
             app.logger.error("Error creating collection {}\n{}".format(error,traceback.format_exc()))
     return render_template('collection_create.jinja', form=form,
         section='collection')
@@ -182,6 +183,8 @@ def create_collection():
 def collection_list():
     page = int(request.args.get('page', 1))
     sort_by = request.args.get('sort_by', 'name')
+    #collections = Collection.query.filter(Collection.active!=False).paginate(page,
+    #    per_page=app.config['COLLECTION_PAGINATION'])
     collections = Collection.query.paginate(page,
         per_page=app.config['COLLECTION_PAGINATION'])
     return render_template('collection_list.jinja', collections=collections,

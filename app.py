@@ -88,7 +88,9 @@ def post_recording():
                 token = Token.query.get(int(token_id))
                 token.marked_as_bad = True
             else:
-                transcription = item['transcript']
+                transcription = ""
+                if "transcript" in item:
+                    transcription = item['transcript']
                 file_obj = request.files.get('file_{}'.format(token_id))
                 recording = Recording(token_id, file_obj.filename, session['user_id'],
                     transcription)

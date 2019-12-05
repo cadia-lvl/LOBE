@@ -6,12 +6,12 @@
     width: 100px;
 }
 
-.table-no-break{
-    white-space: nowrap;
+#btn-th{
+    width: 50px;
 }
 
-.table-btn-wrapper{
-    min-width: 100px;
+.table-no-break{
+    white-space: nowrap;
 }
 
 .directionButton{

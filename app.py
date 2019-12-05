@@ -14,8 +14,7 @@ from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
 from flask_security.utils import hash_password
 from sqlalchemy.sql.expression import func, select
 from werkzeug import secure_filename
-from db import (create_tokens, insert_collection,
-    newest_collections)
+from db import (create_tokens, insert_collection, newest_sessions)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
     ExtendedRegisterForm, UserEditForm, RoleForm)
@@ -64,7 +63,8 @@ SESSION_SZ = 50
 @app.route('/')
 @login_required
 def index():
-    return render_template('index.jinja', collections=newest_collections(num=4))
+    return render_template('index.jinja',
+        sessions=newest_sessions(user_id=session['user_id'], num=4))
 
 @app.route('/lobe/')
 @login_required
@@ -515,3 +515,7 @@ def internal_server_error(error):
     flash("Alvarleg villa kom upp, vinsamlega reynið aftur", category="danger")
     app.logger.error('Server Error: %s', (error))
     return redirect(url_for('index'))
+
+
+# OTHER ROUTES
+

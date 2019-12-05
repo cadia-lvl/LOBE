@@ -1,4 +1,4 @@
-from models import db, Collection, Token
+from models import db, Collection, Session, Token
 from concurrent.futures import ProcessPoolExecutor
 from functools import partialmethod
 import multiprocessing
@@ -63,6 +63,11 @@ def insert_collection(form):
     db.session.commit()
     return collection
 
-def newest_collections(num=3):
+def newest_collections(num=4):
     ''' Get the num newest collections '''
     return Collection.query.order_by(Collection.created_at.desc()).limit(num)
+
+
+def newest_sessions(user_id, num=4):
+    ''' Get the num newest collections '''
+    return Session.query.filter(Session.user_id==user_id,).order_by(Session.created_at.desc()).limit(num)

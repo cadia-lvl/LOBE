@@ -1,0 +1,18 @@
+<div class="card mb-3 flex-fill">
+  <div class="card-body d-flex flex-column justify-content-between">
+    <h5 class="card-title">
+        <a href="{{session.get_url()}}">
+        {{session.get_printable_id()}}
+        </a>
+    </h5>
+    <h6 class="card-subtitle mb-2 text-muted">{{session.created_at | datetime}}</h6>
+    <p class='card-text'>
+      Lesin þann: {{session.created_at | datetime(format='low')}}
+      <br>
+      Setningar lesnar upp: {{session.num_recordings}}
+    </p>
+  </div>
+  <div class="card-footer">
+    Lota
+  </div>
+</div>

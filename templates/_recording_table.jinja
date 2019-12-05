@@ -1,16 +1,45 @@
 <div class='table-responsive'>
     <table class='table table-sm table-no-break'>
         <thead>
+            <th id="btn-th"></th>
             <th>Lesið þann</th>
             <th>Auðkenni</th>
             <th>Lesið af</th>
-            <th>Lengd</th>
             <th>Texti lesinn</th>
-            <th></th>
+            <th>Lengd</th>
         </thead>
         <tbody>
             {% for recording in recordings %}
                 <tr>
+                    <td>
+                        <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{recording.id}})">
+                            <i id='playButtonIcon-{{recording.id}}' class='fa fa-play'></i>
+                        </button>
+                        <button class="btn btn-link btn-sm" type="button" data-toggle="dropdown">
+                                {{macros.btn_icon('ellipsis-h', 0)}}
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            <a class='dropdown-item' href='{{recording.get_download_url()}}'><i class='fa fa-download'></i> Hlaða niður</a>
+                            {% if recording.marked_as_bad %}
+                                <button id='{{recording.id}}-btn' onClick='toggle_recording_bad("{{recording.get_toggle_bad_ajax()}}", "{{recording.id}}")' class='dropdown-item text-success'>
+                                    {{macros.btn_icon('check', 'r')}}
+                                    Merkja sem góð
+                                </button>
+                            {% else %}
+                                <button id='{{recording.id}}}-btn' onClick='toggle_recording_bad("{{recording.get_toggle_bad_ajax()}}", "{{recording.id}}")' class='dropdown-item text-warning'>
+                                    {{macros.btn_icon('times', 'r')}}
+                                    Merkja sem léleg
+                                </button>
+                            {% endif%}
+                            {% if current_user.is_admin() %}
+                                <a class="dropdown-item text-danger" href="#">
+                                    {{macros.btn_icon('trash', 'r')}}
+                                    Eyða
+                                </a>
+                            {% endif %}
+                        </div>
+                    </td>
                     <td>{{recording.created_at | datetime(format='low')}}</td>
                     <td><a id="{{recording.id}}-name" href={{recording.get_url()}} class='{% if recording.marked_as_bad %} text-warning {% endif %}'><code>#{{recording.id}}</code></a></td>
                     {% if recording.user_id %}
@@ -18,40 +47,8 @@
                     {% else %}
                         <td>Ekki skráð</td>
                     {% endif %}
-                    <td>{{recording.get_printable_duration()}}</td>
                     <td>{{recording.get_token().text}}</td>
-                    <td class='table-btn-wrapper'>
-                        <div>
-                            <button class="btn btn-secondary btn-sm float-right ml-1" type="button" data-toggle="dropdown">
-                                    {{macros.btn_icon('ellipsis-h', 0)}}
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                <a class='dropdown-item' href='{{recording.get_download_url()}}'><i class='fa fa-download mr-1'></i> Hlaða niður</a>
-                                {% if recording.marked_as_bad %}
-                                    <button id='{{recording.id}}-btn' onClick='toggle_recording_bad("{{recording.get_toggle_bad_ajax()}}", "{{recording.id}}")' class='dropdown-item text-success'>
-                                        {{macros.btn_icon('check', 'r')}}
-                                        Merkja sem góð
-                                    </button>
-                                {% else %}
-                                    <button id='{{recording.id}}}-btn' onClick='toggle_recording_bad("{{recording.get_toggle_bad_ajax()}}", "{{recording.id}}")' class='dropdown-item text-warning'>
-                                        {{macros.btn_icon('times', 'r')}}
-                                        Merkja sem léleg
-                                    </button>
-                                {% endif%}
-                                {% if current_user.is_admin() %}
-                                    <a class="dropdown-item text-danger" href="#">
-                                        {{macros.btn_icon('trash', 'r')}}
-                                        Eyða
-                                    </a>
-                                {% endif %}
-                            </div>
-                            <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
-                            <button type='button' class='btn btn-secondary btn-sm float-right ml-1' onClick="play({{recording.id}})">
-                                <i id='playButtonIcon-{{recording.id}}' class='fa fa-play'></i>
-                            </button>
-                             <div class="dropdown">
-                        </div>
-                    </td>
+                    <td>{{recording.get_printable_duration()}}</td>
                 </tr>
             {% endfor %}
         </tbody>

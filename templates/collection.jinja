@@ -13,35 +13,41 @@
                 <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.get_invalid_ratio(as_percent=True)}}%"></div>
             </div>
 
-            <a href='{{url_for("record_session", coll_id=collection.id)}}' class='btn btn-success float-right'>
+            <a href='{{url_for("record_session", coll_id=collection.id)}}' class='btn btn-sm btn-success float-right mb-2 ml-2'>
                 {{macros.btn_icon('microphone', 'r')}}
                 Taka upp
             </a>
-            <a href='{{url_for("collection_sessions", id=collection.id)}}' class='btn btn-secondary float-right mr-2'>
+            <a href='{{url_for("collection_sessions", id=collection.id)}}' class='btn btn-sm btn-secondary float-right mb-2 ml-2'>
                 {{macros.btn_icon('arrow-right', 'r')}}
                 Lotur
             </a>
             {% if current_user.is_admin() %}
-                <button type='button' class='btn btn-secondary float-right mr-2' data-toggle='modal', data-target='#addTokensModal'>
+                <button type='button' class='btn btn-secondary btn-sm float-right mb-2 ml-2' data-toggle='modal', data-target='#addTokensModal'>
                     {{macros.btn_icon('plus', 'r')}}
                     Bæta við
                 </button>
-                <a href='{{collection.get_download_url()}}' class='btn btn-secondary float-right mr-2'>
+                <button class="btn btn-secondary float-right ml-2 mb-2 btn-sm" type="button" data-toggle="dropdown">
                     {{macros.btn_icon('download', 'r')}}
-                    Sækja söfnun
-                </a>
-                <a href='{{collection.get_download_index_url()}}' class='btn btn-secondary float-right mr-2'>
-                    {{macros.btn_icon('download', 'r')}}
-                    Sækja index
-                </a>
-                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-danger float-right mr-2'>
+                    Sækja
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <a href='{{collection.get_download_url()}}' class='dropdown-item'>
+                        {{macros.btn_icon('database', 'r')}}
+                        Sækja allt
+                    </a>
+                    <a href='{{collection.get_download_index_url()}}' class='dropdown-item'>
+                        {{macros.btn_icon('file', 'r')}}
+                        Sækja bara index
+                    </a>
+                </div>
+                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-danger btn-sm float-right mb-2'>
                     {{macros.btn_icon('times', 'r')}}
                     Eyða söfnun
                 </button>
             {% endif %}
         </div>
     </div>
-    <div class='row'>
+    <div class='row mt-2'>
         <div class='col-12'>
             <h3 class='font-weight-bold'>Textar</h3>
         </div>

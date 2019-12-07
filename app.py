@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import zipfile
 import tempfile
 import traceback
@@ -23,7 +24,6 @@ from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
 from settings.common import RECORDING_BIT_DEPTH
-
 
 # initialize the logger
 logHandler = RotatingFileHandler('logs/info.log', maxBytes=1000,
@@ -223,37 +223,70 @@ def collection_sessions(id):
 @login_required
 def download_collection(id):
     collection = Collection.query.get(id)
-
     tokens = collection.tokens
     dl_tokens = []
     for token in tokens:
         if token.has_recording:
             dl_tokens.append(token)
-
     if not os.path.exists('temp'):
         os.makedirs('temp')
     zf = zipfile.ZipFile('temp/{}.zip'.format(collection.name), mode='w')
     index_f = open('./temp/index.tsv', 'w')
+    user_ids = set()
+    recording_info = {}
     try:
         for token in dl_tokens:
             zf.write(token.get_path(), 'text/{}'.format(token.get_fname()))
             for recording in token.recordings:
-                app.logger.info(recording.get_path())
-                zf.write(recording.get_path(), 'audio/{}'.format(recording.get_fname()))
-                index_f.write('{}\t{}\n'.format(recording.get_fname(), token.get_fname()))
+                user_name = recording.get_user().name
+                user_ids.add(recording.user_id)
+                zf.write(recording.get_path(), 'audio/{}/{}'.format(
+                    user_name, recording.get_fname()))
+                recording_info[recording.id] = {
+                    'collection_info':{
+                        'recording_fname': recording.get_fname(),
+                        'text_fname': token.get_fname(),
+                        'text': token.text,
+                        'user_name': user_name,
+                        'user_id': recording.user_id,
+                        'session_id': recording.session.id
+                    },'recording_info':{
+                        'sr': recording.sr,
+                        'num_channels': recording.num_channels,
+                        'bit_depth': recording.bit_depth,
+                        'duration': recording.duration,
+                    },'other':{
+                        'transcription': recording.transcription,
+                        'recording_marked_bad': recording.marked_as_bad,
+                        'text_marked_bad': token.marked_as_bad}}
+                index_f.write('{}\t{}\n'.format(
+                    user_name, recording.get_fname(), token.get_fname()))
         index_f.close()
-        app.logger.info(os.path.abspath(index_f.name))
+        with open('./temp/info.json', 'w', encoding='utf-8') as info_f:
+            json.dump(recording_info, info_f, ensure_ascii=False, indent=4)
+        zf.write('./temp/info.json', 'info.json')
         zf.write('./temp/index.tsv', 'index.tsv')
+        meta = {'speakers':[]}
+        for id in user_ids:
+            meta['speakers'].append(User.query.get(id).get_meta())
+        meta['collection'] = collection.get_meta()
+        with open ('./temp/meta.json', 'w', encoding='utf-8') as meta_f:
+            json.dump(meta, meta_f, ensure_ascii=False, indent=4)
+        zf.write('./temp/meta.json', 'meta.json')
     except Exception as error:
+        print("{}\n{}".format(error, traceback.format_exc()))
         app.logger.error(
             "Error creating a collection .zip : {}\n{}".format(error, traceback.format_exc()))
     finally:
         zf.close()
+
     @after_this_request
     def remove_file(response):
         try:
             os.remove('temp/{}.zip'.format(collection.name))
             os.remove('temp/index.tsv')
+            os.remove('temp/info.json')
+            os.remove('temp/meta.json')
         except Exception as error:
             app.logger.error(
                 "Error deleting a downloaded archive : {}\n{}".format(
@@ -265,7 +298,6 @@ def download_collection(id):
 @login_required
 def download_collection_index(id):
     collection = Collection.query.get(id)
-
     tokens = collection.tokens
     dl_tokens = []
     for token in tokens:
@@ -505,6 +537,18 @@ def role_edit(id):
     return render_template('model_form.jinja', role=role, form=form, type='edit',
         action=url_for('role_edit', id=id), section='role')
 
+# OTHER ROUTES
+@app.route('/other/lobe_manual/')
+@login_required
+def download_manual():
+    try:
+        return send_from_directory(app.config['OTHER_PATH'], app.config['MANUAL_FNAME'],
+            as_attachment=True)
+    except Exception as error:
+        flash("Error downloading manual", category="danger")
+        app.logger.error(
+            "Error downloading manual : {}\n{}".format(error,traceback.format_exc()))
+
 @app.errorhandler(404)
 def page_not_found(error):
     flash("Við fundum ekki síðuna sem þú baðst um.", category="warning")
@@ -515,7 +559,3 @@ def internal_server_error(error):
     flash("Alvarleg villa kom upp, vinsamlega reynið aftur", category="danger")
     app.logger.error('Server Error: %s', (error))
     return redirect(url_for('index'))
-
-
-# OTHER ROUTES
-

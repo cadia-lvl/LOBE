@@ -11,3 +11,4 @@ SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:password@localhost:5432/lobe_de
 TAL_API_TOKEN = 'ak_JLedkaWqqORPpYByLXeZjMG4JN0rQkwZ4zn6zg28WmvE57oK9badDAlV12PY5Xo0'
 
 DEBUG = True
+FLASK_DEBUG = True

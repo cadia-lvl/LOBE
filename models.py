@@ -12,7 +12,10 @@ from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug import secure_filename
 
 db = SQLAlchemy()
+
 ADMIN_ROLE_ID = 1
+ESTIMATED_AVERAGE_RECORD_LENGTH = 5
+
 
 class BaseModel(db.Model):
     """Base data model for all objects"""
@@ -104,13 +107,31 @@ class Collection(BaseModel, db.Model):
         if self.has_assigned_user():
             return User.query.get(self.assigned_user_id)
 
+    def get_meta(self):
+        '''
+        Returns a dictionary of values that are included in meta.json
+        when downloading collections
+        '''
+        return {
+            'id': self.id,
+            'name': self.name,
+            'assigned_user_id': self.get_assigned_user().id}
+
+    def estimate_hours(self):
+        '''
+        Returns an estimate of hours of speech given the number
+        of sentences spoken.
+        '''
+        return round((self.num_tokens - self.num_nonrecorded_tokens)\
+            *ESTIMATED_AVERAGE_RECORD_LENGTH / 3600,1)
+
+
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     name = db.Column(db.String, default=str(datetime.now().date()))
 
     # the assigned user
     assigned_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-
     tokens = db.relationship("Token", lazy='select', backref='collection', cascade='all, delete, delete-orphan')
     sessions = db.relationship("Session", lazy='select', backref='collection', cascade='all, delete, delete-orphan')
     active = db.Column(db.Boolean, default=True)
@@ -257,6 +278,7 @@ class Recording(BaseModel, db.Model):
             self.sr = w_params.framerate
             self.num_frames = w_params.nframes
             self.duration = self.num_frames / float(self.sr)
+            self.num_channels = w_params.num_channels
 
     def get_url(self):
         return url_for('recording', id=self.id)
@@ -436,3 +458,16 @@ class User(db.Model, UserMixin):
         if type(self.name) != str:
             return str("User_{}".format(self.id))
         return self.name
+
+    def get_meta(self):
+        '''
+        Returns a dictionary of values that are included in meta.json
+        when downloading collections
+        '''
+        return {
+            'id': self.id,
+            'name': self.get_printable_name(),
+            'email': self.email,
+            'sex': self.sex,
+            'age': self.age,
+            'dialect': self.dialect}

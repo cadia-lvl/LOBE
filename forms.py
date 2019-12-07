@@ -3,13 +3,13 @@ import os
 from flask import current_app as app
 from flask_security.forms import LoginForm, RegisterForm
 from flask_wtf import RecaptchaField
-from wtforms import (FileField, Form, HiddenField, MultipleFileField,
+from wtforms import (fields, FileField, Form, HiddenField, MultipleFileField,
                      PasswordField, SelectField, TextAreaField, TextField, IntegerField, BooleanField,
                      validators, ValidationError)
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms.ext.sqlalchemy.orm import model_form
 
-from models import Role, User, db
+from models import Role, User, Collection, db
 
 sex_choices = [('Kona','Kona'), ('Karl','Karl'), ('Annað','Annað')]
 dialect_choices = [('Linmæli', 'Linmæli'),

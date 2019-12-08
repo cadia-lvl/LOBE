@@ -112,10 +112,12 @@ class Collection(BaseModel, db.Model):
         Returns a dictionary of values that are included in meta.json
         when downloading collections
         '''
-        return {
+        meta = {
             'id': self.id,
-            'name': self.name,
-            'assigned_user_id': self.get_assigned_user().id}
+            'name': self.name}
+        if self.has_assigned_user():
+            meta['assigned_user_id'] = self.get_assigned_user().id
+        return meta
 
     def estimate_hours(self):
         '''

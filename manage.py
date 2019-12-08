@@ -2,6 +2,10 @@ import getpass
 import os
 import re
 import sys
+import json
+import traceback
+from shutil import copyfile
+from tqdm import tqdm
 
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Command, Manager
@@ -10,7 +14,10 @@ from sqlalchemy.exc import IntegrityError
 from termcolor import colored
 
 from app import app, db, user_datastore
-from models import Recording, Token, User, Role
+from models import Recording, Token, User, Role, Collection
+
+migrate = Migrate(app, db)
+manager = Manager(app)
 
 class AddDefaultRoles(Command):
     def run(self):
@@ -61,6 +68,16 @@ class changePass(Command):
         user.password = hash_password(password)
         db.session.commit()
         print("Password has been updated")
+
+def get_pw(confirm=True):
+    password = getpass.getpass("Password: ")
+    if confirm:
+        password_confirm = getpass.getpass("Repeat password: ")
+        while password != password_confirm:
+            print("Passwords must match")
+            password = getpass.getpass("Password: ")
+            password_confirm = getpass.getpass("Repeat password: ")
+    return password
 
 class changeDataRoot(Command):
     '''
@@ -136,19 +153,72 @@ class changeDataRoot(Command):
                 print(colored("Path correct", 'green'))
         db.session.commit()
 
-def get_pw(confirm=True):
-    password = getpass.getpass("Password: ")
-    if confirm:
-        password_confirm = getpass.getpass("Repeat password: ")
-        while password != password_confirm:
-            print("Passwords must match")
-            password = getpass.getpass("Password: ")
-            password_confirm = getpass.getpass("Repeat password: ")
-    return password
+@manager.command
+def download_collection(coll_id, out_dir):
+    '''
+    Will create:
+    * out_dir/audio/...
+    * out_dir/text/...
+    * out_dir/index.tsv
+    * out_dir/info.json
+    * out_dir/meta.json
+    '''
+    collection = Collection.query.get(coll_id)
+    tokens = collection.tokens
+    dl_tokens = []
+    for token in tokens:
+        if token.has_recording:
+            dl_tokens.append(token)
+    if not os.path.exists(out_dir):
+        os.makedirs(os.path.join(out_dir, 'audio'))
+        os.makedirs(os.path.join(out_dir, 'text'))
+    index_f = open(os.path.join(out_dir, 'index.tsv'), 'w')
 
-
-migrate = Migrate(app, db)
-manager = Manager(app)
+    user_ids = set()
+    recording_info = {}
+    try:
+        for token in tqdm(dl_tokens):
+            copyfile(token.get_path(),
+                os.path.join(out_dir, 'text/{}'.format(token.get_fname())))
+            for recording in token.recordings:
+                user_name = recording.get_user().name
+                user_ids.add(recording.user_id)
+                if not os.path.exists(os.path.join(out_dir, 'audio', user_name)):
+                    os.makedirs(os.path.join(out_dir, 'audio', user_name))
+                copyfile(recording.get_path(),
+                    os.path.join(out_dir, 'audio/{}/{}'.format(
+                        user_name, recording.get_fname())))
+                recording_info[recording.id] = {
+                    'collection_info':{
+                        'recording_fname': recording.get_fname(),
+                        'text_fname': token.get_fname(),
+                        'text': token.text,
+                        'user_name': user_name,
+                        'user_id': recording.user_id,
+                        'session_id': recording.session.id
+                    },'recording_info':{
+                        'sr': recording.sr,
+                        'num_channels': recording.num_channels,
+                        'bit_depth': recording.bit_depth,
+                        'duration': recording.duration,
+                    },'other':{
+                        'transcription': recording.transcription,
+                        'recording_marked_bad': recording.marked_as_bad,
+                        'text_marked_bad': token.marked_as_bad}}
+                index_f.write('{}\t{}\n'.format(
+                    user_name, recording.get_fname(), token.get_fname()))
+        index_f.close()
+        with open(os.path.join(out_dir, 'info.json'), 'w', encoding='utf-8') as info_f:
+            json.dump(recording_info, info_f, ensure_ascii=False, indent=4)
+        meta = {'speakers':[]}
+        for id in user_ids:
+            meta['speakers'].append(User.query.get(id).get_meta())
+        meta['collection'] = collection.get_meta()
+        with open (os.path.join(out_dir, 'meta.json'), 'w', encoding='utf-8') as meta_f:
+            json.dump(meta, meta_f, ensure_ascii=False, indent=4)
+        print("Done!, data available at {}".format(out_dir))
+    except Exception as error:
+        print("{}\n{}".format(error, traceback.format_exc()))
 
 manager.add_command('db', MigrateCommand)
 manager.add_command('adduser', AddUser)

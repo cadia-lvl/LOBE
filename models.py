@@ -280,7 +280,7 @@ class Recording(BaseModel, db.Model):
             self.sr = w_params.framerate
             self.num_frames = w_params.nframes
             self.duration = self.num_frames / float(self.sr)
-            self.num_channels = w_params.num_channels
+            self.num_channels = w_params.nchannels
 
     def get_url(self):
         return url_for('recording', id=self.id)

@@ -294,6 +294,8 @@ def download_collection(id):
         return response
     return send_file('temp/{}.zip'.format(collection.name), as_attachment=True)
 
+
+
 @app.route('/collections/<int:id>/download/index')
 @login_required
 def download_collection_index(id):
@@ -323,6 +325,24 @@ def download_collection_index(id):
         return response
     return send_file('temp/index.tsv', as_attachment=True)
 
+@app.route('/collections/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+def edit_collection(id):
+    collection = Collection.query.get(id)
+    form = CollectionForm(request.form, obj=collection)
+    try:
+        if request.method == 'POST' and form.validate():
+            form.populate_obj(collection)
+            db.session.commit()
+            flash("Söfnun hefur verið breytt", category='success')
+            return redirect(url_for('collection', id=id))
+    except Exception as error:
+        app.logger.error('Error updating a collection : {}\n{}'.format(
+            error, traceback.format_exc()))
+
+    return render_template('model_form.jinja', collection=collection,
+        form=form, type='edit', action=url_for('edit_collection', id=id),
+        section='collection')
 
 @app.route('/collections/<int:id>/delete/')
 @login_required

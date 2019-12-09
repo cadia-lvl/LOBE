@@ -24,8 +24,13 @@ dialect_choices = [('Linmæli', 'Linmæli'),
 
 class CollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])
-    assigned_user = QuerySelectField('Rödd', query_factory=lambda: User.query,
+    assigned_user_id = QuerySelectField('Rödd', query_factory=lambda: User.query,
         get_label='name', allow_blank=True)
+
+    def validate_assigned_user_id(form, field):
+        # HACK to user the QuerySelectField on User objects
+        # but then later populate the field with only the pk.
+        field.data = field.data.id
 
 class BulkTokenForm(Form):
     is_g2p = BooleanField('Er G2P skjal.', default=False)

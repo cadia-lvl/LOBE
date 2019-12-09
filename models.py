@@ -94,6 +94,9 @@ class Collection(BaseModel, db.Model):
     def get_download_index_url(self):
         return url_for('download_collection_index', id=self.id)
 
+    def get_edit_url(self):
+        return url_for('edit_collection', id=self.id)
+
     def get_record_dir(self):
         return os.path.join(app.config['RECORD_DIR'], str(self.id))
 

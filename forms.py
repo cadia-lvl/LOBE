@@ -30,7 +30,8 @@ class CollectionForm(Form):
     def validate_assigned_user_id(form, field):
         # HACK to user the QuerySelectField on User objects
         # but then later populate the field with only the pk.
-        field.data = field.data.id
+        if field.data is not None:
+            field.data = field.data.id
 
 class BulkTokenForm(Form):
     is_g2p = BooleanField('Er G2P skjal.', default=False)

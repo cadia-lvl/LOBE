@@ -43,7 +43,7 @@ def create_tokens(collection_id, files, is_g2p):
 def insert_collection(form):
     collection = Collection(form.name.data)
     if form.assigned_user_id.data is not None:
-        collection.assigned_user_id = form.assigned_user.data.id
+        collection.assigned_user_id = form.assigned_user_id.data
     db.session.add(collection)
     db.session.flush()
 
@@ -58,7 +58,10 @@ def insert_collection(form):
                 for example if 2 databases are used on the same machine. If
                 this error occurs, the current environment has to change the
                 DATA_BASE_DIR, TOKEN_DIR, RECORD_DIR flask environment variables
-                to point to some other place.""")
+                to point to some other place.
+
+                Data already exists at e.g. {}
+                """.format(collection.get_record_dir()))
 
     db.session.commit()
     return collection

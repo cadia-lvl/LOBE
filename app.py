@@ -549,6 +549,17 @@ def download_manual():
         app.logger.error(
             "Error downloading manual : {}\n{}".format(error,traceback.format_exc()))
 
+@app.route('/other/test_record/')
+@login_required
+def test_record():
+    token = Token.query.filter(Token.marked_as_bad!=True).order_by(
+        func.random()).limit(1)[0]
+    print(token)
+    return render_template('record.jinja', tokens=token, section='record',
+        single=True, record_test=True, json_tokens=json.dumps([token.get_dict()]),
+        tal_api_token=app.config['TAL_API_TOKEN'])
+
+
 @app.errorhandler(404)
 def page_not_found(error):
     flash("Við fundum ekki síðuna sem þú baðst um.", category="warning")

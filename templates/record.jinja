@@ -3,7 +3,9 @@
     <div class='row mb-3'>
         <div class='col-12'>
             <h3 class='font-weight-bold'>
-                {% if single %}
+                {% if record_test %}
+                    Hljóðprufa
+                {% elif single %}
                     Stakur texti
                 {% else %}
                     Söfnun: {{collection.name}}
@@ -68,66 +70,267 @@
             </div>
         </div>
     </div>
-
-    <div class='row mt-3'>
-        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 controls mb-3 d-flex justify-content-around'>
-            <button id='skipButton' class='btn btn-secondary rounded-pill' type='button'>
-                <span>
-                    <span class='mr-2'>Sleppa</span>
-                    <i class='fa fa-times text-danger'></i>
-                </span>
-            </button>
-        </div>
-    </div>
-
-    <div class='row mt-3'>
-        <div class='col-12'>
-            <button type='submit' id='finishButton' type='button' class='btn btn-success float-right'>
-                Klára
-                <span class='ml-2'>
-                    <i id='finishButtonIcon' class='fa fa-arrow-right'>
-                    </i>
-                </span>
-            </button>
-            {% if not single %}
-                <button type='button' data-toggle='modal' data-target='#reloadTokensModal' class='btn btn-secondary mr-2 float-right text-success'>
-                    Meira
-                    {{macros.btn_icon('redo', 'l')}}
+    {% if not record_test %}
+        <div class='row mt-3'>
+            <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 controls mb-3 d-flex justify-content-around'>
+                <button id='skipButton' class='btn btn-secondary rounded-pill' type='button'>
+                    <span>
+                        <span class='mr-2'>Sleppa</span>
+                        <i class='fa fa-times text-danger'></i>
+                    </span>
                 </button>
-            {% endif %}
+            </div>
         </div>
-    </div>
-{% endblock %}
+    {% else %}
+        <div class='row mt-3'>
+            <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12'>
+                <h4>Hvernig á að framkvæma hljóprufu</h4>
+                <ul class='list-group'>
+                    <li class="list-group-item">
+                        Takið upp setninguna á skjánum eins og venjulega.
+                        Með því að refresh-a þessum skjá fæst ný setning.
+                    </li>
+                    <li class="list-group-item">
+                        Halið niður upptökunni
+                    </li>
+                    <li class="list-group-item">
+                        Dragið skjalið yfir í audacity. Monitorinn ætti að vera á milli
+                        -18 og -12 þegar rödd talar.
+                    </li>
+                    <li class="list-group-item">
+                        Ef það er ekki svo, skoðið <a href='{{url_for("download_manual")}}'>bækling</a>.
+                    </li>
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+    <!--
+    <div class='row mt-3'>
+        <video id="gum" playsinline autoplay muted></video>
+        <video id="recorded" playsinline loop></video>
 
-{% block modals %}
-    {% if not single %}
-        <div class="modal fade" id='reloadTokensModal' tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Hlaða nýjum textum</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
+        <div>
+            <button id="start">Start camera</button>
+            <button id="record" disabled>Start Recording</button>
+            <button id="play" disabled>Play</button>
+            <button id="stop">Stop</button>
+            <button id="download" disabled>Download</button>
+        </div>
+
+        <div>
+            <h4>Media Stream Constraints options</h4>
+            <p>Echo cancellation: <input type="checkbox" id="echoCancellation"></p>
+        </div>
+
+        <div>
+            <span id="errorMsg"></span>
+        </div>
+
+        <script>
+            const mediaSource = new MediaSource();
+            mediaSource.addEventListener('sourceopen', handleSourceOpen, false);
+            let mediaRecorder;
+            let recordedBlobs;
+            let sourceBuffer;
+
+            const errorMsgElement = document.querySelector('span#errorMsg');
+            const recordedVideo = document.querySelector('video#recorded');
+            const recordButton = document.querySelector('button#record');
+            recordButton.addEventListener('click', () => {
+            if (recordButton.textContent === 'Start Recording') {
+                startRecording();
+            } else {
+                stopRecording();
+                recordButton.textContent = 'Start Recording';
+                playButton.disabled = false;
+                downloadButton.disabled = false;
+            }
+            });
+
+            const playButton = document.querySelector('button#play');
+            playButton.addEventListener('click', () => {
+            //const superBuffer = new Blob(recordedBlobs, {type: 'video/webm'});
+            const superBuffer = new Blob(recordedBlobs, {type: 'audio/wav'});
+
+            recordedVideo.src = null;
+            recordedVideo.srcObject = null;
+            recordedVideo.src = window.URL.createObjectURL(superBuffer);
+            recordedVideo.controls = true;
+            recordedVideo.play();
+            });
+
+            const stopButton = document.querySelector('button#stop');
+            stopButton.addEventListener('click', () => {
+            //const superBuffer = new Blob(recordedBlobs, {type: 'video/webm'});
+            recordedVideo.pauseweb();
+            });
+
+            const downloadButton = document.querySelector('button#download');
+            downloadButton.addEventListener('click', () => {
+            //const blob = new Blob(recordedBlobs, {type: 'video/webm'});
+            const blob = new Blob(recordedBlobs, {type: 'audio/wav'});
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'test.wav';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+            });
+
+            function handleSourceOpen(event) {
+            console.log('MediaSource opened');
+            //sourceBuffer = mediaSource.addSourceBuffer('video/webm; codecs="vp8"');
+            sourceBuffer = mediaSource.addSourceBuffer('audio');
+
+            console.log('Source buffer: ', sourceBuffer);
+            }
+
+            function handleDataAvailable(event) {
+            console.log('handleDataAvailable', event);
+            if (event.data && event.data.size > 0) {
+                recordedBlobs.push(event.data);
+            }
+            }
+
+            function startRecording() {
+            recordedBlobs = [];
+            //let options = {mimeType: 'video/webm;codecs=vp9'};
+            let options = {mimeType: 'audio/wav'};
+
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                console.error(`${options.mimeType} is not Supported`);
+                errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+                options = {mimeType: 'video/webm;codecs=vp8'};
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                console.error(`${options.mimeType} is not Supported`);
+                errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+                options = {mimeType: 'video/webm'};
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    console.error(`${options.mimeType} is not Supported`);
+                    errorMsgElement.innerHTML = `${options.mimeType} is not Supported`;
+                    options = {mimeType: ''};
+                }
+                }
+            }
+
+            try {
+                mediaRecorder = new MediaRecorder(window.stream, options);
+            } catch (e) {
+                console.error('Exception while creating MediaRecorder:', e);
+                errorMsgElement.innerHTML = `Exception while creating MediaRecorder: ${JSON.stringify(e)}`;
+                return;
+            }
+
+            console.log('Created MediaRecorder', mediaRecorder, 'with options', options);
+            recordButton.textContent = 'Stop Recording';
+            playButton.disabled = true;
+            downloadButton.disabled = true;
+            mediaRecorder.onstop = (event) => {
+                console.log('Recorder stopped: ', event);
+                console.log('Recorded Blobs: ', recordedBlobs);
+            };
+            mediaRecorder.ondataavailable = handleDataAvailable;
+            mediaRecorder.start(10); // collect 10ms of data
+            console.log('MediaRecorder started', mediaRecorder);
+            }
+
+            function stopRecording() {
+            mediaRecorder.stop();
+            }
+
+            function handleSuccess(stream) {
+            recordButton.disabled = false;
+            console.log('getUserMedia() got stream:', stream);
+            window.stream = stream;
+
+            const gumVideo = document.querySelector('video#gum');
+            gumVideo.srcObject = stream;
+            }
+
+            async function init(constraints) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                handleSuccess(stream);
+            } catch (e) {
+                console.error('navigator.getUserMedia error:', e);
+                errorMsgElement.innerHTML = `navigator.getUserMedia error:${e.toString()}`;
+            }
+            }
+
+            document.querySelector('button#start').addEventListener('click', async () => {
+            const hasEchoCancellation = document.querySelector('#echoCancellation').checked;
+            const constraints = {
+                audio: {
+
+                    echoCancellation: {exact: hasEchoCancellation}
+                },
+                //video: {
+                //  width: 1280, height: 720
+                //}
+            };
+            console.log('Using media constraints:', constraints);
+            await init(constraints);
+            });
+
+        </script>
+    </div>-->
+    {% if not record_test %}
+        <div class='row mt-3'>
+            <div class='col-12'>
+                <button type='submit' id='finishButton' type='button' class='btn btn-success float-right'>
+                    Klára
+                    <span class='ml-2'>
+                        <i id='finishButtonIcon' class='fa fa-arrow-right'>
+                        </i>
+                    </span>
+                </button>
+                {% if not single %}
+                    <button type='button' data-toggle='modal' data-target='#reloadTokensModal' class='btn btn-secondary mr-2 float-right text-success'>
+                        Meira
+                        {{macros.btn_icon('redo', 'l')}}
                     </button>
-                </div>
-                <div class="modal-body">
-                    <p>
-                        Með því að halda áfram muntu hlaða inn nýjum textaskrám og söfnun heldur áfram.
-                        Ef núverandi upptökusett hefur ekki verið klárað mun það ekki vistast við að halda
-                        áfram.
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
-                    <a href="{{url_for('record_session', coll_id=collection.id)}}" class='btn btn-primary'>
-                        Halda áfram
-                    </a>
-                </div>
-                </div>
+                {% endif %}
             </div>
         </div>
     {% endif %}
 {% endblock %}
+
+{% if not record_test %}
+    {% block modals %}
+        {% if not single %}
+            <div class="modal fade" id='reloadTokensModal' tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Hlaða nýjum textum</h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            Með því að halda áfram muntu hlaða inn nýjum textaskrám og söfnun heldur áfram.
+                            Ef núverandi upptökusett hefur ekki verið klárað mun það ekki vistast við að halda
+                            áfram.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                        <a href="{{url_for('record_session', coll_id=collection.id)}}" class='btn btn-primary'>
+                            Halda áfram
+                        </a>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endblock %}
+{% endif %}
 
 {% block scripts %}
     {{super()}}

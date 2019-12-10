@@ -2,10 +2,16 @@ window.onbeforeunload = function() {
     return "Are you sure?";
  };
 
+var NUM_CHANNELS = 1;
+var FFT_SIZE = 1024;
+var AUDIO_CTXT_BUFFER_SZ = 16384;
+var RECORD_WAIT_TIME = 1;
+var DO_TRANSCRIPT = false;
+
+
 URL = window.URL || window.webkitURL;
 
 var startTime = new Date();
-var recordWaitTime = 1;
 var gumStream;
 var rec;
 var input;
@@ -260,6 +266,9 @@ function deleteRecordAction(){
 }
 
 function recordAction(){
+	/**
+	 * TODO: This seems to be redundant, remove when possible
+	 */
 	if(recordButton.attr('data-state') == 'initial'){
 		// delete any old recording if there is one
 		deleteRecordAction();
@@ -275,7 +284,7 @@ function recordAction(){
 	} else if(recordButton.attr('data-state') == 'recording'){
 
 		//pause for a period to avoid cutting the recording too early
-		var timeleft = recordWaitTime;
+		var timeleft = RECORD_WAIT_TIME;
 		recordButtonText.text(timeleft);
 		recordButton.removeClass('recording-button').addClass('pending-button');
 
@@ -291,15 +300,16 @@ function recordAction(){
 				stopRecording();
 			}
 		}, 1000);
-		//updateUI(tokenIndex, updateRecBtn=false);
+		updateUI(tokenIndex, updateRecBtn=false);
 
 	} else {
 		deleteRecordAction();
 		isRecording = true; // added here to avoid switching while waiting
-		var timeleft = recordWaitTime;
+		var timeleft = RECORD_WAIT_TIME;
 		recordButtonText.text(timeleft);
 		recordButton.addClass('pending-button');
 
+		startRecording();
 		var recordTimer = setInterval(function(){
 			timeleft -= 1;
 			recordButtonText.text(timeleft);
@@ -309,8 +319,6 @@ function recordAction(){
 				recordButton.attr('data-state', 'recording');
 				recordButton.removeClass('pending-button').addClass('recording-button')
 				recordButtonText.text('lesa');
-				// TODO : MOVE THIS TO OUTSIDE
-				startRecording();
 				updateUI(tokenIndex, updateRecBtn=false);
 			}
 		}, 1000);
@@ -371,32 +379,33 @@ function startRecording() {
 
 		input = audioContext.createMediaStreamSource(stream);
 		//input.connect(meter);
+		/**
 		analyser = audioContext.createAnalyser();
-		analyser.fftsize = 1024;
+		analyser.fftsize = FFT_SIZE;
 		input.connect(analyser)
-
-
-		// TODO: CHANGE TO MONO
-		rec = new Recorder(input,{numChannels:2})
+		*/
+		rec = new Recorder(input,{numChannels:NUM_CHANNELS})
 		rec.record();
 
-		ws = new WebSocket("wss://tal.ru.is/v1/speech:streamingrecognize?token=" + talAPIToken, );
-		ws.onopen = function(e) {
-			ws.send(JSON.stringify({
-				streamingConfig: {
-					config: { sampleRate: sampleRate, encoding:"LINEAR16",
-						maxAlternatives: 1 },
-				interimResults: true}
-			}));
-		};
+		if(DO_TRANSCRIPT){
+			ws = new WebSocket("wss://tal.ru.is/v1/speech:streamingrecognize?token=" + talAPIToken, );
+			ws.onopen = function(e) {
+				ws.send(JSON.stringify({
+					streamingConfig: {
+						config: { sampleRate: sampleRate, encoding:"LINEAR16",
+							maxAlternatives: 1 },
+					interimResults: true}
+				}));
+			};
 
-		ws.onmessage = handleStreamingResult;
-
+			ws.onmessage = handleStreamingResult;
+		}
 		/**
-		 * We use the maximum buffersize of 16384 for maximum quality.
+		 * We should use the maximum buffersize of 16384 for maximum quality.
 		 * This can cause latency.
 		 */
-		streamProcessor = audioContext.createScriptProcessor(16384, 1, 1);
+		streamProcessor = audioContext.createScriptProcessor(AUDIO_CTXT_BUFFER_SZ,
+			NUM_CHANNELS, NUM_CHANNELS);
 		input.connect(streamProcessor);
 		streamProcessor.connect(audioContext.destination);
 
@@ -406,10 +415,18 @@ function startRecording() {
 				var buffer = new ArrayBuffer(e.inputBuffer.length * 2);
 				var view = new DataView(buffer);
 				// We use 16 BIT PCM like LJSPeech
-				floatTo16BitPCM(view, 0, e.inputBuffer.getChannelData(0));
-				var encodedContent = base64ArrayBuffer(buffer);
-				ws.send(JSON.stringify({ audioContent: encodedContent }));
+				if(DO_TRANSCRIPT){
+					floatTo16BitPCM(view, 0, e.inputBuffer.getChannelData(0));
+					var encodedContent = base64ArrayBuffer(buffer);
+					ws.send(JSON.stringify({ audioContent: encodedContent }));
+				}
+				updateUI(tokenIndex, updateRecBtn=false);
 			}
+		};
+
+		streamProcessor.onended = function(e){
+			console.log("wwww")
+			updateUI(tokenIndex, updateRecBtn=false);
 		};
 		//onLevelChange();
 	})}
@@ -435,8 +452,9 @@ function stopRecording() {
 	gumStream.getAudioTracks()[0].stop();
 	//create the wav blob and pass it on to createDownloadLink
 	rec.exportWAV(createAudioFile);
-
+	console.log("YPYYPY");
 	isRecording = false;
+	updateUI(tokenIndex, updateRecBtn=false);
 }
 
 function createAudioFile(blob) {
@@ -447,12 +465,13 @@ function createAudioFile(blob) {
 	tokens[tokenIndex]['recording'] = {
 		'filename':filename + '.wav',
 		'url': url,
-		'blob': blob}
+		'blob': blob,
+		'transcript': ''}
 
 	// submit to WS one last time to confirm end of recording,
 	// then add the transcription to the token. Also update the
 	// UI, finally.
-	if (!!ws) {
+	if (DO_TRANSCRIPT && !!ws) {
 		if (ws.readyState === WebSocket.OPEN) {
 			ws.send(JSON.stringify({ audioContent: "" }));
 		}

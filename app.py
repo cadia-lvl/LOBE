@@ -284,7 +284,7 @@ def download_collection(id):
                             'transcription': recording.transcription,
                             'recording_marked_bad': recording.marked_as_bad,
                             'text_marked_bad': token.marked_as_bad}}
-                    index_f.write('{}\t{}\n'.format(
+                    index_f.write('{}\t{}\t{}\n'.format(
                         user_name, recording.get_fname(), token.get_fname()))
                 else:
                     print("Error - token {} does not have a recording".format(token.id))

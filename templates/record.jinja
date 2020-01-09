@@ -165,6 +165,13 @@
         As well as other meter related code.
     -->
     <!--<script src='{{url_for("static", filename="js/volume-meter.js")}}'></script>-->
+    {% if not record_test %}
+        <script type='text/javascript'>
+            window.onbeforeunload = function() {
+                return "Are you sure?";
+            };
+        </script>
+    {% endif %}
     <script src='{{url_for("static", filename="js/base64ArrayBuffer.js")}}'></script>
     <script src='{{url_for("static", filename="js/audio.js")}}'></script>
 {% endblock %}

@@ -227,6 +227,9 @@ class Token(BaseModel, db.Model):
     def has_recording(self):
         return self.num_recordings > 0
 
+    def get_printable_score(self):
+        return round(self.score, 3)
+
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     text = db.Column(db.String)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())

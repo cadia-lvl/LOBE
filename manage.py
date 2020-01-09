@@ -181,32 +181,35 @@ def download_collection(coll_id, out_dir):
             copyfile(token.get_path(),
                 os.path.join(out_dir, 'text/{}'.format(token.get_fname())))
             for recording in token.recordings:
-                user_name = recording.get_user().name
-                user_ids.add(recording.user_id)
-                if not os.path.exists(os.path.join(out_dir, 'audio', user_name)):
-                    os.makedirs(os.path.join(out_dir, 'audio', user_name))
-                copyfile(recording.get_path(),
-                    os.path.join(out_dir, 'audio/{}/{}'.format(
-                        user_name, recording.get_fname())))
-                recording_info[recording.id] = {
-                    'collection_info':{
-                        'recording_fname': recording.get_fname(),
-                        'text_fname': token.get_fname(),
-                        'text': token.text,
-                        'user_name': user_name,
-                        'user_id': recording.user_id,
-                        'session_id': recording.session.id
-                    },'recording_info':{
-                        'sr': recording.sr,
-                        'num_channels': recording.num_channels,
-                        'bit_depth': recording.bit_depth,
-                        'duration': recording.duration,
-                    },'other':{
-                        'transcription': recording.transcription,
-                        'recording_marked_bad': recording.marked_as_bad,
-                        'text_marked_bad': token.marked_as_bad}}
-                index_f.write('{}\t{}\n'.format(
-                    user_name, recording.get_fname(), token.get_fname()))
+                if recording.get_path() is not None:
+                    user_name = recording.get_user().name
+                    user_ids.add(recording.user_id)
+                    if not os.path.exists(os.path.join(out_dir, 'audio', user_name)):
+                        os.makedirs(os.path.join(out_dir, 'audio', user_name))
+                    copyfile(recording.get_path(),
+                        os.path.join(out_dir, 'audio/{}/{}'.format(
+                            user_name, recording.get_fname())))
+                    recording_info[recording.id] = {
+                        'collection_info':{
+                            'recording_fname': recording.get_fname(),
+                            'text_fname': token.get_fname(),
+                            'text': token.text,
+                            'user_name': user_name,
+                            'user_id': recording.user_id,
+                            'session_id': recording.session.id
+                        },'recording_info':{
+                            'sr': recording.sr,
+                            'num_channels': recording.num_channels,
+                            'bit_depth': recording.bit_depth,
+                            'duration': recording.duration,
+                        },'other':{
+                            'transcription': recording.transcription,
+                            'recording_marked_bad': recording.marked_as_bad,
+                            'text_marked_bad': token.marked_as_bad}}
+                    index_f.write('{}\t{}\n'.format(
+                        user_name, recording.get_fname(), token.get_fname()))
+                else:
+                    print("Error - token {} does not have a recording".format(token.id))
         index_f.close()
         with open(os.path.join(out_dir, 'info.json'), 'w', encoding='utf-8') as info_f:
             json.dump(recording_info, info_f, ensure_ascii=False, indent=4)

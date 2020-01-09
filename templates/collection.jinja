@@ -9,6 +9,7 @@
             <p>Stofnuð þann: {{collection.created_at | datetime(format='low')}}</p>
             <p>Búið að taka upp {{collection.num_tokens - collection.num_nonrecorded_tokens}} af {{collection.num_tokens}} textum</p>
             <p>Áætlaðir klukkutímar kláraðir: {{collection.estimate_hours()}} klukkustundir</p>
+            <p>Söfnun raðað eftir: <code>{{collection.sort_by}}</code></p>
             <div class="progress mb-3">
                 <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
                 <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.get_invalid_ratio(as_percent=True)}}%"></div>
@@ -65,7 +66,7 @@
     <div class='row mt-3'>
         <div class='col-12'>
             <!-- Quick fix for compiling, replace token_list with collection -->
-            {{macros.pagination(tokens, url_for("token_list"))}}
+            {{macros.pagination(tokens, url_for("collection", id=collection.id))}}
         </div>
     </div>
 {% endblock %}
@@ -85,6 +86,14 @@
                         <p>
                             Veljið eitt eða fleiri skjöl hér að neðan. Textaskjal sem inniheldur fleiri en eina línu er túlkað
                             sem margir textabútar og textaskjölin vistast sem slík (5 línur í textaskrá samsvarar 5 textum til dæmis).
+
+                            G2P skjal þarf að vera að vera tab-seperated listi af setningum þannig að hver lína inniheldur
+                            <ul class="list-group">
+                                <li class="list-group-item">Sjálfa setninguna</li>
+                                <li class="list-group-item">Uppruna setningar (t.d. "risamálheild")</li>
+                                <li class="list-group-item">Röðunarstuðul (einhver fleytitala, hærri því fyrr birtist setningin)</li>
+                                <li class="list-group-item">Framburð (t.d. "~ uː t s m ɔi j ɪ n ~")</li>
+                            </ul>
                         </p>
                         {% with form=token_form %}
                             {% include '_form.jinja' %}

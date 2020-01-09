@@ -139,7 +139,9 @@ class Collection(BaseModel, db.Model):
 
     # the assigned user
     assigned_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    tokens = db.relationship("Token", lazy='select', backref='collection', cascade='all, delete, delete-orphan')
+    tokens = db.relationship(
+        "Token", lazy='select', backref='collection',
+        cascade='all, delete, delete-orphan', order_by="desc(Token.score)")
     sessions = db.relationship("Session", lazy='select', backref='collection', cascade='all, delete, delete-orphan')
     active = db.Column(db.Boolean, default=True)
     sort_by = db.Column(db.String)

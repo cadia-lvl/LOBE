@@ -19,7 +19,13 @@
                             <p class='text-danger'>Merktur sem slæmur.</p>
                         {% endif %}
                         {% if token.pron %}
-                            <p>{{token.pron | safe}}</p>
+                            Framburður: <p>{{token.pron | safe}}</p>
+                        {% endif %}
+                        {% if token.source %}
+                            Tekið úr: <p>{{token.source}}</p>
+                        {% endif %}
+                        {% if token.score is not none %}
+                            Röðunarstuðull: <p>{{token.score}}</p>
                         {% endif %}
                     </div>
                 </div>

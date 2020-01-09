@@ -133,7 +133,7 @@ def record_session(coll_id):
             return redirect(url_for('index'))
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
-        Token.num_recordings==0, Token.marked_as_bad!=True).order_by(func.random()).limit(SESSION_SZ)
+        Token.num_recordings==0, Token.marked_as_bad!=True).limit(SESSION_SZ)
 
     if tokens.count() == 0:
         flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun", category="warning")
@@ -240,27 +240,31 @@ def download_collection(id):
             for recording in token.recordings:
                 user_name = recording.get_user().name
                 user_ids.add(recording.user_id)
-                zf.write(recording.get_path(), 'audio/{}/{}'.format(
-                    user_name, recording.get_fname()))
-                recording_info[recording.id] = {
-                    'collection_info':{
-                        'recording_fname': recording.get_fname(),
-                        'text_fname': token.get_fname(),
-                        'text': token.text,
-                        'user_name': user_name,
-                        'user_id': recording.user_id,
-                        'session_id': recording.session.id
-                    },'recording_info':{
-                        'sr': recording.sr,
-                        'num_channels': recording.num_channels,
-                        'bit_depth': recording.bit_depth,
-                        'duration': recording.duration,
-                    },'other':{
-                        'transcription': recording.transcription,
-                        'recording_marked_bad': recording.marked_as_bad,
-                        'text_marked_bad': token.marked_as_bad}}
-                index_f.write('{}\t{}\n'.format(
-                    user_name, recording.get_fname(), token.get_fname()))
+                # HACK
+                if recording.get_path() is not None:
+                    zf.write(recording.get_path(), 'audio/{}/{}'.format(
+                        user_name, recording.get_fname()))
+                    recording_info[recording.id] = {
+                        'collection_info':{
+                            'recording_fname': recording.get_fname(),
+                            'text_fname': token.get_fname(),
+                            'text': token.text,
+                            'user_name': user_name,
+                            'user_id': recording.user_id,
+                            'session_id': recording.session.id
+                        },'recording_info':{
+                            'sr': recording.sr,
+                            'num_channels': recording.num_channels,
+                            'bit_depth': recording.bit_depth,
+                            'duration': recording.duration,
+                        },'other':{
+                            'transcription': recording.transcription,
+                            'recording_marked_bad': recording.marked_as_bad,
+                            'text_marked_bad': token.marked_as_bad}}
+                    index_f.write('{}\t{}\n'.format(
+                        user_name, recording.get_fname(), token.get_fname()))
+                else:
+                    print("Error - token {} does not have a recording".format(token.id))
         index_f.close()
         with open('./temp/info.json', 'w', encoding='utf-8') as info_f:
             json.dump(recording_info, info_f, ensure_ascii=False, indent=4)
@@ -574,7 +578,6 @@ def download_manual():
 def test_record():
     token = Token.query.filter(Token.marked_as_bad!=True).order_by(
         func.random()).limit(1)[0]
-    print(token)
     return render_template('record.jinja', tokens=token, section='record',
         single=True, record_test=True, json_tokens=json.dumps([token.get_dict()]),
         tal_api_token=app.config['TAL_API_TOKEN'])

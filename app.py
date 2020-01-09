@@ -144,6 +144,29 @@ def record_session(coll_id):
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         tal_api_token=app.config['TAL_API_TOKEN'])
 
+@app.route('/record_beta/<int:coll_id>/')
+@login_required
+def record_session_beta(coll_id):
+    collection = Collection.query.get(coll_id)
+
+    if collection.has_assigned_user():
+        if current_user.id != collection.assigned_user_id:
+            flash("Aðeins skráð rödd getur tekið upp í þessari söfnun", category="danger")
+            return redirect(url_for('index'))
+
+    tokens = Token.query.filter(Token.collection_id==coll_id,
+        Token.num_recordings==0, Token.marked_as_bad!=True).order_by(func.random()).limit(SESSION_SZ)
+
+    if tokens.count() == 0:
+        flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun", category="warning")
+        return redirect(url_for("collection", id=coll_id))
+
+    return render_template('record_beta.jinja', section='record',
+        collection=collection,  tokens=tokens,
+        json_tokens=json.dumps([t.get_dict() for t in tokens]),
+        tal_api_token=app.config['TAL_API_TOKEN'])
+
+
 @app.route('/record/token/<int:tok_id>/')
 @login_required
 def record_single(tok_id):
@@ -574,7 +597,6 @@ def download_manual():
 def test_record():
     token = Token.query.filter(Token.marked_as_bad!=True).order_by(
         func.random()).limit(1)[0]
-    print(token)
     return render_template('record.jinja', tokens=token, section='record',
         single=True, record_test=True, json_tokens=json.dumps([token.get_dict()]),
         tal_api_token=app.config['TAL_API_TOKEN'])

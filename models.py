@@ -32,8 +32,10 @@ class BaseModel(db.Model):
 class Collection(BaseModel, db.Model):
     __tablename__ = 'Collection'
 
-    def __init__(self, name):
+    def __init__(self, name, sort_by, assigned_user_id=None):
         self.name = name
+        self.sort_by = sort_by
+        self.assigned_user_id = assigned_user_id
 
     @hybrid_property
     def num_tokens(self):
@@ -140,6 +142,7 @@ class Collection(BaseModel, db.Model):
     tokens = db.relationship("Token", lazy='select', backref='collection', cascade='all, delete, delete-orphan')
     sessions = db.relationship("Session", lazy='select', backref='collection', cascade='all, delete, delete-orphan')
     active = db.Column(db.Boolean, default=True)
+    sort_by = db.Column(db.String)
     #recordings = db.relationship("Recording", lazy='joined', backref='collection')
 
 

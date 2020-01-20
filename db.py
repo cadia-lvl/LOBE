@@ -41,9 +41,8 @@ def create_tokens(collection_id, files, is_g2p):
 
 
 def insert_collection(form):
-    collection = Collection(form.name.data)
-    if form.assigned_user_id.data is not None:
-        collection.assigned_user_id = form.assigned_user_id.data
+    collection = Collection(form.name.data, form.sort_by.data,
+        form.assigned_user_id.data)
     db.session.add(collection)
     db.session.flush()
 

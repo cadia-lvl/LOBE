@@ -26,6 +26,10 @@ class CollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])
     assigned_user_id = QuerySelectField('Rödd', query_factory=lambda: User.query,
         get_label='name', allow_blank=True)
+    sort_by = SelectField("Röðun", choices=[
+        ('score', 'Röðunarstuðull'),
+        ('same', 'Sömu röð og í skjali'),
+        ('random', 'Slembiröðun')])
 
     def validate_assigned_user_id(form, field):
         # HACK to user the QuerySelectField on User objects

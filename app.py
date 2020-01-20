@@ -133,7 +133,8 @@ def record_session(coll_id):
             return redirect(url_for('index'))
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
-        Token.num_recordings==0, Token.marked_as_bad!=True).limit(SESSION_SZ)
+        Token.num_recordings==0, Token.marked_as_bad!=True).order_by(
+            get_collection_sortby(collection)).limit(SESSION_SZ)
 
     if tokens.count() == 0:
         flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun", category="warning")
@@ -143,6 +144,14 @@ def record_session(coll_id):
         collection=collection,  tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         tal_api_token=app.config['TAL_API_TOKEN'])
+
+def get_collection_sortby(collection):
+    if collection.sort_by == "score":
+        return Token.score.desc()
+    elif collection.sort_by == "random":
+        return func.random()
+    else:
+        return Token.id
 
 @app.route('/record_beta/<int:coll_id>/')
 @login_required

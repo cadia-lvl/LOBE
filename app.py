@@ -189,7 +189,7 @@ def post_recording_beta(coll_id):
             fname = file_obj.filename
             file_obj.save(fname)
             print(fname)
-            command = f"ffmpeg -i {fname} -vn audio_test.wav"
+            command = "ffmpeg -i {} -vn audio_test.wav".format(fname)
             subprocess.call(command, shell=True)
 
     return redirect(url_for('record_session_beta', coll_id=coll_id))

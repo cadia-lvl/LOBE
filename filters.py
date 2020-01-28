@@ -9,5 +9,8 @@ def format_date(value, format='medium'):
         format="dd.MM.y HH:mm"
     elif format == 'low':
         format = "dd.MM.y"
+    elif format == 'hm':
+        # hours and minutes
+        format = "HH:mm"
 
     return format_datetime(value, format)

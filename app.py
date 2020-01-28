@@ -5,7 +5,11 @@ import zipfile
 import tempfile
 import traceback
 import shutil
+import subprocess
+import datetime
+import math
 
+from collections import defaultdict
 from flask import (Flask, Response, flash, redirect, render_template, request,
     send_from_directory, send_file, session, url_for, after_this_request, flash)
 import logging
@@ -24,7 +28,7 @@ from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
 from settings.common import RECORDING_BIT_DEPTH
-
+from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
 # initialize the logger
 logHandler = RotatingFileHandler('logs/info.log', maxBytes=1000,
     backupCount=1)
@@ -153,7 +157,7 @@ def get_collection_sortby(collection):
     else:
         return Token.id
 
-@app.route('/record_beta/<int:coll_id>/')
+@app.route('/record_beta/<int:coll_id>/', methods=['GET'])
 @login_required
 def record_session_beta(coll_id):
     collection = Collection.query.get(coll_id)
@@ -164,17 +168,50 @@ def record_session_beta(coll_id):
             return redirect(url_for('index'))
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
-        Token.num_recordings==0, Token.marked_as_bad!=True).order_by(func.random()).limit(SESSION_SZ)
+        Token.num_recordings==0, Token.marked_as_bad!=True).order_by(func.random()).limit(1)
 
     if tokens.count() == 0:
         flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun", category="warning")
         return redirect(url_for("collection", id=coll_id))
 
     return render_template('record_beta.jinja', section='record',
-        collection=collection,  tokens=tokens,
-        json_tokens=json.dumps([t.get_dict() for t in tokens]),
-        tal_api_token=app.config['TAL_API_TOKEN'])
+        collection=collection,  token=tokens[0], tal_api_token=app.config['TAL_API_TOKEN'])
 
+@app.route('/record_beta/<int:coll_id>/post/', methods=['GET', 'POST'])
+@login_required
+def post_recording_beta(coll_id):
+    if request.method == 'POST':
+        print(request.form)
+        for name in request.form:
+            print(name)
+        for file in request.files:
+            file_obj = request.files.get(file)
+            fname = file_obj.filename
+            file_obj.save(fname)
+            print(fname)
+            command = f"ffmpeg -i {fname} -vn audio_test.wav"
+            subprocess.call(command, shell=True)
+
+    return redirect(url_for('record_session_beta', coll_id=coll_id))
+
+@app.route('/record_beta/analyze/', methods=['POST'])
+@login_required
+def analyze_audio():
+
+    # save to disk, only one file in the form
+    file_obj = next(iter(request.files.values()))
+    file_path = os.path.join('./temp', file_obj.filename)
+    file_obj.save(file_path)
+
+    # load the sample
+    sample, _ = load_sample(file_path)
+
+    # check the sample and return the response
+    if signal_is_too_high(sample):
+        return Response('high', 200)
+    elif signal_is_too_low(sample):
+        return Response('low', 200)
+    return Response('ok', 200)
 
 @app.route('/record/token/<int:tok_id>/')
 @login_required
@@ -517,6 +554,37 @@ def user(id):
         app.config['RECORDING_PAGINATION'])
     return render_template("user.jinja", user=user, recordings=recordings,
         section='user')
+
+@app.route('/users/<int:id>/times', methods=['GET'])
+@login_required
+def user_time_info(id):
+    user = User.query.get(id)
+    sessions = Session.query.filter(
+        Session.user_id==id).order_by(Session.created_at)
+
+    # insert by dates
+    days = defaultdict(list)
+    for s in sessions:
+        days[s.created_at.date()].append(s)
+
+    day_info = dict()
+    for day, sessions in days.items():
+        day_info[day] = {
+            'sessions': sessions,
+            'start_time': sessions[0].get_start_time,
+            'end_time': sessions[-1].created_at,
+            'est_work_time': datetime.timedelta(seconds=math.ceil((sessions[-1].created_at - sessions[0].get_start_time).total_seconds())),
+            'session_duration': datetime.timedelta(seconds=int(sum(s.duration for s in sessions)))}
+
+    total_est_work_time = sum((i['est_work_time'] for _, i in day_info.items()),
+        datetime.timedelta(0))
+    total_session_duration = sum((i['session_duration'] for _, i in day_info.items()),
+        datetime.timedelta(0))
+
+    return render_template('user_time.jinja', user=user, sessions=sessions,
+        day_info=day_info, total_est_work_time=total_est_work_time,
+        total_session_duration=total_session_duration)
+
 
 @app.route('/users/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required

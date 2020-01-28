@@ -417,6 +417,12 @@ class Session(BaseModel, db.Model):
             return 'n/a'
 
     @hybrid_property
+    def get_start_time(self):
+        if self.duration is not None:
+            return self.created_at - timedelta(seconds=int(self.duration))
+        return None
+
+    @hybrid_property
     def num_recordings(self):
         return len(self.recordings)
 

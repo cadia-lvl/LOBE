@@ -1,3 +1,6 @@
+# L.O.B.E.
+LOBE is a recording client made specifically for TTS data collections. It supports multiple collections, single and multi-speaker, and can prompt sentencens based on phonetic coverage.
+
 # Setup
 * Install Python requirements using `pip3 install -r requirements.txt`
 * Other system requirements (installed via apt):

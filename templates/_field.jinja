@@ -1,16 +1,21 @@
-<div class='form-group'>
-    {% if field.type != 'HiddenField' and field.type != 'CSRFTokenField' and field.type != 'RecaptchaField' %}
-        {{ field.label }}
+<div class="{% if field.type == 'BooleanField'%}custom-control custom-switch mb-2
+    {% elif field.type == 'MultipleFileField' %}custom-file mb-2
+    {% else%}form-group{% endif%}">
+    {% if field.type != 'HiddenField' and field.type != 'CSRFTokenField' and field.type != 'RecaptchaField'
+        and field.type != 'BooleanField' and field.type != 'MultipleFileField' %}
+            {{ field.label }}
     {% endif %}
 
     {% if field.type == 'BooleanField' %}
-        {{field}}
+        {{field(class_="custom-control-input")}}
+        {{ field.label(class_="custom-control-label") }}
     {% elif field.type == 'MultipleFileField' %}
-        {{field(class_='form-control-file')}}
+        {{field(class_='custom-file-input')}}
+        {{ field.label(class_="custom-file-label") }}
     {% else %}
         {{ field(class_='form-control') }}
     {% endif %}
-
+    <small class="form-text text-muted">{{field.description}}</small>
     {% for error in field.errors %}
         <p class='text-danger'>
             <span class='mr-2'>

@@ -32,42 +32,15 @@ class BaseModel(db.Model):
 class Collection(BaseModel, db.Model):
     __tablename__ = 'Collection'
 
-    def __init__(self, name, sort_by, assigned_user_id=None):
+    def __init__(self, name, sort_by, has_video=False, assigned_user_id=None):
         self.name = name
         self.sort_by = sort_by
         self.assigned_user_id = assigned_user_id
-
-    @hybrid_property
-    def num_tokens(self):
-        return len(self.tokens)
-
-    @num_tokens.expression
-    def num_tokens(cls):
-        return (select([func.count(Token.id)]).
-                where(Token.collection == cls.id).
-                label("num_tokens"))
+        self.has_video = has_video
 
     @hybrid_property
     def num_nonrecorded_tokens(self):
-        return len([t for t in self.tokens if not t.has_recording])
-
-    @num_nonrecorded_tokens.expression
-    def num_nonrecorded_tokens(cls):
-        return (select([func.count(Token.id)]).
-                where(Token.collection == cls.id).
-                where(Token.has_recording == False).
-                label("num_tokens"))
-
-    @hybrid_property
-    def num_invalid_tokens(self):
-        return len([t for t in self.tokens if t.marked_as_bad])
-
-    @num_invalid_tokens.expression
-    def num_nonrecorded_valid_tokens(cls):
-        return (select([func.count(Token.id)]).
-                where(Token.collection == cls.id).
-                where(Token.marked_as_bad == True).
-                label("num_tokens"))
+        return self.num_tokens - self.num_recorded_tokens
 
     @hybrid_method
     def get_complete_ratio(self, as_percent=False):
@@ -105,12 +78,30 @@ class Collection(BaseModel, db.Model):
     def get_token_dir(self):
         return os.path.join(app.config['TOKEN_DIR'], str(self.id))
 
+    def get_video_dir(self):
+        return os.path.join(app.config['VIDEO_DIR'], str(self.id))
+
     def has_assigned_user(self):
         return self.assigned_user_id is not None
 
     def get_assigned_user(self):
         if self.has_assigned_user():
             return User.query.get(self.assigned_user_id)
+
+    def get_sortby_function(self):
+        if self.sort_by == "score":
+            return Token.score.desc()
+        elif self.sort_by == "random":
+            return func.random()
+        else:
+            return Token.id
+
+    def update_numbers(self):
+        tokens = Token.query.filter(Token.collection_id==self.id)
+        self.num_tokens = tokens.count()
+        self.num_invalid_tokens = tokens.filter(Token.marked_as_bad==True).count()
+        self.num_recorded_tokens = tokens.filter(Token.num_recordings>0).count()
+
 
     def get_meta(self):
         '''
@@ -130,7 +121,7 @@ class Collection(BaseModel, db.Model):
         of sentences spoken.
         '''
         return round((self.num_tokens - self.num_nonrecorded_tokens)\
-            *ESTIMATED_AVERAGE_RECORD_LENGTH / 3600,1)
+            *ESTIMATED_AVERAGE_RECORD_LENGTH/3600, 1)
 
 
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
@@ -141,10 +132,14 @@ class Collection(BaseModel, db.Model):
     assigned_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     tokens = db.relationship(
         "Token", lazy='select', backref='collection',
-        cascade='all, delete, delete-orphan', order_by="desc(Token.score)")
+        cascade='all, delete, delete-orphan')
     sessions = db.relationship("Session", lazy='select', backref='collection', cascade='all, delete, delete-orphan')
     active = db.Column(db.Boolean, default=True)
     sort_by = db.Column(db.String)
+    has_video = db.Column(db.Boolean, default=False)
+    num_tokens = db.Column(db.Integer, default=0)
+    num_recorded_tokens = db.Column(db.Integer, default=0)
+    num_invalid_tokens = db.Column(db.Integer, default=0)
     #recordings = db.relationship("Recording", lazy='joined', backref='collection')
 
 
@@ -187,7 +182,8 @@ class Token(BaseModel, db.Model):
     def set_path(self):
         self.fname = secure_filename("{}_{:09d}.token".format(
             os.path.splitext(self.original_fname)[0], self.id))
-        self.path = os.path.join(app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
+        self.path = os.path.join(
+            app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
 
     def get_configured_path(self):
         '''
@@ -196,7 +192,8 @@ class Token(BaseModel, db.Model):
         '''
         fname = secure_filename("{}_{:09d}.token".format(
             os.path.splitext(self.original_fname)[0], self.id))
-        path = os.path.join(app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
+        path = os.path.join(
+            app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
         return path
 
     def get_dict(self):
@@ -215,22 +212,16 @@ class Token(BaseModel, db.Model):
     def get_download_url(self):
         return url_for('download_token', id=self.id)
 
-    @hybrid_property
-    def num_recordings(self):
-        return len(self.recordings)
-
-    @num_recordings.expression
-    def num_recordings(cls):
-        return (select([func.count(Recording.id)]).
-                where(Recording.token_id == cls.id).
-                label("num_recordings"))
-
-    @hybrid_property
-    def has_recording(self):
-        return self.num_recordings > 0
+    def update_numbers(self):
+        self.num_recordings = Recording.query.filter(
+            Recording.token_id==self.id).count()
 
     def get_printable_score(self):
         return round(self.score, 3)
+
+    @hybrid_property
+    def collection(self):
+        return Collection.query.get(self.collection_id)
 
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     text = db.Column(db.String)
@@ -242,13 +233,13 @@ class Token(BaseModel, db.Model):
     fname = db.Column(db.String)
     path = db.Column(db.String)
     marked_as_bad = db.Column(db.Boolean, default=False)
+    num_recordings = db.Column(db.Integer, default=0)
     # a tab seperated string of word pronounciations
     # where phones in each word is space seperated
     pron = db.Column(db.String)
     # default score is -1
     score = db.Column(db.Float, default=-1)
     source = db.Column(db.String)
-
 
     recordings = db.relationship("Recording", lazy='joined', backref='token')
 
@@ -318,7 +309,6 @@ class Recording(BaseModel, db.Model):
         self.set_path()
         file_obj.filename = self.fname
         file_obj.save(self.path)
-
 
     def set_path(self):
         self.file_id = '{}_r{:09d}'.format(os.path.splitext(self.original_fname)[0], self.id)

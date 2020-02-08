@@ -7,6 +7,7 @@ APP_ROOT = os.path.abspath(os.path.join(
 DATA_BASE_DIR = os.path.join(APP_ROOT, 'data/')
 TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'tokens/')
 RECORD_DIR = os.path.join(DATA_BASE_DIR, 'records/')
+VIDEO_DIR = os.path.join(DATA_BASE_DIR, 'videos/')
 
 OTHER_PATH = os.path.join(APP_ROOT, 'other')
 MANUAL_FNAME = 'LOBE_manual.pdf'

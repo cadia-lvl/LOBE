@@ -6,7 +6,7 @@ var NUM_CHANNELS = 1;
 var FFT_SIZE = 1024;
 var AUDIO_CTXT_BUFFER_SZ = 16384;
 var RECORD_WAIT_TIME = 1;
-var DO_TRANSCRIPT = false;
+var DO_TRANSCRIPT = true;
 
 
 URL = window.URL || window.webkitURL;
@@ -30,7 +30,7 @@ var numTokens = tokens.length;
 /** ----------------- DOM elements ----------------- */
 
 var streamResultElem = document.getElementById("transcription");
-var finalTranscriptionElem = $("#finalTrupdateTableUIanscription");
+var finalTranscriptionElem = $("#finalTranscription");
 
 var tokenText = $("#tokenText");
 var tokenIDSpan = $("#tokenID");
@@ -425,7 +425,6 @@ function startRecording() {
 		};
 
 		streamProcessor.onended = function(e){
-			console.log("wwww")
 			updateUI(tokenIndex, updateRecBtn=false);
 		};
 		//onLevelChange();
@@ -452,7 +451,6 @@ function stopRecording() {
 	gumStream.getAudioTracks()[0].stop();
 	//create the wav blob and pass it on to createDownloadLink
 	rec.exportWAV(createAudioFile);
-	console.log("YPYYPY");
 	isRecording = false;
 	updateUI(tokenIndex, updateRecBtn=false);
 }
@@ -482,6 +480,7 @@ function createAudioFile(blob) {
 
 function handleStreamingResult(event) {
 	var response = JSON.parse(event.data);
+	console.log(response);
 	var result = response.result;
 	var res = result.results;
 	if (res !== undefined && res.length > 0) {

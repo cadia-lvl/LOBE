@@ -37,18 +37,25 @@ def create_tokens(collection_id, files, is_g2p):
         token.save_to_disk()
     db.session.commit()
 
+    # reset the number of tokens in the collection
+    collection = Collection.query.get(collection_id)
+    collection.update_numbers()
+
     return tokens
 
 
 def insert_collection(form):
     collection = Collection(form.name.data, form.sort_by.data,
-        form.assigned_user_id.data)
+        has_video=form.has_video.data,
+        assigned_user_id=form.assigned_user_id.data)
     db.session.add(collection)
     db.session.flush()
 
-
+    dirs = [collection.get_record_dir(), collection.get_token_dir()]
+    if collection.has_video:
+        dirs.append(collection.get_video_dir())
     # create dirs for tokens and records
-    for dir in [collection.get_record_dir(), collection.get_token_dir()]:
+    for dir in dirs:
         if not os.path.exists(dir): os.makedirs(dir)
         else:
             raise ValueError("""
@@ -59,8 +66,10 @@ def insert_collection(form):
                 DATA_BASE_DIR, TOKEN_DIR, RECORD_DIR flask environment variables
                 to point to some other place.
 
-                Data already exists at e.g. {}
-                """.format(collection.get_record_dir()))
+                Folder that already exists: {}
+
+                Perhaps some of the source folders have never been created before.
+                """.format(dir))
 
     db.session.commit()
     return collection

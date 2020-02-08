@@ -82,28 +82,38 @@ def post_recording():
     files = []
     duration = None
     record_session = None
+    recorded_token_ids = []
     try:
         for token_id in request.form:
             item = json.loads(request.form[token_id])
             # HACK that should be changed
             if token_id == 'duration':
+                # get the duration of the session
                 duration = float(item)
             elif item == 'skipped':
+                # this token was skipped and has no token
                 token = Token.query.get(int(token_id))
                 token.marked_as_bad = True
             else:
+                # this token has a recording
                 transcription = ""
                 if "transcript" in item:
                     transcription = item['transcript']
                 file_obj = request.files.get('file_{}'.format(token_id))
+
                 recording = Recording(token_id, file_obj.filename, session['user_id'],
                     transcription)
                 recording.bit_depth = RECORDING_BIT_DEPTH
                 db.session.add(recording)
+
                 recordings.append(recording)
                 files.append(file_obj)
+
+                recorded_token_ids.append(token_id)
         db.session.commit()
+
         # only create session if at least one recording
+
         if len(recordings) > 0:
             collection_id = recordings[0].get_collection()
             record_session = Session(session['user_id'], collection_id,
@@ -113,8 +123,19 @@ def post_recording():
                 recording.save_to_disk(files[idx])
                 recording.set_wave_params()
                 recording.set_session_id(record_session.id)
-        db.session.commit()
+            db.session.commit()
+
+            # update the numbers of those tokens that were recorded
+            for token_id in recorded_token_ids:
+                token = Token.query.get(token_id)
+                token.update_numbers()
+            db.session.commit()
+            # then update the numbers of the collection
+            collection = Collection.query.get(collection_id)
+            collection.update_numbers()
+            db.session.commit()
     except Exception as error:
+        flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
         app.logger.error("Error posting recordings: {}\n{}".format(error,traceback.format_exc()))
         return Response(str(error), status=500)
 
@@ -138,10 +159,10 @@ def record_session(coll_id):
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
         Token.num_recordings==0, Token.marked_as_bad!=True).order_by(
-            get_collection_sortby(collection)).limit(SESSION_SZ)
+            collection.get_sortby_function()).limit(SESSION_SZ)
 
     if tokens.count() == 0:
-        flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun", category="warning")
+        flash("Engar ólesnar eða ómerktar setningar eru eftir í þessari söfnun", category="warning")
         return redirect(url_for("collection", id=coll_id))
 
     return render_template('record.jinja', section='record',
@@ -149,17 +170,28 @@ def record_session(coll_id):
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         tal_api_token=app.config['TAL_API_TOKEN'])
 
-def get_collection_sortby(collection):
-    if collection.sort_by == "score":
-        return Token.score.desc()
-    elif collection.sort_by == "random":
-        return func.random()
-    else:
-        return Token.id
-
 @app.route('/record_beta/<int:coll_id>/', methods=['GET'])
 @login_required
 def record_session_beta(coll_id):
+    use_video = True
+    has_echo_cancel = False
+    if use_video:
+        media_constraints = json.dumps({
+            'audio': {
+                'echoCancellation': {'exact': has_echo_cancel},
+            },
+            'video': {
+                    'width': 1280,
+                    'height': 720
+            }
+        })
+    else:
+        media_constraints = json.dumps({
+            'audio': {
+                'echoCancellation': {'exact': has_echo_cancel},
+            }
+        })
+
     collection = Collection.query.get(coll_id)
 
     if collection.has_assigned_user():
@@ -175,7 +207,8 @@ def record_session_beta(coll_id):
         return redirect(url_for("collection", id=coll_id))
 
     return render_template('record_beta.jinja', section='record',
-        collection=collection,  token=tokens[0], tal_api_token=app.config['TAL_API_TOKEN'])
+        collection=collection, token=tokens[0], tal_api_token=app.config['TAL_API_TOKEN'],
+        use_video=use_video, media_constraints=media_constraints)
 
 @app.route('/record_beta/<int:coll_id>/post/', methods=['GET', 'POST'])
 @login_required
@@ -253,11 +286,10 @@ def create_collection():
 @login_required
 def collection_list():
     page = int(request.args.get('page', 1))
+    # TODO: sort_by not currently supported
     sort_by = request.args.get('sort_by', 'name')
-    #collections = Collection.query.filter(Collection.active!=False).paginate(page,
-    #    per_page=app.config['COLLECTION_PAGINATION'])
     collections = Collection.query.paginate(page,
-        per_page=app.config['COLLECTION_PAGINATION'])
+        per_page=app.config['COLLECTION_PAGINATION'], )
     return render_template('collection_list.jinja', collections=collections,
         section='collection')
 
@@ -271,8 +303,11 @@ def collection(id):
 
     page = int(request.args.get('page', 1))
     collection = Collection.query.get(id)
-    tokens = ListPagination(collection.tokens, page,
-        app.config['TOKEN_PAGINATION'])
+
+    # TODO: implement collection default sort on the paginated results here
+    tokens = Token.query.filter(Token.collection_id==collection.id)\
+            .order_by(Token.score.desc())\
+            .paginate(page,per_page=app.config['TOKEN_PAGINATION'])
 
     return render_template('collection.jinja',
         collection=collection, token_form=token_form, tokens=tokens,
@@ -295,7 +330,7 @@ def download_collection(id):
     tokens = collection.tokens
     dl_tokens = []
     for token in tokens:
-        if token.has_recording:
+        if token.num_recordings > 0:
             dl_tokens.append(token)
     if not os.path.exists('temp'):
         os.makedirs('temp')
@@ -376,7 +411,7 @@ def download_collection_index(id):
     tokens = collection.tokens
     dl_tokens = []
     for token in tokens:
-        if token.has_recording:
+        if token.num_recordings > 0:
             dl_tokens.append(token)
 
     if not os.path.exists('temp'):
@@ -407,6 +442,11 @@ def edit_collection(id):
         if request.method == 'POST' and form.validate():
             form.populate_obj(collection)
             db.session.commit()
+            collection = Collection.query.get(id)
+            if collection.has_video:
+                # create the video directory for the collection
+                if not os.path.exists(collection.get_video_dir()):
+                    os.makedirs(collection.get_video_dir())
             flash("Söfnun hefur verið breytt", category='success')
             return redirect(url_for('collection', id=id))
     except Exception as error:
@@ -423,11 +463,20 @@ def edit_collection(id):
 def delete_collection(id):
     collection = db.session.query(Collection).get(id)
     name = collection.name
-    shutil.rmtree(collection.get_record_dir())
-    shutil.rmtree(collection.get_token_dir())
-    db.session.delete(collection)
-    db.session.commit()
-    flash("{} var eytt".format(name), category='success')
+    is_video = collection.has_video
+    try:
+        db.session.delete(collection)
+        db.session.commit()
+        shutil.rmtree(collection.get_record_dir())
+        shutil.rmtree(collection.get_token_dir())
+        if is_video:
+            shutil.rmtree(collection.get_video_dir())
+        flash("{} var eytt".format(name), category='success')
+    except Exception as error:
+        flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
+        app.logger.error('Error updating a collection : {}\n{}'.format(
+            error, traceback.format_exc()))
+
     return redirect(url_for('collection_list'))
 
 # TOKEN ROUTES

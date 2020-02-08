@@ -30,6 +30,7 @@ class CollectionForm(Form):
         ('score', 'Röðunarstuðull'),
         ('same', 'Sömu röð og í skjali'),
         ('random', 'Slembiröðun')])
+    has_video = BooleanField(label='Myndbandssöfnun', description='Hakið við ef myndbandsupptökur eru hluti af gagnasöfnun.')
 
     def validate_assigned_user_id(form, field):
         # HACK to user the QuerySelectField on User objects
@@ -38,8 +39,9 @@ class CollectionForm(Form):
             field.data = field.data.id
 
 class BulkTokenForm(Form):
-    is_g2p = BooleanField('Er G2P skjal.', default=False)
-    files = MultipleFileField('Textaskjöl')
+    is_g2p = BooleanField('Er G2P skjal.', description='Hakið við ef skjalið er G2P skjal samnber lýsingu hér að ofan',
+        default=False)
+    files = MultipleFileField('Textaskjöl', description='Veljið eitt eða fleiri textaskjöl.')
 
     # TODO add custom validator for files
     '''

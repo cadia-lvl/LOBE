@@ -14,12 +14,13 @@
             </div>
         </div>
         <div class='row'>
-            <div class='col-12'>
+            <div class='col-12 table-responsive'>
                 <table class='table'>
                     <thead>
                         <th>Nafn</th>
                         <th>Búin til</th>
                         <th>Fjöldi setninga</th>
+                        <th class='text-right'>Tegund</th>
                         <th>Gangur</th>
                     </thead>
                     <tbody>
@@ -27,7 +28,14 @@
                             <tr>
                                 <td><a href={{collection.get_url()}}>{{collection.name}}</a></td>
                                 <td>{{collection.created_at | datetime('low')}}</td>
-                                <td>{{collection.tokens | length}}</td>
+                                <td>{{collection.num_tokens}}</td>
+                                <td class='text-right'>
+                                    {% if collection.has_video %}
+                                        <span class='text-success'><i class='fa fa-video'></i></span>
+                                    {% else%}
+                                        <span class='text-success'><i class='fa fa-microphone'></i></span>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <div class="progress">
                                         <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>

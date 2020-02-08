@@ -6,18 +6,56 @@
             {% if collection.has_assigned_user() %}
                 <h3 class='font-weight-bold'>Rödd: {{collection.get_assigned_user()}}</h3>
             {% endif %}
-            <p>Stofnuð þann: {{collection.created_at | datetime(format='low')}}</p>
-            <p>Búið að taka upp {{collection.num_tokens - collection.num_nonrecorded_tokens}} af {{collection.num_tokens}} textum</p>
-            <p>Áætlaðir klukkutímar kláraðir: {{collection.estimate_hours()}} klukkustundir</p>
-            <p>Söfnun raðað eftir:
-                <code>
-                    {% if collection.sort_by %}
-                        {{collection.sort_by}}
-                    {% else %}
-                        Sjálfgefin röðun
-                    {% endif %}
-                </code>
-            </p>
+        </div>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-7'>
+                    <p>Stofnuð þann:</p>
+                </div>
+                <div class='col-5 text-right'>
+                    <p>{{collection.created_at | datetime(format='low')}}</p>
+                </div>
+                <div class='col-7'>
+                    <p>Búið að taka upp:</p>
+                </div>
+                <div class='col-5 text-right'>
+                    <p>{{collection.num_tokens - collection.num_nonrecorded_tokens}} af {{collection.num_tokens}}</p>
+                </div>
+                <div class='col-7'>
+                    <p>Klukkutímar kláraðir:</p>
+                </div>
+                <div class='col-5 text-right'>
+                    <p>{{collection.estimate_hours()}} klst</p>
+                </div>
+            </div>
+        </div>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-8'>
+                    <p>Söfnun raðað eftir:</p>
+                </div>
+                <div class='col-4 text-right'>
+                    <code>
+                        {% if collection.sort_by %}
+                            {{collection.sort_by}}
+                        {% else %}
+                            Sjálfgefin röðun
+                        {% endif %}
+                    </code>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-4'>
+                    <p>Tegund:</p>
+                </div>
+                <div class='col-8 text-right'>
+                    <code>{%if collection.has_video %}{{macros.btn_icon('video', 'r')}} Myndbandssöfnun
+                    {% else %}{{macros.btn_icon('microphone', 'r')}} Hljóðsöfnun{% endif %}
+                    </code>
+                </div>
+            </div>
+        </div>
+        <div class='col-12'>
             <div class="progress mb-3">
                 <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
                 <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.get_invalid_ratio(as_percent=True)}}%"></div>
@@ -32,6 +70,10 @@
                 Lotur
             </a>
             {% if current_user.is_admin() %}
+                <a href='{{url_for("record_session_beta", coll_id=collection.id)}}' class='btn btn-sm btn-success float-right mb-2 ml-2'>
+                    {{macros.btn_icon('microphone', 'r')}}
+                    WebRTC (beta)
+                </a>
                 <button type='button' class='btn btn-secondary btn-sm float-right mb-2 ml-2' data-toggle='modal', data-target='#addTokensModal'>
                     {{macros.btn_icon('plus', 'r')}}
                     Bæta við

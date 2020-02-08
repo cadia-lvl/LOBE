@@ -12,6 +12,7 @@ from flask_script import Command, Manager
 from flask_security.utils import hash_password
 from sqlalchemy.exc import IntegrityError
 from termcolor import colored
+from collections import defaultdict
 
 from app import app, db, user_datastore
 from models import Recording, Token, User, Role, Collection
@@ -167,7 +168,7 @@ def download_collection(coll_id, out_dir):
     tokens = collection.tokens
     dl_tokens = []
     for token in tokens:
-        if token.has_recording:
+        if token.num_recordings > 0:
             dl_tokens.append(token)
     if not os.path.exists(out_dir):
         os.makedirs(os.path.join(out_dir, 'audio'))
@@ -222,6 +223,35 @@ def download_collection(coll_id, out_dir):
         print("Done!, data available at {}".format(out_dir))
     except Exception as error:
         print("{}\n{}".format(error, traceback.format_exc()))
+
+@manager.command
+def update_numbers():
+    '''
+    Updates out-of-date values for the following columns in the Colleciton
+    class:
+        * num_tokens
+        * num_recorded_tokens
+        * num_invalid_tokens
+    And the following of the Token class:
+        * num_recordings
+    '''
+    recordings = Recording.query.all()
+    token_recordings = defaultdict(int)
+
+    for token in tqdm(Token.query.all()):
+        token.num_recordings = 0
+
+    for recording in tqdm(recordings):
+        token_recordings[recording.token_id] += 1
+    for token_id, num_recordings in token_recordings.items():
+        token = Token.query.get(token_id)
+        token.num_recordings = num_recordings
+    db.session.commit()
+
+    collections = Collection.query.all()
+    for collection in tqdm(collections):
+        collection.update_numbers()
+    db.session.commit()
 
 manager.add_command('db', MigrateCommand)
 manager.add_command('adduser', AddUser)

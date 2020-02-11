@@ -306,12 +306,17 @@ class Recording(BaseModel, db.Model):
         return self.path
 
     def save_to_disk(self, file_obj):
+        '''
+        Can only be called after being committed
+        since we need the token id
+        '''
         self.set_path()
         file_obj.filename = self.fname
         file_obj.save(self.path)
 
     def set_path(self):
-        self.file_id = '{}_r{:09d}'.format(os.path.splitext(self.original_fname)[0], self.id)
+        self.file_id = '{}_r{:09d}_t{:09d}'.format(
+            os.path.splitext(self.original_fname)[0], self.id, self.token_id)
         self.fname = secure_filename('{}.wav'.format(self.file_id))
         self.path = os.path.join(app.config['RECORD_DIR'],
             str(self.token.collection_id), self.fname)

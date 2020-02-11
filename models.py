@@ -359,7 +359,9 @@ class Recording(BaseModel, db.Model):
         return User.query.get(self.user_id)
 
     def get_token(self):
-        return Token.query.get(self.token_id)
+        if self.token_id is not None:
+            return Token.query.get(self.token_id)
+        return None
 
     def get_printable_id(self):
         return "R-{:09d}".format(self.id)

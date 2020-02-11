@@ -604,11 +604,12 @@ def user_edit(id):
         if request.method == 'POST' and form.validate():
             form.populate_obj(user)
             db.session.commit()
+            flash("Notanda var breytt", category='success')
     except Exception as error:
         app.logger.error('Error updating a user : {}\n{}'.format(error, traceback.format_exc()))
 
     return render_template('model_form.jinja', user=user, form=form, type='edit',
-        action=url_for('user_create', id=id), section='user')
+        action=url_for('user_edit', id=id), section='user')
 
 @app.route('/users/create/', methods=['GET', 'POST'])
 @login_required
@@ -664,6 +665,7 @@ def role_edit(id):
         try:
             form.populate_obj(role)
             db.session.commit()
+            flash("Hlutverki var breytt", category='success')
         except Exception as error:
             app.logger.error('Error updating a role : {}\n{}'.format(error,traceback.format_exc()))
     return render_template('model_form.jinja', role=role, form=form, type='edit',

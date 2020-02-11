@@ -47,7 +47,7 @@
                     {% else %}
                         <td>Ekki skráð</td>
                     {% endif %}
-                    <td>{{recording.get_token().text}}</td>
+                    <td>{% if recording.get_token() %}{{recording.get_token().text}}{% else %}n/a{% endif %}</td>
                     <td>{{recording.get_printable_duration()}}</td>
                 </tr>
             {% endfor %}

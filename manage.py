@@ -242,7 +242,10 @@ def update_numbers():
         token.num_recordings = 0
 
     for recording in tqdm(recordings):
-        token_recordings[recording.token_id] += 1
+        if recording.token_id is not None:
+            token_recordings[recording.token_id] += 1
+        else:
+            print("Recording with id {} has no token id".format(recording.id))
     for token_id, num_recordings in token_recordings.items():
         token = Token.query.get(token_id)
         token.num_recordings = num_recordings

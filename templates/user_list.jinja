@@ -19,6 +19,9 @@
                     <thead>
                         <th>Nafn</th>
                         <th>Tölvupóstur</th>
+                        <th>Kyn</th>
+                        <th>Aldur</th>
+                        <th>Mállýska</th>
                         <th>Staða</th>
                     </thead>
                     <tbody>
@@ -26,6 +29,9 @@
                             <tr>
                                 <td><a href={{user.get_url()}}>{{user.get_printable_name()}}</a></td>
                                 <td>{{user.email}}</td>
+                                <td>{{user.sex | default("Ekki tilgreint", true)}}</td>
+                                <td>{{user.age | default("Ekki tilgreint", true)}}</td>
+                                <td>{{user.dialect | default("Ekki tilgreint", true)}}</td>
                                 <td>{% for role in user.roles %}{{role.name}}{% endfor %}</td>
                             </tr>
                         {% endfor %}

@@ -6,7 +6,7 @@ var NUM_CHANNELS = 1;
 var FFT_SIZE = 1024;
 var AUDIO_CTXT_BUFFER_SZ = 16384;
 var RECORD_WAIT_TIME = 1;
-var DO_TRANSCRIPT = true;
+var DO_TRANSCRIPT = false;
 
 
 URL = window.URL || window.webkitURL;
@@ -350,19 +350,27 @@ function sendAction(){
 		finishButton.attr('disabled',true);
 	};
 	var fd = new FormData();
-	for(var i=0; i<numTokens; i++){
-		if('recording' in tokens[i]){
-			fd.append(tokens[i]['id'], JSON.stringify(tokens[i]['recording']));
-			fd.append("file_"+tokens[i]['id'], tokens[i]['recording']['blob'], tokens[i]['recording']['filename']);
-		} else if(tokens[i].skipped){
-			// append as skipped
-			fd.append(tokens[i]['id'], JSON.stringify('skipped'));
-		}
-	}
-	// append duration to the form
+	var recordings = {};
+	var skipped = [];
 	var endTime = new Date()
 	var duration = (endTime.getTime() - startTime.getTime())/1000;
 	fd.append('duration', JSON.stringify(duration));
+	fd.append('user_id', user_id);
+	fd.append('manager_id', manager_id);
+	fd.append('collection_id', collection_id);
+	for(var i=0; i<numTokens; i++){
+		if('recording' in tokens[i]){
+			recordings[tokens[i]['id']] = tokens[i]['recording'];
+			//fd.append(tokens[i]['id'], JSON.stringify(tokens[i]['recording']));
+			fd.append("file_"+tokens[i]['id'], tokens[i]['recording']['blob'], tokens[i]['recording']['filename']);
+		} else if(tokens[i].skipped){
+			// append as skipped
+			skipped.push(tokens[i]['id']);
+			//fd.append(tokens[i]['id'], JSON.stringify('skipped'));
+		}
+	}
+	fd.append('recordings', JSON.stringify(recordings));
+	fd.append('skipped', JSON.stringify(skipped));
 	xhr.open("POST", postRecordingRoute, true);
 	xhr.send(fd);
 }

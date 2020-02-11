@@ -60,11 +60,10 @@
                 <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
                 <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.get_invalid_ratio(as_percent=True)}}%"></div>
             </div>
-
-            <a href='{{url_for("record_session", coll_id=collection.id)}}' class='btn btn-sm btn-success float-right mb-2 ml-2'>
+            <button type='button' class='btn btn-success btn-sm float-right mb-2 ml-2' data-toggle='modal', data-target='#confirmModal'>
                 {{macros.btn_icon('microphone', 'r')}}
                 Taka upp
-            </a>
+            </button>
             <a href='{{url_for("collection_sessions", id=collection.id)}}' class='btn btn-sm btn-secondary float-right mb-2 ml-2'>
                 {{macros.btn_icon('arrow-right', 'r')}}
                 Lotur
@@ -186,10 +185,11 @@
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
                 <a href='{{url_for("delete_collection", id=collection.id)}}' class='btn btn-danger'>
                     Eyða
-                    <span class='ml-1'><i class='fa fa-times'></i></span>
+                    {{macros.btn_icon('times', 'l')}}
                 </a>
             </div>
             </div>
         </div>
     </div>
+    {% include '_user_confirm_modal.jinja' %}
 {% endblock %}

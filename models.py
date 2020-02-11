@@ -261,13 +261,18 @@ class Recording(BaseModel, db.Model):
     __tablename__ = 'Recording'
 
     def __init__(self, token_id, original_fname, user_id,
-        transcription):
+        transcription, bit_depth, session_id=None):
 
         self.token_id = token_id
+        # as determined by the browser / client side
         self.original_fname = original_fname
         self.user_id = user_id
-        self.transcription = transcription
+        if transcription is not None:
+            self.transcription = transcription
         self.marked_as_bad = False
+        self.bit_depth = bit_depth
+        if session_id is not None:
+            self.session_id = session_id
 
     def set_session_id(self, session_id):
         self.session_id = session_id
@@ -308,11 +313,21 @@ class Recording(BaseModel, db.Model):
     def save_to_disk(self, file_obj):
         '''
         Can only be called after being committed
-        since we need the token id
+        since we need self.id
         '''
-        self.set_path()
         file_obj.filename = self.fname
         file_obj.save(self.path)
+
+    def add_file_obj(self, obj):
+        '''
+        performs, in order, :
+        * self.set_path()
+        * self.save_to_disk(obj)
+        * self.set_wave_params()
+        '''
+        self.set_path()
+        self.save_to_disk(obj)
+        self.set_wave_params()
 
     def set_path(self):
         self.file_id = '{}_r{:09d}_t{:09d}'.format(
@@ -393,8 +408,10 @@ class Recording(BaseModel, db.Model):
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
 
-    def __init__(self, user_id, collection_id, duration=None):
+    def __init__(self, user_id, collection_id, manager_id,
+        duration=None):
         self.user_id = user_id
+        self.manager_id = manager_id
         self.collection_id = collection_id
         if duration is not None:
             self.duration = duration
@@ -421,8 +438,21 @@ class Session(BaseModel, db.Model):
     def num_recordings(self):
         return len(self.recordings)
 
+    @hybrid_property
+    def get_user(self):
+        if self.user_id is not None:
+            return User.query.get(self.user_id)
+        return "n/a"
+
+    @hybrid_property
+    def get_manager(self):
+        if self.manager_id is not None:
+            return User.query.get(self.manager_id)
+        return "n/a"
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    manager_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
     duration = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())

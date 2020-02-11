@@ -1,8 +1,11 @@
-from models import db, Collection, Session, Token
+from models import db, Collection, Session, Token, Recording
 from concurrent.futures import ProcessPoolExecutor
 from functools import partialmethod
 import multiprocessing
 import os
+import json
+
+from settings.common import RECORDING_BIT_DEPTH
 
 def create_tokens(collection_id, files, is_g2p):
     tokens = []
@@ -73,6 +76,47 @@ def insert_collection(form):
 
     db.session.commit()
     return collection
+
+def save_recording_session(form, files):
+    duration = float(form['duration'])
+    user_id = int(form['user_id'])
+    manager_id = int(form['manager_id'])
+    collection_id = int(form['collection_id'])
+    recording_objs = json.loads(form['recordings'])
+    record_session = None
+    if len(recording_objs) > 0:
+        record_session = Session(user_id, collection_id, manager_id,
+            duration=duration)
+        db.session.add(record_session)
+        db.session.flush()
+    for token_id, recording_obj in recording_objs.items():
+        # this token has a recording
+        file_obj = files.get('file_{}'.format(token_id))
+        recording = Recording(int(token_id), file_obj.filename, user_id,
+            recording_obj['transcript'], RECORDING_BIT_DEPTH,
+            session_id=record_session.id)
+        db.session.add(recording)
+        db.session.flush()
+        recording.add_file_obj(file_obj)
+    db.session.commit()
+
+    for token_id in recording_objs:
+        token = Token.query.get(token_id)
+        token.update_numbers()
+    db.session.commit()
+
+    for token_id in json.loads(form['skipped']):
+        # this token was skipped and has no token
+        token = Token.query.get(int(token_id))
+        token.marked_as_bad = True
+    db.session.commit()
+
+    # then update the numbers of the collection
+    collection = Collection.query.get(collection_id)
+    collection.update_numbers()
+    db.session.commit()
+
+    return record_session.id if record_session else None
 
 def newest_collections(num=4):
     ''' Get the num newest collections '''

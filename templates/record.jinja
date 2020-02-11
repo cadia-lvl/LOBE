@@ -11,6 +11,9 @@
                     Söfnun: {{collection.name}}
                 {% endif %}
             </h3>
+            {% if user %}
+                <p>Rödd: {{user.name}}</p>
+            {% endif %}
         </div>
         {% if not single %}
             <div class='col-12 mt-3'>
@@ -152,6 +155,7 @@
                     </div>
                 </div>
             </div>
+            </div>
         {% endif %}
     {% endblock %}
 {% endif %}
@@ -179,6 +183,9 @@
 {% block headscripts %}
     <script type="text/javascript">
         var tokens = {{json_tokens}};
+        var user_id = {{user.id}};
+        var manager_id = {{manager.id}};
+        var collection_id = {{collection.id}};
         var talAPIToken = "{{tal_api_token}}";
         var postRecordingRoute = "{{url_for('post_recording')}}";
     </script>

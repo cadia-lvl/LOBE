@@ -5,6 +5,8 @@
             <th>Auðkenni</th>
             <th>Fjöldi upptaka</th>
             <th>Lengd</th>
+            <th>Rödd</th>
+            <th>Stjórn</th>
         </thead>
         <tbody>
             {% for session in sessions %}
@@ -13,6 +15,8 @@
                     <td><a href={{session.get_url()}}>{{session.get_printable_id()}}</a></td>
                     <td>{{session.num_recordings}}</td>
                     <td>{{session.get_printable_duration() | default("N/A")}}</td>
+                    <td>{{session.get_user}}</td>
+                    <td>{{session.get_manager}}</td>
                 </tr>
             {% endfor %}
         </tbody>

@@ -19,7 +19,7 @@ from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
 from flask_security.utils import hash_password
 from sqlalchemy.sql.expression import func, select
 from werkzeug import secure_filename
-from db import (create_tokens, insert_collection, newest_sessions)
+from db import (create_tokens, insert_collection, newest_sessions, save_recording_session)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
     ExtendedRegisterForm, UserEditForm, RoleForm)
@@ -27,7 +27,6 @@ from models import Collection, Recording, Role, Token, User, Session, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
-from settings.common import RECORDING_BIT_DEPTH
 from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
 # initialize the logger
 logHandler = RotatingFileHandler('logs/info.log', maxBytes=1000,
@@ -67,83 +66,30 @@ SESSION_SZ = 50
 @app.route('/')
 @login_required
 def index():
-    return render_template('index.jinja',
-        sessions=newest_sessions(user_id=session['user_id'], num=4))
+    return redirect(url_for('collection_list'))
 
 @app.route('/lobe/')
 @login_required
 def index_redirect():
-    return redirect(url_for('index'))
+    return redirect(url_for('collection_list'))
 
 @app.route('/post_recording/', methods=['POST'])
 @login_required
 def post_recording():
-    recordings = []
-    files = []
-    duration = None
-    record_session = None
-    recorded_token_ids = []
+    session_id = None
     try:
-        for token_id in request.form:
-            item = json.loads(request.form[token_id])
-            # HACK that should be changed
-            if token_id == 'duration':
-                # get the duration of the session
-                duration = float(item)
-            elif item == 'skipped':
-                # this token was skipped and has no token
-                token = Token.query.get(int(token_id))
-                token.marked_as_bad = True
-            else:
-                # this token has a recording
-                transcription = ""
-                if "transcript" in item:
-                    transcription = item['transcript']
-                file_obj = request.files.get('file_{}'.format(token_id))
-
-                recording = Recording(token_id, file_obj.filename, session['user_id'],
-                    transcription)
-                recording.bit_depth = RECORDING_BIT_DEPTH
-                db.session.add(recording)
-
-                recordings.append(recording)
-                files.append(file_obj)
-
-                recorded_token_ids.append(token_id)
-        db.session.commit()
-
-        # only create session if at least one recording
-
-        if len(recordings) > 0:
-            collection_id = recordings[0].get_collection()
-            record_session = Session(session['user_id'], collection_id,
-                duration=duration)
-            db.session.add(record_session)
-            for idx, recording in enumerate(recordings):
-                recording.save_to_disk(files[idx])
-                recording.set_wave_params()
-                recording.set_session_id(record_session.id)
-            db.session.commit()
-
-            # update the numbers of those tokens that were recorded
-            for token_id in recorded_token_ids:
-                token = Token.query.get(token_id)
-                token.update_numbers()
-            db.session.commit()
-            # then update the numbers of the collection
-            collection = Collection.query.get(collection_id)
-            collection.update_numbers()
-            db.session.commit()
+        session_id = save_recording_session(request.form, request.files)
     except Exception as error:
         flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
         app.logger.error("Error posting recordings: {}\n{}".format(error,traceback.format_exc()))
         return Response(str(error), status=500)
 
-    if record_session is None:
-        flash("Engar upptökur, bara setningar merktar", category='success')
+    if session_id is None:
+        flash("Engar upptökur, bara setningar merktar.", category='success')
         return Response(url_for('index'), status=200)
     else:
-        return Response(url_for('rec_session', id=record_session.id), status=200)
+        return Response(url_for('rec_session', id=session_id), status=200)
+
 
 # RECORD ROUTES
 
@@ -151,9 +97,21 @@ def post_recording():
 @login_required
 def record_session(coll_id):
     collection = Collection.query.get(coll_id)
+    user_id = request.args.get('user_id')
+    if not user_id:
+        flash("Villa kom upp. Vinsamlega veljið rödd til að taka upp", category="danger")
+        return redirect(url_for('index'))
+    user_id = int(user_id)
+    user = User.query.get(user_id)
+    if not user:
+        flash("Notandi er ekki þekktur. Vinsamlega hafið samband við kerfisstjóra",
+            category="danger")
+        app.logger.error("User with id {} does not exist when trying to record".format(
+            user_id))
+        return redirect(url_for('index'))
 
     if collection.has_assigned_user():
-        if current_user.id != collection.assigned_user_id:
+        if user_id != collection.assigned_user_id:
             flash("Aðeins skráð rödd getur tekið upp í þessari söfnun", category="danger")
             return redirect(url_for('index'))
 
@@ -168,7 +126,8 @@ def record_session(coll_id):
     return render_template('record.jinja', section='record',
         collection=collection,  tokens=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
-        tal_api_token=app.config['TAL_API_TOKEN'])
+        tal_api_token=app.config['TAL_API_TOKEN'], user=user,
+        manager=current_user)
 
 @app.route('/record_beta/<int:coll_id>/', methods=['GET'])
 @login_required
@@ -311,7 +270,7 @@ def collection(id):
 
     return render_template('collection.jinja',
         collection=collection, token_form=token_form, tokens=tokens,
-        section='collection')
+        users=User.query.all(), section='collection')
 
 @app.route('/collections/<int:id>/sessions', methods=['GET'])
 @login_required

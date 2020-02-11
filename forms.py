@@ -11,6 +11,7 @@ from wtforms.ext.sqlalchemy.orm import model_form
 
 from models import Role, User, Collection, db
 
+# TODO: move to app configuration
 sex_choices = [('Kona','Kona'), ('Karl','Karl'), ('Annað','Annað')]
 dialect_choices = [('Linmæli', 'Linmæli'),
     ('Harðmæli', 'Harðmæli'),

@@ -3,11 +3,15 @@
     <div class='row'>
         <div class='col-12'>
             <h1 class='font-weight-bold'>Lota : {{session.get_printable_id()}}</h1>
+            <h2>Rödd: {{session.get_user}}</h2>
+            <p>Upptökustjóri: {{session.get_manager}}</p>
             <p>Tekin upp þann: {{session.created_at | datetime(format='low')}}</p>
             <p>Setningar teknar upp: {{session.num_recordings}}</p>
             <p>Lengd lotu: {{session.get_printable_duration() | default("N/A")}}</p>
 
-            <a href='{{url_for("record_session", coll_id=session.collection.id)}}' class='btn btn-success float-right'>
+            <a href='{{url_for("record_session", coll_id=session.collection.id)}}?user_id={{session.user_id}}'
+                class='btn btn-success float-right'
+                data-toggle="tooltip" data-placement="bottom" title="Sama rödd, {{session.get_user}}, verður notuð.">
                 {{macros.btn_icon('microphone', 'r')}}
                 Taka upp fleiri
             </a>

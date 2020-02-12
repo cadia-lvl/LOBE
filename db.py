@@ -43,7 +43,7 @@ def create_tokens(collection_id, files, is_g2p):
     # reset the number of tokens in the collection
     collection = Collection.query.get(collection_id)
     collection.update_numbers()
-
+    db.session.commit()
     return tokens
 
 

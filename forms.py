@@ -80,10 +80,12 @@ class UserEditForm(Form):
                             validators=[validators.required()])
 
 class SessionEditForm(Form):
-    user_id = QuerySelectField('Rödd', query_factory=lambda: User.query, get_label='name',
-        validators=[validators.required()])
     manager_id = QuerySelectField('Stjórnandi', query_factory=lambda: User.query, get_label='name',
         validators=[validators.required()])
+
+    def validate_manager_id(form, field):
+        if field.data is not None:
+            field.data = field.data.id
 
 RoleForm = model_form(model=Role, base_class=Form,
                       db_session=db.session)

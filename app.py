@@ -547,15 +547,14 @@ def rec_session(id):
 @login_required
 def session_edit(id):
     session = Session.query.get(id)
-    form = SessionEditForm(request.form, obj=user)
+    form = SessionEditForm(request.form)
     try:
         if request.method == 'POST' and form.validate():
-            form.populate_obj(user)
+            form.populate_obj(session)
             db.session.commit()
             flash("Lotu var breytt", category='success')
     except Exception as error:
-        app.logger.error('Error updating a user : {}\n{}'.format(error, traceback.format_exc()))
-
+        app.logger.error('Error updating a session : {}\n{}'.format(error, traceback.format_exc()))
     return render_template('model_form.jinja', form=form, type='edit',
         action=url_for('session_edit', id=id), section='session')
 

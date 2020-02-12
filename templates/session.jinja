@@ -15,6 +15,10 @@
                 {{macros.btn_icon('microphone', 'r')}}
                 Taka upp fleiri
             </a>
+            <a href='{{url_for("session_edit", id=session.id)}}' class='btn btn-secondary text-success float-right mr-2'>
+                {{macros.btn_icon('edit', 'r')}}
+                Breyta
+            </a>
             <a href='{{url_for("collection", id=session.collection.id)}}' class='btn btn-secondary float-right mr-2'>
                 {{macros.btn_icon('arrow-left', 'r')}}
                 Til baka í {{session.collection.name}}

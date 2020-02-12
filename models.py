@@ -481,7 +481,6 @@ class User(db.Model, UserMixin):
     sex = db.Column(db.String(255))
     age = db.Column(db.Integer)
     dialect = db.Column(db.String(255))
-    pin = db.Column(db.String(4))
 
     active = db.Column(db.Boolean())
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())

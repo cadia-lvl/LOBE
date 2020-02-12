@@ -22,7 +22,7 @@ from werkzeug import secure_filename
 from db import (create_tokens, insert_collection, newest_sessions, save_recording_session)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
-    ExtendedRegisterForm, UserEditForm, RoleForm)
+    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm)
 from models import Collection, Recording, Role, Token, User, Session, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
@@ -542,6 +542,22 @@ def rec_session_list():
 def rec_session(id):
     session = Session.query.get(id)
     return render_template('session.jinja', session=session, section='session')
+
+@app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+def session_edit(id):
+    session = Session.query.get(id)
+    form = SessionEditForm(request.form, obj=user)
+    try:
+        if request.method == 'POST' and form.validate():
+            form.populate_obj(user)
+            db.session.commit()
+            flash("Lotu var breytt", category='success')
+    except Exception as error:
+        app.logger.error('Error updating a user : {}\n{}'.format(error, traceback.format_exc()))
+
+    return render_template('model_form.jinja', form=form, type='edit',
+        action=url_for('session_edit', id=id), section='session')
 
 # USER ROUTES
 

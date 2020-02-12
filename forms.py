@@ -69,16 +69,8 @@ class ExtendedRegisterForm(RegisterForm):
         choices=dialect_choices)
     age = IntegerField('Aldur', [validators.required(),
         validators.NumberRange(min=18, max=100)])
-    pin = PasswordField('PIN', [validators.required(),
-        validators.length(min=4, max=4)], description='4 tölustafir')
-    pin_2 = PasswordField('Endurtaktu PIN', [validators.required(),
-        validators.length(min=4, max=4)])
     role = QuerySelectField('Hlutverk', query_factory=lambda: Role.query, get_label='name',
                             validators=[validators.required()])
-
-    def validadate_pin(form, field):
-        if form.pin.data != form.pin_2.data:
-            raise ValidationError('PIN did not match.')
 
 
 class UserEditForm(Form):
@@ -87,6 +79,11 @@ class UserEditForm(Form):
     role = QuerySelectField('Hlutverk', query_factory=lambda: Role.query, get_label='name',
                             validators=[validators.required()])
 
+class SessionEditForm(Form):
+    user_id = QuerySelectField('Rödd', query_factory=lambda: User.query, get_label='name',
+        validators=[validators.required()])
+    manager_id = QuerySelectField('Stjórnandi', query_factory=lambda: User.query, get_label='name',
+        validators=[validators.required()])
 
 RoleForm = model_form(model=Role, base_class=Form,
                       db_session=db.session)

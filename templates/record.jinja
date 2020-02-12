@@ -183,9 +183,11 @@
 {% block headscripts %}
     <script type="text/javascript">
         var tokens = {{json_tokens}};
-        var user_id = {{user.id}};
-        var manager_id = {{manager.id}};
-        var collection_id = {{collection.id}};
+        {% if not record_test %}
+            var user_id = {{user.id}};
+            var manager_id = {{manager.id}};
+            var collection_id = {{collection.id}};
+        {% endif %}
         var talAPIToken = "{{tal_api_token}}";
         var postRecordingRoute = "{{url_for('post_recording')}}";
     </script>

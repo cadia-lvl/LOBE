@@ -1,8 +1,11 @@
 from models import db, Collection, Session, Token, Recording
 from concurrent.futures import ProcessPoolExecutor
+from collections import defaultdict
 from functools import partialmethod
 import multiprocessing
 import os
+import datetime
+import math
 import json
 
 from settings.common import RECORDING_BIT_DEPTH
@@ -126,3 +129,37 @@ def newest_collections(num=4):
 def newest_sessions(user_id, num=4):
     ''' Get the num newest collections '''
     return Session.query.filter(Session.user_id==user_id,).order_by(Session.created_at.desc()).limit(num)
+
+def sessions_day_info(sessions, user):
+    # insert by dates
+    days = defaultdict(list)
+    for s in sessions:
+        days[s.created_at.date()].append(s)
+
+    day_info = dict()
+    for day, sessions in days.items():
+        is_voice = False
+        is_manager = False
+        for s in sessions:
+            if is_voice and is_manager: break
+            is_voice == is_voice or user.id == s.user_id
+            is_manager == is_manager or user.id == s.manager_id
+        role = "voice"
+        if is_voice and is_manager:
+            role = "both"
+        else:
+            role = "manager"
+        day_info[day] = {
+            'sessions': sessions,
+            'role': role,
+            'start_time': sessions[0].get_start_time,
+            'end_time': sessions[-1].created_at,
+            'est_work_time': datetime.timedelta(seconds=math.ceil((sessions[-1].created_at - sessions[0].get_start_time).total_seconds())),
+            'session_duration': datetime.timedelta(seconds=int(sum(s.duration for s in sessions)))}
+
+    total_est_work_time = sum((i['est_work_time'] for _, i in day_info.items()),
+        datetime.timedelta(0))
+    total_session_duration = sum((i['session_duration'] for _, i in day_info.items()),
+        datetime.timedelta(0))
+
+    return day_info, total_est_work_time, total_session_duration

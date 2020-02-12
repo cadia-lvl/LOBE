@@ -6,8 +6,6 @@ import tempfile
 import traceback
 import shutil
 import subprocess
-import datetime
-import math
 
 from collections import defaultdict
 from flask import (Flask, Response, flash, redirect, render_template, request,
@@ -17,9 +15,11 @@ from logging.handlers import RotatingFileHandler
 from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
     roles_required, current_user)
 from flask_security.utils import hash_password
+from sqlalchemy import or_
 from sqlalchemy.sql.expression import func, select
 from werkzeug import secure_filename
-from db import (create_tokens, insert_collection, newest_sessions, save_recording_session)
+from db import (create_tokens, insert_collection, newest_sessions, save_recording_session,
+    sessions_day_info)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
     ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm)
@@ -583,26 +583,9 @@ def user(id):
 def user_time_info(id):
     user = User.query.get(id)
     sessions = Session.query.filter(
-        Session.user_id==id).order_by(Session.created_at)
+        or_(Session.user_id==user.id, Session.manager_id==user.id)).order_by(Session.created_at)
 
-    # insert by dates
-    days = defaultdict(list)
-    for s in sessions:
-        days[s.created_at.date()].append(s)
-
-    day_info = dict()
-    for day, sessions in days.items():
-        day_info[day] = {
-            'sessions': sessions,
-            'start_time': sessions[0].get_start_time,
-            'end_time': sessions[-1].created_at,
-            'est_work_time': datetime.timedelta(seconds=math.ceil((sessions[-1].created_at - sessions[0].get_start_time).total_seconds())),
-            'session_duration': datetime.timedelta(seconds=int(sum(s.duration for s in sessions)))}
-
-    total_est_work_time = sum((i['est_work_time'] for _, i in day_info.items()),
-        datetime.timedelta(0))
-    total_session_duration = sum((i['session_duration'] for _, i in day_info.items()),
-        datetime.timedelta(0))
+    day_info, total_est_work_time, total_session_duration = sessions_day_info(sessions, user)
 
     return render_template('user_time.jinja', user=user, sessions=sessions,
         day_info=day_info, total_est_work_time=total_est_work_time,

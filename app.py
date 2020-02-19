@@ -28,6 +28,7 @@ from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
 from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
+
 # initialize the logger
 logHandler = RotatingFileHandler('logs/info.log', maxBytes=1000,
     backupCount=1)
@@ -132,42 +133,27 @@ def record_session(coll_id):
 @app.route('/record_beta/<int:coll_id>/', methods=['GET'])
 @login_required
 def record_session_beta(coll_id):
-    use_video = True
-    has_echo_cancel = False
-    if use_video:
-        media_constraints = json.dumps({
-            'audio': {
-                'echoCancellation': {'exact': has_echo_cancel},
-            },
-            'video': {
-                    'width': 1280,
-                    'height': 720
-            }
-        })
-    else:
-        media_constraints = json.dumps({
-            'audio': {
-                'echoCancellation': {'exact': has_echo_cancel},
-            }
-        })
-
     collection = Collection.query.get(coll_id)
 
     if collection.has_assigned_user():
         if current_user.id != collection.assigned_user_id:
-            flash("Aðeins skráð rödd getur tekið upp í þessari söfnun", category="danger")
+            flash("Aðeins skráð rödd getur tekið upp í þessari söfnun",
+                category="danger")
             return redirect(url_for('index'))
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
-        Token.num_recordings==0, Token.marked_as_bad!=True).order_by(func.random()).limit(1)
+        Token.num_recordings==0, Token.marked_as_bad!=True).order_by(
+            func.random()).limit(SESSION_SZ)
 
     if tokens.count() == 0:
-        flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun", category="warning")
+        flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun",
+            category="warning")
         return redirect(url_for("collection", id=coll_id))
 
     return render_template('record_beta.jinja', section='record',
-        collection=collection, token=tokens[0], tal_api_token=app.config['TAL_API_TOKEN'],
-        use_video=use_video, media_constraints=media_constraints)
+        collection=collection, token=tokens, json_tokens=json.dumps(
+            [t.get_dict() for t in tokens]),
+        tal_api_token=app.config['TAL_API_TOKEN'])
 
 @app.route('/record_beta/<int:coll_id>/post/', methods=['GET', 'POST'])
 @login_required
@@ -189,7 +175,6 @@ def post_recording_beta(coll_id):
 @app.route('/record_beta/analyze/', methods=['POST'])
 @login_required
 def analyze_audio():
-
     # save to disk, only one file in the form
     file_obj = next(iter(request.files.values()))
     file_path = os.path.join('./temp', file_obj.filename)

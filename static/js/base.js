@@ -1,5 +1,5 @@
 //Notification shower
-if($('#notification')){
+if($('#notification').length > 0){
 	$( "#notification" ).animate(
 		{ left: "20px"},
 		{ duration: 500}

@@ -133,28 +133,28 @@
             <div class="modal fade" id='reloadTokensModal' tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Hlaða nýjum textum</h5>
-                        <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <p>
-                            Með því að halda áfram muntu hlaða inn nýjum textaskrám og söfnun heldur áfram.
-                            Ef núverandi upptökusett hefur ekki verið klárað mun það ekki vistast við að halda
-                            áfram.
-                        </p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
-                        <a href="{{url_for('record_session', coll_id=collection.id)}}" class='btn btn-primary'>
-                            Halda áfram
-                        </a>
-                    </div>
+                        <div class="modal-header">
+                            <h5 class="modal-title">Hlaða nýjum textum</h5>
+                            <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p>
+                                Með því að halda áfram muntu hlaða inn nýjum textaskrám og söfnun heldur áfram.
+                                Ef núverandi upptökusett hefur ekki verið klárað mun það ekki vistast við að halda
+                                áfram.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                            <a href="{{url_for('record_session', coll_id=collection.id)}}" class='btn btn-primary'>
+                                Halda áfram
+                            </a>
+                        </div>
+                        </div>
                     </div>
                 </div>
-            </div>
             </div>
         {% endif %}
     {% endblock %}
@@ -188,6 +188,7 @@
             var manager_id = {{manager.id}};
             var collection_id = {{collection.id}};
         {% endif %}
+        var analyze_url = "{{url_for("analyze_audio")}}";
         var talAPIToken = "{{tal_api_token}}";
         var postRecordingRoute = "{{url_for('post_recording')}}";
     </script>

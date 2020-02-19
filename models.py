@@ -1,6 +1,7 @@
 import contextlib
 import os
 import wave
+import json
 from datetime import datetime, timedelta
 
 from flask import current_app as app
@@ -10,6 +11,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, select
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug import secure_filename
+
+from settings.common import USE_ECHO_CANCELLATION, VIDEO_W, VIDEO_H
 
 db = SQLAlchemy()
 
@@ -123,6 +126,15 @@ class Collection(BaseModel, db.Model):
         return round((self.num_tokens - self.num_nonrecorded_tokens)\
             *ESTIMATED_AVERAGE_RECORD_LENGTH/3600, 1)
 
+    @hybrid_property
+    def json_media_constraints(self):
+        media_constraints = {'audio':
+            { 'echoCancellation': {'exact': app.config['USE_ECHO_CANCELLATION']},}}
+        if self.has_video:
+            media_constraints['video']: {
+                'width': app.config['VIDEO_W'],
+                'height': app.config['VIDEO_H']}
+        return json.dumps(media_constraints)
 
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())

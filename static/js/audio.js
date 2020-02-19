@@ -5,6 +5,7 @@ window.onbeforeunload = function() {
 var NUM_CHANNELS = 1;
 var FFT_SIZE = 1024;
 var AUDIO_CTXT_BUFFER_SZ = 16384;
+var SAMPLE_RATE = 41000;
 var RECORD_WAIT_TIME = 1;
 var DO_TRANSCRIPT = false;
 
@@ -380,7 +381,7 @@ function sendAction(){
 function startRecording() {
 	isRecording = true;
 	navigator.mediaDevices.getUserMedia({audio:true, video:false}).then(function(stream) {
-		audioContext = new AudioContext();
+		audioContext = new AudioContext({'sampleRate': SAMPLE_RATE});
 		//meter = createAudioMeter(audioContext);
 		sampleRate = audioContext.sampleRate;
 		gumStream = stream;
@@ -422,7 +423,7 @@ function startRecording() {
 				function(elem) { return elem === 0; })) {
 				var buffer = new ArrayBuffer(e.inputBuffer.length * 2);
 				var view = new DataView(buffer);
-				// We use 16 BIT PCM like LJSPeech
+				// 16bit PCM used for transcription
 				if(DO_TRANSCRIPT){
 					floatTo16BitPCM(view, 0, e.inputBuffer.getChannelData(0));
 					var encodedContent = base64ArrayBuffer(buffer);
@@ -474,7 +475,7 @@ function createAudioFile(blob) {
 		'blob': blob,
 		'transcript': ''}
 
-	// submit to WS one last time to confirm end of recording,
+		// submit to WS one last time to confirm end of recording,
 	// then add the transcription to the token. Also update the
 	// UI, finally.
 	if (DO_TRANSCRIPT && !!ws) {

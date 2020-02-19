@@ -61,3 +61,11 @@ video#recorded, video#gum{
 .custom-file-label {
     border-radius: 0.25rem 0.5rem 0.5rem 0.25rem;
 }
+
+.rounded-pill-right{
+    border-radius: 0 50rem 50rem 0 !important;
+}
+
+.rounded-pill-left{
+    border-radius: 50rem 0 0 50rem !important;
+}

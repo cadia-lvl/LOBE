@@ -17,7 +17,7 @@ from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
 from flask_security.utils import hash_password
 from sqlalchemy import or_
 from sqlalchemy.sql.expression import func, select
-from werkzeug import secure_filename
+from werkzeug import secure_filename, Request
 from db import (create_tokens, insert_collection, newest_sessions, save_recording_session,
     sessions_day_info)
 from filters import format_date
@@ -346,6 +346,89 @@ def download_collection(id):
         return response
     return send_file('temp/{}.zip'.format(collection.name), as_attachment=True)
 
+@app.route('/collections/<int:id>/download_beta/')
+@login_required
+def download_collection_beta(id):
+    collection = Collection.query.get(id)
+    tokens = collection.tokens
+    dl_tokens = []
+    for token in tokens:
+        if token.num_recordings > 0:
+            dl_tokens.append(token)
+    if not os.path.exists('temp'):
+        os.makedirs('temp')
+    zf = zipfile.ZipFile('temp/{}.zip'.format(collection.name), mode='w')
+    index_f = open('./temp/index.tsv', 'w')
+    user_ids = set()
+    recording_info = {}
+    try:
+        for token in dl_tokens:
+            zf.write(token.get_path(), 'text/{}'.format(token.get_fname()))
+            for recording in token.recordings:
+                user_name = recording.get_user().name
+                user_ids.add(recording.user_id)
+                # HACK
+                if recording.get_path() is not None:
+                    zf.write(recording.get_path(), 'audio/{}/{}'.format(
+                        user_name, recording.get_fname()))
+                    recording_info[recording.id] = {
+                        'collection_info':{
+                            'recording_fname': recording.get_fname(),
+                            'text_fname': token.get_fname(),
+                            'text': token.text,
+                            'user_name': user_name,
+                            'user_id': recording.user_id,
+                            'session_id': recording.session.id
+                        },'recording_info':{
+                            'sr': recording.sr,
+                            'num_channels': recording.num_channels,
+                            'bit_depth': recording.bit_depth,
+                            'duration': recording.duration,
+                        },'other':{
+                            'transcription': recording.transcription,
+                            'recording_marked_bad': recording.marked_as_bad,
+                            'text_marked_bad': token.marked_as_bad}}
+                    index_f.write('{}\t{}\t{}\n'.format(
+                        user_name, recording.get_fname(), token.get_fname()))
+                else:
+                    print("Error - token {} does not have a recording".format(token.id))
+        index_f.close()
+        with open('./temp/info.json', 'w', encoding='utf-8') as info_f:
+            json.dump(recording_info, info_f, ensure_ascii=False, indent=4)
+        zf.write('./temp/info.json', 'info.json')
+        zf.write('./temp/index.tsv', 'index.tsv')
+        meta = {'speakers':[]}
+        for id in user_ids:
+            meta['speakers'].append(User.query.get(id).get_meta())
+        meta['collection'] = collection.get_meta()
+        with open ('./temp/meta.json', 'w', encoding='utf-8') as meta_f:
+            json.dump(meta, meta_f, ensure_ascii=False, indent=4)
+        zf.write('./temp/meta.json', 'meta.json')
+    except Exception as error:
+        print("{}\n{}".format(error, traceback.format_exc()))
+        app.logger.error(
+            "Error creating a collection .zip : {}\n{}".format(error, traceback.format_exc()))
+    finally:
+        zf.close()
+
+    '''
+    @after_this_request
+    def remove_file(response):
+        try:
+            os.remove('temp/{}.zip'.format(collection.name))
+            os.remove('temp/index.tsv')
+            os.remove('temp/info.json')
+            os.remove('temp/meta.json')
+        except Exception as error:
+            app.logger.error(
+                "Error deleting a downloaded archive : {}\n{}".format(
+                    error,traceback.format_exc()))
+        return response
+    '''
+    zip_file = open('temp/{}.zip'.format(collection.name), 'rb')
+    #zip_file = open('./temp/index.tsv', 'rb')
+    return Response(zip_file, direct_passthrough=True)
+    #send_file('temp/{}.zip'.format(collection.name), as_attachment=True)
 
 
 @app.route('/collections/<int:id>/download/index')

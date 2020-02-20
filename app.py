@@ -411,23 +411,17 @@ def download_collection_beta(id):
     finally:
         zf.close()
 
-    '''
-    @after_this_request
-    def remove_file(response):
-        try:
-            os.remove('temp/{}.zip'.format(collection.name))
-            os.remove('temp/index.tsv')
-            os.remove('temp/info.json')
-            os.remove('temp/meta.json')
-        except Exception as error:
-            app.logger.error(
-                "Error deleting a downloaded archive : {}\n{}".format(
-                    error,traceback.format_exc()))
-        return response
-    '''
     zip_file = open('temp/{}.zip'.format(collection.name), 'rb')
+    file_size = os.path.getsize('temp/{}.zip'.format(collection.name))
     #zip_file = open('./temp/index.tsv', 'rb')
-    return Response(zip_file, direct_passthrough=True)
+    return Response(
+        zip_file,
+        mimetype='application/octet-stream',
+        headers=[
+            ('Content-Length', str(file_size)),
+            ('Content-Disposition', "attachment; filename=\"%s\"" % '{}.zip'.format(collection.name))
+        ],
+        direct_passthrough=True)
     #send_file('temp/{}.zip'.format(collection.name), as_attachment=True)
 
 

@@ -73,27 +73,14 @@
                     {{macros.btn_icon('microphone', 'r')}}
                     WebRTC (beta)
                 </a>
-                <a href='{{url_for("download_collection_beta", id=collection.id)}}' class='btn btn-sm btn-success float-right mb-2 ml-2'>
-                    Download Beta
-                </a>
                 <button type='button' class='btn btn-secondary btn-sm float-right mb-2 ml-2' data-toggle='modal', data-target='#addTokensModal'>
                     {{macros.btn_icon('plus', 'r')}}
                     Bæta við
                 </button>
-                <button class="btn btn-secondary float-right ml-2 mb-2 btn-sm" type="button" data-toggle="dropdown">
+                <button class="btn btn-secondary float-right ml-2 mb-2 btn-sm" type="button" data-toggle='modal', data-target='#downloadModal'>
                     {{macros.btn_icon('download', 'r')}}
                     Sækja
                 </button>
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                    <button class='dropdown-item' type='button', data-toggle='modal', data-target='#downloadModal'>
-                        {{macros.btn_icon('database', 'r')}}
-                        Sækja allt
-                    </button>
-                    <a href='{{collection.get_download_index_url()}}' class='dropdown-item'>
-                        {{macros.btn_icon('file', 'r')}}
-                        Sækja bara index
-                    </a>
-                </div>
                 <a href='{{collection.get_edit_url()}}' class='btn btn-warning btn-sm mb-2 ml-2 float-right'>
                     {{macros.btn_icon('edit', 'r')}}
                     Breyta
@@ -221,6 +208,7 @@
                     <p>
                         Til að ná í söfnun þarf fyrst að útbúa skjalasafn. Þegar skjalasafnið er tilbúið birtist
                         það <a target="_blank" rel="noopener noreferrer" href='{{url_for("collection_zip_list")}}'>hér</a>.
+                        Athugið að það getur tekið allt að 10 mínútur að útbúa skjalasafnið.
                     </p>
                 {% endif %}
             </div>

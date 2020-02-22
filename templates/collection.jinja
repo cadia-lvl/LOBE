@@ -85,10 +85,10 @@
                     Sækja
                 </button>
                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                    <a href='{{collection.get_download_url()}}' class='dropdown-item'>
+                    <button class='dropdown-item' type='button', data-toggle='modal', data-target='#downloadModal'>
                         {{macros.btn_icon('database', 'r')}}
                         Sækja allt
-                    </a>
+                    </button>
                     <a href='{{collection.get_download_index_url()}}' class='dropdown-item'>
                         {{macros.btn_icon('file', 'r')}}
                         Sækja bara index
@@ -194,5 +194,52 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id='downloadModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sækja söfnun</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                {% if collection.has_zip %}
+                    <p class='font-weight-bold'>
+                        Búið er að útbúa skjalasafn fyrir þessa söfnun
+                    </p>
+                    <p>
+                        Skjalasafnið var gert þegar búið var að lesa {{collection.zip_token_count}} setningar.
+                        Núna er búið að lesa {{collection.num_tokens - collection.num_nonrecorded_tokens}} setningar.
+                        Þú getur annað hvort búið til nýtt skjalasafn eða náð í það nýjasta.
+                    </p>
+                {% else %}
+                    <p class='font-weight-bold'>
+                        Ekki er búið að útbúa skjalasafn
+                    </p>
+                    <p>
+                        Til að ná í söfnun þarf fyrst að útbúa skjalasafn. Þegar skjalasafnið er tilbúið birtist
+                        það <a target="_blank" rel="noopener noreferrer" href='{{url_for("collection_zip_list")}}'>hér</a>.
+                    </p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                {% if collection.has_zip %}
+                    <a href='{{url_for("stream_collection_zip", id=collection.id)}}' class='btn btn-primary'>
+                        Sækja söfnun
+                        {{macros.btn_icon('download', 'r')}}
+                    </a>
+                {% endif %}
+                <a href='{{url_for("generate_zip", id=collection.id)}}' class='btn btn-secondary'>
+                    Gera skjalasafn
+                    {{macros.btn_icon('archive', 'r')}}
+                </a>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+            </div>
+            </div>
+        </div>
+    </div>
+
     {% include '_user_confirm_modal.jinja' %}
 {% endblock %}

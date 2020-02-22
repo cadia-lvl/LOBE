@@ -6,15 +6,16 @@ import tempfile
 import traceback
 import shutil
 import subprocess
+import logging
+from logging.handlers import RotatingFileHandler
 
 from collections import defaultdict
 from flask import (Flask, Response, flash, redirect, render_template, request,
     send_from_directory, send_file, session, url_for, after_this_request, flash)
-import logging
-from logging.handlers import RotatingFileHandler
 from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
     roles_required, current_user)
 from flask_security.utils import hash_password
+from flask_executor import Executor
 from sqlalchemy import or_
 from sqlalchemy.sql.expression import func, select
 from werkzeug import secure_filename, Request
@@ -27,6 +28,7 @@ from models import Collection, Recording, Role, Token, User, Session, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
+from managers import ZipManager, RecordingInfoManager, IndexManager, create_collection_zip
 from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
 
 # initialize the logger
@@ -44,10 +46,9 @@ def create_app():
         app.config.from_pyfile('{}.py'.format(os.path.join('settings/','semi_production')))
     else:
         app.config.from_pyfile('{}.py'.format(os.path.join('settings/',
-            os.getenv('FLASK_ENV', 'development'))))
+            os.getenv('FLASK_printENV', 'development'))))
     app.logger.setLevel(logging.DEBUG)
     app.logger.addHandler(logHandler)
-
     if 'REVERSE_PROXY_PATH' in app.config:
         ReverseProxyPrefixFix(app)
 
@@ -57,9 +58,13 @@ def create_app():
     # register filters
     app.jinja_env.filters['datetime'] = format_date
 
+    # Propagate background task exceptions
+    app.config['EXECUTOR_PROPAGATE_EXCEPTIONS'] = True
+
     return app
 
 app = create_app()
+executor = Executor(app)
 
 SESSION_SZ = 50
 
@@ -235,6 +240,17 @@ def collection_list():
     collections = Collection.query.paginate(page,
         per_page=app.config['COLLECTION_PAGINATION'], )
     return render_template('collection_list.jinja', collections=collections,
+        section='collection')
+
+@app.route('/collections/zip_list/')
+@login_required
+def collection_zip_list():
+    page = int(request.args.get('page', 1))
+    # TODO: sort_by not currently supported
+    sort_by = request.args.get('sort_by', 'name')
+    collections = db.session.query(Collection).filter_by(has_zip=True).paginate(page,
+        per_page=app.config['COLLECTION_PAGINATION'], )
+    return render_template('zip_list.jinja', collections=collections,
         section='collection')
 
 @app.route('/collections/<int:id>/', methods=['GET', 'POST'])
@@ -424,6 +440,28 @@ def download_collection_beta(id):
         direct_passthrough=True)
     #send_file('temp/{}.zip'.format(collection.name), as_attachment=True)
 
+
+@app.route('/collections/<int:id>/generate_zip')
+@login_required
+def generate_zip(id):
+    executor.submit(create_collection_zip, id)
+    flash('Skjalasafn verður tilbúið vonbráðar.', category='success')
+    return redirect(url_for('collection', id=id))
+
+@app.route('/collections/<int:id>/stream_zip')
+@login_required
+def stream_collection_zip(id):
+    collection = Collection.query.get(id)
+    zip_file = open(collection.zip_path, 'rb')
+    file_size = os.path.getsize(collection.zip_path)
+    return Response(
+        zip_file,
+        mimetype='application/octet-stream',
+        headers=[
+            ('Content-Length', str(file_size)),
+            ('Content-Disposition', "attachment; filename=\"%s\"" % '{}'.format(collection.zip_fname))
+        ],
+        direct_passthrough=True)
 
 @app.route('/collections/<int:id>/download/index')
 @login_required

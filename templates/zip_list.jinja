@@ -1,0 +1,38 @@
+{% extends "__base.jinja" %}
+{% block body %}
+        <div class='row'>
+            <div class='col-12'>
+                <h1 class='font-weight-bold'>Skjalasöfn</h1>
+            </div>
+            <div class='col-12 mb-3'>
+                {% if current_user.is_admin() %}
+                    <a class='btn btn-secondary float-right' href='{{url_for("collection_list")}}'>
+                        {{macros.btn_icon('database', 'r')}}
+                        Safnanir
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class='row'>
+            <div class='col-12 table-responsive'>
+                <table class='table'>
+                    <thead>
+                        <th>Nafn</th>
+                        <th>Lesnar setningar í safni</th>
+                        <th>Lesnar setningar í söfnun</th>
+                        <th>Setningar í söfnun</th>
+                    </thead>
+                    <tbody>
+                        {% for collection in collections.items %}
+                            <tr>
+                                <td><a href={{collection.get_url()}}>{{collection.name}}</a></td>
+                                <td>{{collection.zip_token_count}}</td>
+                                <td>{{collection.num_tokens - collection.num_nonrecorded_tokens}}</td>
+                                <td>{{collection.num_tokens}}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+{% endblock %}

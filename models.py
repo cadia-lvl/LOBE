@@ -91,6 +91,14 @@ class Collection(BaseModel, db.Model):
         if self.has_assigned_user():
             return User.query.get(self.assigned_user_id)
 
+    @hybrid_property
+    def zip_path(self):
+        return os.path.join(app.config['ZIP_DIR'], self.zip_fname)
+
+    @hybrid_property
+    def zip_fname(self):
+        return f'{self.id}.zip'
+
     def get_sortby_function(self):
         if self.sort_by == "score":
             return Token.score.desc()
@@ -152,6 +160,8 @@ class Collection(BaseModel, db.Model):
     num_tokens = db.Column(db.Integer, default=0)
     num_recorded_tokens = db.Column(db.Integer, default=0)
     num_invalid_tokens = db.Column(db.Integer, default=0)
+    has_zip = db.Column(db.Boolean, default=False)
+    zip_token_count = db.Column(db.Integer, default=0)
     #recordings = db.relationship("Recording", lazy='joined', backref='collection')
 
 

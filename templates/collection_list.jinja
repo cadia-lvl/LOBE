@@ -6,9 +6,13 @@
             </div>
             <div class='col-12 mb-3'>
                 {% if current_user.is_admin() %}
-                    <a class='btn btn-secondary float-right' href='{{url_for("create_collection")}}'>
+                    <a class='btn btn-secondary text-success float-right' href='{{url_for("create_collection")}}'>
                         {{macros.btn_icon('plus', 'r')}}
                         Búa til
+                    </a>
+                    <a class='btn btn-secondary float-right mr-2' href='{{url_for("collection_zip_list")}}'>
+                        {{macros.btn_icon('archive', 'r')}}
+                        Skjalasöfn
                     </a>
                 {% endif %}
             </div>

@@ -57,7 +57,8 @@ def insert_collection(form):
     db.session.add(collection)
     db.session.flush()
 
-    dirs = [collection.get_record_dir(), collection.get_token_dir()]
+    dirs = [collection.get_record_dir(), collection.get_token_dir(),
+        collection.zip_path]
     if collection.has_video:
         dirs.append(collection.get_video_dir())
     # create dirs for tokens and records

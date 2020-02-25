@@ -20,7 +20,7 @@ from sqlalchemy import or_
 from sqlalchemy.sql.expression import func, select
 from werkzeug import secure_filename, Request
 from db import (create_tokens, insert_collection, newest_sessions, save_recording_session,
-    sessions_day_info)
+    sessions_day_info, delete_recording_db, delete_session_db)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
     ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm)
@@ -182,7 +182,7 @@ def post_recording_beta(coll_id):
 def analyze_audio():
     # save to disk, only one file in the form
     file_obj = next(iter(request.files.values()))
-    file_path = os.path.join('./temp', file_obj.filename)
+    file_path = os.path.join(app.config['TEMP_DIR'], file_obj.filename)
     file_obj.save(file_path)
 
     # load the sample
@@ -411,6 +411,19 @@ def recording(id):
     recording = Recording.query.get(id)
     return render_template('recording.jinja', recording=recording, section='recording')
 
+@app.route('/recordings/<int:id>/delete/', methods=['GET'])
+@login_required
+@roles_required('admin')
+def delete_recording(id):
+    recording = Recording.query.get(id)
+    did_delete = delete_recording_db(recording)
+    if did_delete:
+        flash("Upptöku var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða upptöku", category='warning')
+    return redirect(request.args.get('backref', url_for('index')))
+
+
 @app.route('/recordings/<int:id>/mark_bad/')
 @login_required
 def toggle_recording_bad(id):
@@ -460,6 +473,7 @@ def rec_session(id):
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin')
 def session_edit(id):
     session = Session.query.get(id)
     form = SessionEditForm(request.form)
@@ -472,6 +486,18 @@ def session_edit(id):
         app.logger.error('Error updating a session : {}\n{}'.format(error, traceback.format_exc()))
     return render_template('model_form.jinja', form=form, type='edit',
         action=url_for('session_edit', id=id), section='session')
+
+@app.route('/sessions/<int:id>/delete/', methods=['GET'])
+@login_required
+@roles_required('admin')
+def delete_session(id):
+    record_session = Session.query.get(id)
+    did_delete = delete_session_db(record_session)
+    if did_delete:
+        flash("Lotu var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða lotu", category='warning')
+    return redirect(url_for('rec_session_list'))
 
 # USER ROUTES
 

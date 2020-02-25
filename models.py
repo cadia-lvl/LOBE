@@ -136,13 +136,23 @@ class Collection(BaseModel, db.Model):
 
     @hybrid_property
     def json_media_constraints(self):
-        media_constraints = {'audio':
-            { 'echoCancellation': {'exact': app.config['USE_ECHO_CANCELLATION']},}}
+        media_constraints = {'audio':{
+            'echoCancellation': {'exact': app.config['USE_ECHO_CANCELLATION']},
+            'channelCount': {'exact': app.config['CHANNEL_COUNT']},
+            'sampleRate': {'exact': app.config['SAMPLE_RATE']},
+            'sampleSize': {'exact': app.config['SAMPLE_SIZE']}}}
         if self.has_video:
             media_constraints['video']: {
                 'width': app.config['VIDEO_W'],
                 'height': app.config['VIDEO_H']}
         return json.dumps(media_constraints)
+
+    @hybrid_property
+    def json_recorder_options(self):
+        options = {
+            'mimeType': f'{"video" if self.has_video else "audio"}/webm; codecs=' +\
+                 f'\"{"vp8, " if self.has_video else ""}pcm\"'}
+        return json.dumps(options)
 
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
@@ -404,7 +414,7 @@ class Recording(BaseModel, db.Model):
         return {'id':self.id, 'token': self.token.get_dict()}
 
     #@hybrid_property
-    def get_collection(self):
+    def get_collection_id(self):
         return Token.query.get(self.token_id).collection_id
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

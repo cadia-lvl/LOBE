@@ -2,11 +2,33 @@
     <table class='table table-sm table-no-break'>
         <thead>
             <th id="btn-th"></th>
-            <th>Lesið þann</th>
-            <th>Auðkenni</th>
-            <th>Lesið af</th>
-            <th>Texti lesinn</th>
-            <th>Lengd</th>
+            <th>
+                Lesið þann
+                {{macros.sort_th_a('created_at')}}
+            </th>
+            <th>
+                Auðkenni
+                {{macros.sort_th_a('id')}}
+            </th>
+            <th>
+                Texti
+                {{macros.sort_th_a('token_id')}}
+            </th>
+            <th>
+                Lota
+                {{macros.sort_th_a('session_id')}}
+            </th>
+            <th>
+                Lesið af
+                {{macros.sort_th_a('user_id')}}
+            </th>
+            <th>
+                Texti lesinn
+            </th>
+            <th>
+                Lengd
+                {{macros.sort_th_a('duration')}}
+            </th>
         </thead>
         <tbody>
             {% for recording in recordings %}
@@ -33,7 +55,7 @@
                                 </button>
                             {% endif%}
                             {% if current_user.is_admin() %}
-                                <a class="dropdown-item text-danger" href="#">
+                                <a class="dropdown-item text-danger" href="{{url_for('delete_recording', id=recording.id)}}?backref={{request.path}}">
                                     {{macros.btn_icon('trash', 'r')}}
                                     Eyða
                                 </a>
@@ -42,12 +64,28 @@
                     </td>
                     <td>{{recording.created_at | datetime(format='low')}}</td>
                     <td><a id="{{recording.id}}-name" href={{recording.get_url()}} class='{% if recording.marked_as_bad %} text-warning {% endif %}'><code>#{{recording.id}}</code></a></td>
-                    {% if recording.user_id %}
-                        <td><a href={{recording.get_user().get_url()}}>{{recording.get_user().name}}</a></td>
+                    <td>
+                        <a href="{{url_for('token', id=recording.token.id)}}"><code>{{recording.token.get_printable_id()}}</code></a>
+                    </td>
+                    <td>
+                        {% if recording.session%}
+                            <a href="{{url_for('rec_session', id=recording.session.id)}}"><code>{{recording.session.get_printable_id()}}</code></a>
+                        {% else %}
+                            n/a
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if recording.user_id %}
+                            <a href={{recording.get_user().get_url()}}>{{recording.get_user().name}}</a>
+                        {% else %}
+                            n/a
+                        {% endif %}
+                    </td>
+                    {% if recording.get_token() %}
+                        <td data-toggle="tooltip" data-placement="bottom" title="{{recording.get_token().text}}">{{recording.get_token().short_text()}}</td>
                     {% else %}
-                        <td>Ekki skráð</td>
+                        <td>n/a</td>
                     {% endif %}
-                    <td>{% if recording.get_token() %}{{recording.get_token().text}}{% else %}n/a{% endif %}</td>
                     <td>{{recording.get_printable_duration()}}</td>
                 </tr>
             {% endfor %}

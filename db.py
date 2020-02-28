@@ -1,14 +1,16 @@
-from models import db, Collection, Session, Token, Recording
-from concurrent.futures import ProcessPoolExecutor
-from collections import defaultdict
-from functools import partialmethod
+import datetime
+import json
+import math
 import multiprocessing
 import os
-import datetime
-import math
-import json
+import traceback
+from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor
+from functools import partialmethod
 
+from models import Collection, Recording, Session, Token, db
 from settings.common import RECORDING_BIT_DEPTH
+
 
 def create_tokens(collection_id, files, is_g2p):
     tokens = []
@@ -164,3 +166,43 @@ def sessions_day_info(sessions, user):
         datetime.timedelta(0))
 
     return day_info, total_est_work_time, total_session_duration
+
+def delete_recording_db(recording):
+    collection = Collection.query.get(recording.get_collection_id())
+    token = recording.get_token()
+    try:
+        os.remove(recording.get_path())
+    except Exception as error:
+        print(f'{error}\n{traceback.format_exc()}')
+        return False
+    db.session.delete(recording)
+    db.session.commit()
+
+    token.update_numbers()
+    db.session.commit()
+
+    collection.update_numbers()
+    db.session.commit()
+    return True
+
+def delete_session_db(record_session):
+    tokens = [r.get_token() for r in record_session.recordings]
+    collection = Collection.query.get(record_session.collection_id)
+    try:
+        for recording in record_session.recordings:
+            os.remove(recording.get_path())
+    except Exception as error:
+        print(f'{error}\n{traceback.format_exc()}')
+        return False
+    for recording in record_session.recordings:
+        db.session.delete(recording)
+    db.session.delete(record_session)
+    db.session.commit()
+
+    for token in tokens:
+        token.update_numbers()
+    db.session.commit()
+
+    collection.update_numbers()
+    db.session.commit()
+    return True

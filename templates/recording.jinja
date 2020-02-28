@@ -3,46 +3,55 @@
     <div class='row'>
         <div class='col-12'>
             <h1 class='font-weight-bold'>Upptaka #{{recording.id}}</h1>
-            <h2>{{recording.get_printable_id()}}</h2>
-            {% if recording.marked_as_bad %}
-                <h3 class='text-danger'>Merkt sem léleg.</h3>
-            {% endif %}
-        </div>
-        <div class='col-12'>
-            <hr>
+            <p class='font-weight-bold'>{{recording.get_printable_id()}}
+                {% if recording.marked_as_bad %}
+                    <span class='text-danger'>Merkt sem léleg.</span>
+                {% endif %}
+            </p>
         </div>
         <div class='col-md-6 col-12'>
-            <p>Tekið upp: {{recording.created_at | datetime(format='medium')}}</p>
-            <p>Lesið af: {{recording.user | default("ekki skráð", true)}} </p>
-            <p>Lengd: {{recording.get_printable_duration()}}</p>
-            <p>Texti lesinn: {{recording.token.text}}</p>
-            <p>Rafrænt afrit: {{recording.get_printable_transcription()}}</p>
-        </div>
-        <div class='col-md-6 col-12 text-md-right'>
-            <p>Sample rate: {{recording.sr}}</p>
-            <p>Fjöldi rása: {{recording.num_channels}}</p>
-            <p>Fjöldi ramma: {{recording.num_frames}}</p>
-            <p>Bitadjúp: {% if recording.bit_depth %}{{recording.bit_depth}}{% else %}Ekki skráð{% endif %}</p>
-        </div>
-        <!--
-        <div class='col-12'>
-            <div id='peaks-container'>
+            <div class='row'>
+                <div class='col-6'><p>Tekið upp:</p></div>
+                <div class='col-6 text-right'><p>{{recording.created_at | datetime(format='medium')}}</p></div>
+
+                <div class='col-6'><p>Lesið af:</p></div>
+                <div class='col-6 text-right'><p>{{recording.user | default("ekki skráð", true)}}</p></div>
+
+                <div class='col-6'><p>Lengd:</p></div>
+                <div class='col-6 text-right'><p>{{recording.get_printable_duration()}}</p></div>
+
+                <div class='col-6'><p>Texti lesinn:</p></div>
+                <div class='col-6 text-right'><p>{{recording.token.text}}</p></div>
+
+                <div class='col-6'><p>Rafrænt afrit:</p></div>
+                <div class='col-6 text-right'><p>{{recording.get_printable_transcription()}}</p></div>
             </div>
         </div>
-        <div class='col-12'>
-            <div id='overview-container'>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-6'><p>Sample rate:</p></div>
+                <div class='col-6 text-right'><p>{{recording.sr}}</p></div>
+
+                <div class='col-6'><p>Fjöldi rása:</p></div>
+                <div class='col-6 text-right'><p>{{recording.num_channels}}</p></div>
+
+                <div class='col-6'><p>Fjöldi ramma:</p></div>
+                <div class='col-6 text-right'><p>{{recording.num_frames}}</p></div>
+
+                <div class='col-6'><p>Bitadjúp:</p></div>
+                <div class='col-6 text-right'><p>{% if recording.bit_depth %}{{recording.bit_depth}}{% else %}Ekki skráð{% endif %}</p></div>
             </div>
-        </div>-->
-        <div class='col-12'>
-            <hr>
         </div>
     </div>
     <div class='row'>
         <div class='col-12'>
-            <button class='btn btn-danger float-right ml-1' href='#' disabled>
+            <a class='btn btn-danger float-right ml-1' href="{{url_for('delete_recording', id=recording.id)}}">
                 {{macros.btn_icon('trash', 'r')}}
                 Eyða
-            </button>
+            </a>
+            <a href="{{url_for('token', id=recording.token.id)}}" class='btn btn-secondary float-right ml-1'>
+                Skoða setningu
+            </a>
             <form method="POST" action=>
                 {% if recording.marked_as_bad %}
                     <a href="{{url_for('toggle_recording_bad', id=recording.id)}}" class='btn btn-success float-right ml-1'>

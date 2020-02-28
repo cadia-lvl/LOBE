@@ -149,4 +149,3 @@ def create_collection_zip(id):
     collection.has_zip = True
     collection.zip_token_count = len(dl_tokens)
     db.session.commit()
-    print("Have finished the zip!")

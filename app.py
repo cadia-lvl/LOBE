@@ -20,7 +20,7 @@ from sqlalchemy import or_
 from sqlalchemy.sql.expression import func, select
 from werkzeug import secure_filename, Request
 from db import (create_tokens, insert_collection, newest_sessions, save_recording_session,
-    sessions_day_info)
+    sessions_day_info, delete_recording_db, delete_session_db)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
     ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm)
@@ -66,7 +66,6 @@ def create_app():
 app = create_app()
 executor = Executor(app)
 
-SESSION_SZ = 50
 
 # GENERAL ROUTES
 @app.route('/')
@@ -123,8 +122,9 @@ def record_session(coll_id):
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
         Token.num_recordings==0, Token.marked_as_bad!=True).order_by(
-            collection.get_sortby_function()).limit(SESSION_SZ)
-
+            collection.get_sortby_function()).limit(app.config['SESSION_SZ'])
+    for token in tokens:
+        print(token.num_recordings)
     if tokens.count() == 0:
         flash("Engar ólesnar eða ómerktar setningar eru eftir í þessari söfnun", category="warning")
         return redirect(url_for("collection", id=coll_id))
@@ -148,7 +148,7 @@ def record_session_beta(coll_id):
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
         Token.num_recordings==0, Token.marked_as_bad!=True).order_by(
-            func.random()).limit(SESSION_SZ)
+            func.random()).limit(app.config['SESSION_SZ'])
 
     if tokens.count() == 0:
         flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun",
@@ -182,7 +182,7 @@ def post_recording_beta(coll_id):
 def analyze_audio():
     # save to disk, only one file in the form
     file_obj = next(iter(request.files.values()))
-    file_path = os.path.join('./temp', file_obj.filename)
+    file_path = os.path.join(app.config['TEMP_DIR'], file_obj.filename)
     file_obj.save(file_path)
 
     # load the sample
@@ -208,7 +208,7 @@ def record_single(tok_id):
 @login_required
 def rate_session(coll_id):
     collection = Collection.query.get(coll_id)
-    recordings = db.session.query(Recording).order_by(func.random()).limit(SESSION_SZ)
+    recordings = db.session.query(Recording).order_by(func.random()).limit(app.config['SESSION_SZ'])
     return render_template('rate.jinja', section='rate',
         json_recordings=json.dumps([r.get_dict() for r in recordings]),
         collection=collection,  recordings=recordings)
@@ -237,8 +237,10 @@ def collection_list():
     page = int(request.args.get('page', 1))
     # TODO: sort_by not currently supported
     sort_by = request.args.get('sort_by', 'name')
-    collections = Collection.query.paginate(page,
-        per_page=app.config['COLLECTION_PAGINATION'], )
+    collections = Collection.query.order_by(resolve_order(Collection,
+            request.args.get('sort_by', default='name'),
+            order=request.args.get('order', default='desc')))\
+            .paginate(page,per_page=app.config['COLLECTION_PAGINATION'])
     return render_template('collection_list.jinja', collections=collections,
         section='collection')
 
@@ -261,17 +263,27 @@ def collection(id):
         tokens = create_tokens(id, request.files.getlist('files'),
             token_form.is_g2p.data)
 
-    page = int(request.args.get('page', 1))
     collection = Collection.query.get(id)
 
-    # TODO: implement collection default sort on the paginated results here
     tokens = Token.query.filter(Token.collection_id==collection.id)\
-            .order_by(Token.score.desc())\
-            .paginate(page,per_page=app.config['TOKEN_PAGINATION'])
+            .order_by(resolve_order(Token,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc')))\
+            .paginate(int(request.args.get('page', 1)) ,per_page=app.config['TOKEN_PAGINATION'])
 
     return render_template('collection.jinja',
         collection=collection, token_form=token_form, tokens=tokens,
         users=User.query.all(), section='collection')
+
+def resolve_order(object, sort_by, order='desc'):
+    ordering = getattr(object, sort_by)
+    if callable(ordering):
+        ordering = ordering()
+    if str(order) == 'asc':
+        return ordering.asc()
+    else:
+        return ordering.desc()
+
 
 @app.route('/collections/<int:id>/sessions', methods=['GET'])
 @login_required
@@ -283,167 +295,11 @@ def collection_sessions(id):
     return render_template('collection_sessions.jinja',
         collection=collection, sessions=rec_sessions, section='collection')
 
-@app.route('/collections/<int:id>/download/')
-@login_required
-def download_collection(id):
-    collection = Collection.query.get(id)
-    tokens = collection.tokens
-    dl_tokens = []
-    for token in tokens:
-        if token.num_recordings > 0:
-            dl_tokens.append(token)
-    if not os.path.exists('temp'):
-        os.makedirs('temp')
-    zf = zipfile.ZipFile('temp/{}.zip'.format(collection.name), mode='w')
-    index_f = open('./temp/index.tsv', 'w')
-    user_ids = set()
-    recording_info = {}
-    try:
-        for token in dl_tokens:
-            zf.write(token.get_path(), 'text/{}'.format(token.get_fname()))
-            for recording in token.recordings:
-                user_name = recording.get_user().name
-                user_ids.add(recording.user_id)
-                # HACK
-                if recording.get_path() is not None:
-                    zf.write(recording.get_path(), 'audio/{}/{}'.format(
-                        user_name, recording.get_fname()))
-                    recording_info[recording.id] = {
-                        'collection_info':{
-                            'recording_fname': recording.get_fname(),
-                            'text_fname': token.get_fname(),
-                            'text': token.text,
-                            'user_name': user_name,
-                            'user_id': recording.user_id,
-                            'session_id': recording.session.id
-                        },'recording_info':{
-                            'sr': recording.sr,
-                            'num_channels': recording.num_channels,
-                            'bit_depth': recording.bit_depth,
-                            'duration': recording.duration,
-                        },'other':{
-                            'transcription': recording.transcription,
-                            'recording_marked_bad': recording.marked_as_bad,
-                            'text_marked_bad': token.marked_as_bad}}
-                    index_f.write('{}\t{}\t{}\n'.format(
-                        user_name, recording.get_fname(), token.get_fname()))
-                else:
-                    print("Error - token {} does not have a recording".format(token.id))
-        index_f.close()
-        with open('./temp/info.json', 'w', encoding='utf-8') as info_f:
-            json.dump(recording_info, info_f, ensure_ascii=False, indent=4)
-        zf.write('./temp/info.json', 'info.json')
-        zf.write('./temp/index.tsv', 'index.tsv')
-        meta = {'speakers':[]}
-        for id in user_ids:
-            meta['speakers'].append(User.query.get(id).get_meta())
-        meta['collection'] = collection.get_meta()
-        with open ('./temp/meta.json', 'w', encoding='utf-8') as meta_f:
-            json.dump(meta, meta_f, ensure_ascii=False, indent=4)
-        zf.write('./temp/meta.json', 'meta.json')
-    except Exception as error:
-        print("{}\n{}".format(error, traceback.format_exc()))
-        app.logger.error(
-            "Error creating a collection .zip : {}\n{}".format(error, traceback.format_exc()))
-    finally:
-        zf.close()
-
-    @after_this_request
-    def remove_file(response):
-        try:
-            os.remove('temp/{}.zip'.format(collection.name))
-            os.remove('temp/index.tsv')
-            os.remove('temp/info.json')
-            os.remove('temp/meta.json')
-        except Exception as error:
-            app.logger.error(
-                "Error deleting a downloaded archive : {}\n{}".format(
-                    error,traceback.format_exc()))
-        return response
-    return send_file('temp/{}.zip'.format(collection.name), as_attachment=True)
-
-@app.route('/collections/<int:id>/download_beta/')
-@login_required
-def download_collection_beta(id):
-    collection = Collection.query.get(id)
-    tokens = collection.tokens
-    dl_tokens = []
-    for token in tokens:
-        if token.num_recordings > 0:
-            dl_tokens.append(token)
-    if not os.path.exists('temp'):
-        os.makedirs('temp')
-    zf = zipfile.ZipFile('temp/{}.zip'.format(collection.name), mode='w')
-    index_f = open('./temp/index.tsv', 'w')
-    user_ids = set()
-    recording_info = {}
-    try:
-        for token in dl_tokens:
-            zf.write(token.get_path(), 'text/{}'.format(token.get_fname()))
-            for recording in token.recordings:
-                user_name = recording.get_user().name
-                user_ids.add(recording.user_id)
-                # HACK
-                if recording.get_path() is not None:
-                    zf.write(recording.get_path(), 'audio/{}/{}'.format(
-                        user_name, recording.get_fname()))
-                    recording_info[recording.id] = {
-                        'collection_info':{
-                            'recording_fname': recording.get_fname(),
-                            'text_fname': token.get_fname(),
-                            'text': token.text,
-                            'user_name': user_name,
-                            'user_id': recording.user_id,
-                            'session_id': recording.session.id
-                        },'recording_info':{
-                            'sr': recording.sr,
-                            'num_channels': recording.num_channels,
-                            'bit_depth': recording.bit_depth,
-                            'duration': recording.duration,
-                        },'other':{
-                            'transcription': recording.transcription,
-                            'recording_marked_bad': recording.marked_as_bad,
-                            'text_marked_bad': token.marked_as_bad}}
-                    index_f.write('{}\t{}\t{}\n'.format(
-                        user_name, recording.get_fname(), token.get_fname()))
-                else:
-                    print("Error - token {} does not have a recording".format(token.id))
-        index_f.close()
-        with open('./temp/info.json', 'w', encoding='utf-8') as info_f:
-            json.dump(recording_info, info_f, ensure_ascii=False, indent=4)
-        zf.write('./temp/info.json', 'info.json')
-        zf.write('./temp/index.tsv', 'index.tsv')
-        meta = {'speakers':[]}
-        for id in user_ids:
-            meta['speakers'].append(User.query.get(id).get_meta())
-        meta['collection'] = collection.get_meta()
-        with open ('./temp/meta.json', 'w', encoding='utf-8') as meta_f:
-            json.dump(meta, meta_f, ensure_ascii=False, indent=4)
-        zf.write('./temp/meta.json', 'meta.json')
-    except Exception as error:
-        print("{}\n{}".format(error, traceback.format_exc()))
-        app.logger.error(
-            "Error creating a collection .zip : {}\n{}".format(error, traceback.format_exc()))
-    finally:
-        zf.close()
-
-    zip_file = open('temp/{}.zip'.format(collection.name), 'rb')
-    file_size = os.path.getsize('temp/{}.zip'.format(collection.name))
-    #zip_file = open('./temp/index.tsv', 'rb')
-    return Response(
-        zip_file,
-        mimetype='application/octet-stream',
-        headers=[
-            ('Content-Length', str(file_size)),
-            ('Content-Disposition', "attachment; filename=\"%s\"" % '{}.zip'.format(collection.name))
-        ],
-        direct_passthrough=True)
-    #send_file('temp/{}.zip'.format(collection.name), as_attachment=True)
-
 
 @app.route('/collections/<int:id>/generate_zip')
 @login_required
 def generate_zip(id):
+    # TODO: Send some message in real-time to notify user when finished
     executor.submit(create_collection_zip, id)
     flash('Skjalasafn verður tilbúið vonbráðar.', category='success')
     return redirect(url_for('collection', id=id))
@@ -462,35 +318,6 @@ def stream_collection_zip(id):
             ('Content-Disposition', "attachment; filename=\"%s\"" % '{}'.format(collection.zip_fname))
         ],
         direct_passthrough=True)
-
-@app.route('/collections/<int:id>/download/index')
-@login_required
-def download_collection_index(id):
-    collection = Collection.query.get(id)
-    tokens = collection.tokens
-    dl_tokens = []
-    for token in tokens:
-        if token.num_recordings > 0:
-            dl_tokens.append(token)
-
-    if not os.path.exists('temp'):
-        os.makedirs('temp')
-    index_f = open('./temp/index.tsv', 'w')
-    for token in dl_tokens:
-        for recording in token.recordings:
-            app.logger.info(recording.get_path())
-            index_f.write('{}\t{}\n'.format(recording.get_fname(), token.get_fname()))
-    index_f.close()
-    @after_this_request
-    def remove_file(response):
-        try:
-            os.remove('temp/index.tsv')
-        except Exception as error:
-            app.logger.error(
-                "Error deleting a downloaded a index : {}\n{}".format(
-                    error,traceback.format_exc()))
-        return response
-    return send_file('temp/index.tsv', as_attachment=True)
 
 @app.route('/collections/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
@@ -549,14 +376,18 @@ def token(id):
 @app.route('/tokens/')
 @login_required
 def token_list():
-    page = int(request.args.get('page', 1))
+    page = int(request.args.get('page', default=1))
     only_bad = bool(request.args.get('only_bad', False))
 
     if only_bad:
-        tokens = db.session.query(Token).filter_by(marked_as_bad=True).paginate(page,
+        tokens = db.session.query(Token).filter_by(marked_as_bad=True).order_by(
+            resolve_order(Token, request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc'))).paginate(page,
             per_page=app.config['TOKEN_PAGINATION'])
     else:
-        tokens = Token.query.paginate(page,
+        tokens = Token.query.order_by(resolve_order(Token,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc'))).paginate(page,
             per_page=app.config['TOKEN_PAGINATION'])
 
     return render_template('token_list.jinja', tokens=tokens, only_bad=only_bad, section='token')
@@ -584,8 +415,10 @@ def recording_list():
         recordings = db.session.query(Recording).filter_by(marked_as_bad=True).paginate(page,
             per_page=app.config['RECORDING_PAGINATION'])
     else:
-        recordings = Recording.query.order_by(Recording.created_at.desc()).paginate(page,
-            per_page=app.config['RECORDING_PAGINATION'])
+        recordings = Recording.query.order_by(resolve_order(Recording,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc')))\
+            .paginate(page, per_page=app.config['RECORDING_PAGINATION'])
 
     return render_template('recording_list.jinja', recordings=recordings, only_bad=only_bad,
         section='recording')
@@ -595,6 +428,19 @@ def recording_list():
 def recording(id):
     recording = Recording.query.get(id)
     return render_template('recording.jinja', recording=recording, section='recording')
+
+@app.route('/recordings/<int:id>/delete/', methods=['GET'])
+@login_required
+@roles_required('admin')
+def delete_recording(id):
+    recording = Recording.query.get(id)
+    did_delete = delete_recording_db(recording)
+    if did_delete:
+        flash("Upptöku var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða upptöku", category='warning')
+    return redirect(request.args.get('backref', url_for('index')))
+
 
 @app.route('/recordings/<int:id>/mark_bad/')
 @login_required
@@ -632,7 +478,9 @@ def download_recording(id):
 @login_required
 def rec_session_list():
     page = int(request.args.get('page', 1))
-    sessions = Session.query.order_by(Session.created_at.desc()).paginate(page,
+    sessions = Session.query.order_by(resolve_order(Token,
+        request.args.get('sort_by', default='created_at'),
+        order=request.args.get('order', default='desc'))).paginate(page,
         per_page=app.config['SESSION_PAGINATION'])
     return render_template('session_list.jinja', sessions=sessions,
         section='session')
@@ -645,6 +493,7 @@ def rec_session(id):
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin')
 def session_edit(id):
     session = Session.query.get(id)
     form = SessionEditForm(request.form)
@@ -658,6 +507,18 @@ def session_edit(id):
     return render_template('model_form.jinja', form=form, type='edit',
         action=url_for('session_edit', id=id), section='session')
 
+@app.route('/sessions/<int:id>/delete/', methods=['GET'])
+@login_required
+@roles_required('admin')
+def delete_session(id):
+    record_session = Session.query.get(id)
+    did_delete = delete_session_db(record_session)
+    if did_delete:
+        flash("Lotu var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða lotu", category='warning')
+    return redirect(url_for('rec_session_list'))
+
 # USER ROUTES
 
 @app.route('/users/')
@@ -665,7 +526,10 @@ def session_edit(id):
 @roles_required('admin')
 def user_list():
     page = int(request.args.get('page', 1))
-    users = User.query.paginate(page, app.config['USER_PAGINATION'])
+    users = User.query.order_by(resolve_order(User,
+            request.args.get('sort_by', default='name'),
+            order=request.args.get('order', default='desc')))\
+            .paginate(page, app.config['USER_PAGINATION'])
     return render_template('user_list.jinja', users=users, section='user')
 
 @app.route('/users/<int:id>/')
@@ -673,8 +537,10 @@ def user_list():
 def user(id):
     page = int(request.args.get('page', 1))
     user = User.query.get(id)
-    recordings = ListPagination(user.recordings, page,
-        app.config['RECORDING_PAGINATION'])
+    recordings = Recording.query.filter(Recording.user_id==id).order_by(resolve_order(Recording,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc')))\
+            .paginate(page, app.config['RECORDING_PAGINATION'])
     return render_template("user.jinja", user=user, recordings=recordings,
         section='user')
 

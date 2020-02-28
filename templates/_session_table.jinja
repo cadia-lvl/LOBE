@@ -1,12 +1,30 @@
 <div class='table-responsive'>
     <table class='table'>
         <thead>
-            <th>Dagsetning</th>
-            <th>Auðkenni</th>
-            <th>Fjöldi upptaka</th>
-            <th>Lengd</th>
-            <th>Rödd</th>
-            <th>Stjórn</th>
+            <th>
+                Dagsetning
+                {{macros.sort_th_a('created_at')}}
+            </th>
+            <th>
+                Auðkenni
+                {{macros.sort_th_a('id')}}
+            </th>
+            <th>
+                Fjöldi upptaka
+                {{macros.sort_th_a('num_recordings')}}
+            </th>
+            <th>
+                Lengd
+                {{macros.sort_th_a('duration')}}
+            </th>
+            <th>
+                Rödd
+                {{macros.sort_th_a('user_id')}}
+            </th>
+            <th>
+                Stjórn
+                {{macros.sort_th_a('manager_id')}}
+            </th>
         </thead>
         <tbody>
             {% for session in sessions %}

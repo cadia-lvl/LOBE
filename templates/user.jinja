@@ -10,7 +10,7 @@
                     {{macros.btn_icon('edit', 'l')}}
                 </a>
                 <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-danger float-right mr-2'>
-                    {{macros.btn_icon('times', 'r')}}
+                    {{macros.btn_icon('trash', 'r')}}
                     Eyða notanda
                 </button>
             {% endif %}
@@ -72,7 +72,7 @@
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
                 <a href='{{url_for("delete_user", id=user.id)}}' class='btn btn-danger'>
                     Eyða
-                    <span class='ml-1'><i class='fa fa-times'></i></span>
+                    <span class='ml-1'><i class='fa fa-trash'></i></span>
                 </a>
             </div>
             </div>

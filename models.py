@@ -32,6 +32,7 @@ class BaseModel(db.Model):
             column: value
             for column, value in self.__dict__.items()})
 
+
 class Collection(BaseModel, db.Model):
     __tablename__ = 'Collection'
 
@@ -202,8 +203,15 @@ class Token(BaseModel, db.Model):
     def get_fname(self):
         return self.fname
 
-    def get_length(self):
+    @hybrid_property
+    def length(self):
         return len(self.text)
+
+    def short_text(self, limit=20):
+        if self.length < limit:
+            return self.text
+        else:
+            return f'{self.text[:limit]}...'
 
     def save_to_disk(self):
         self.set_path()

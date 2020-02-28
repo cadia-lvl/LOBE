@@ -17,12 +17,29 @@
             <div class='table-responsive'>
                 <table class='table'>
                     <thead>
-                        <th>Nafn</th>
-                        <th>Tölvupóstur</th>
-                        <th>Kyn</th>
-                        <th>Aldur</th>
-                        <th>Mállýska</th>
-                        <th>Staða</th>
+                        <th>
+                            Nafn
+                            {{macros.sort_th_a('name')}}
+                        </th>
+                        <th>
+                            Tölvupóstur
+                            {{macros.sort_th_a('email')}}
+                        </th>
+                        <th>
+                            Kyn
+                            {{macros.sort_th_a('sex')}}
+                        </th>
+                        <th>
+                            Aldur
+                            {{macros.sort_th_a('age')}}
+                        </th>
+                        <th>
+                            Mállýska
+                            {{macros.sort_th_a('dialect')}}
+                        </th>
+                        <th>
+                            Staða
+                        </th>
                     </thead>
                     <tbody>
                         {% for user in users.items %}

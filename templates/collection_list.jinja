@@ -21,11 +21,25 @@
             <div class='col-12 table-responsive'>
                 <table class='table'>
                     <thead>
-                        <th>Nafn</th>
-                        <th>Búin til</th>
-                        <th>Fjöldi setninga</th>
-                        <th class='text-right'>Tegund</th>
-                        <th>Gangur</th>
+                        <th>
+                            Nafn
+                            {{macros.sort_th_a('name')}}
+                        </th>
+                        <th>
+                            Búin til
+                            {{macros.sort_th_a('created_at')}}
+                        </th>
+                        <th>
+                            Fjöldi setninga
+                            {{macros.sort_th_a('num_tokens')}}
+                        </th>
+                        <th class='text-right'>
+                            Tegund
+                            {{macros.sort_th_a('has_video')}}
+                        </th>
+                        <th>
+                            Gangur
+                        </th>
                     </thead>
                     <tbody>
                         {% for collection in collections.items %}

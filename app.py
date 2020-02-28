@@ -66,7 +66,6 @@ def create_app():
 app = create_app()
 executor = Executor(app)
 
-SESSION_SZ = 50
 
 # GENERAL ROUTES
 @app.route('/')
@@ -123,8 +122,9 @@ def record_session(coll_id):
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
         Token.num_recordings==0, Token.marked_as_bad!=True).order_by(
-            collection.get_sortby_function()).limit(SESSION_SZ)
-
+            collection.get_sortby_function()).limit(app.config['SESSION_SZ'])
+    for token in tokens:
+        print(token.num_recordings)
     if tokens.count() == 0:
         flash("Engar ólesnar eða ómerktar setningar eru eftir í þessari söfnun", category="warning")
         return redirect(url_for("collection", id=coll_id))
@@ -148,7 +148,7 @@ def record_session_beta(coll_id):
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
         Token.num_recordings==0, Token.marked_as_bad!=True).order_by(
-            func.random()).limit(SESSION_SZ)
+            func.random()).limit(app.config['SESSION_SZ'])
 
     if tokens.count() == 0:
         flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun",
@@ -208,7 +208,7 @@ def record_single(tok_id):
 @login_required
 def rate_session(coll_id):
     collection = Collection.query.get(coll_id)
-    recordings = db.session.query(Recording).order_by(func.random()).limit(SESSION_SZ)
+    recordings = db.session.query(Recording).order_by(func.random()).limit(app.config['SESSION_SZ'])
     return render_template('rate.jinja', section='rate',
         json_recordings=json.dumps([r.get_dict() for r in recordings]),
         collection=collection,  recordings=recordings)
@@ -237,8 +237,10 @@ def collection_list():
     page = int(request.args.get('page', 1))
     # TODO: sort_by not currently supported
     sort_by = request.args.get('sort_by', 'name')
-    collections = Collection.query.paginate(page,
-        per_page=app.config['COLLECTION_PAGINATION'], )
+    collections = Collection.query.order_by(resolve_order(Collection,
+            request.args.get('sort_by', default='name'),
+            order=request.args.get('order', default='desc')))\
+            .paginate(page,per_page=app.config['COLLECTION_PAGINATION'])
     return render_template('collection_list.jinja', collections=collections,
         section='collection')
 
@@ -261,17 +263,27 @@ def collection(id):
         tokens = create_tokens(id, request.files.getlist('files'),
             token_form.is_g2p.data)
 
-    page = int(request.args.get('page', 1))
     collection = Collection.query.get(id)
 
-    # TODO: implement collection default sort on the paginated results here
     tokens = Token.query.filter(Token.collection_id==collection.id)\
-            .order_by(Token.score.desc())\
-            .paginate(page,per_page=app.config['TOKEN_PAGINATION'])
+            .order_by(resolve_order(Token,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc')))\
+            .paginate(int(request.args.get('page', 1)) ,per_page=app.config['TOKEN_PAGINATION'])
 
     return render_template('collection.jinja',
         collection=collection, token_form=token_form, tokens=tokens,
         users=User.query.all(), section='collection')
+
+def resolve_order(object, sort_by, order='desc'):
+    ordering = getattr(object, sort_by)
+    if callable(ordering):
+        ordering = ordering()
+    if str(order) == 'asc':
+        return ordering.asc()
+    else:
+        return ordering.desc()
+
 
 @app.route('/collections/<int:id>/sessions', methods=['GET'])
 @login_required
@@ -364,14 +376,18 @@ def token(id):
 @app.route('/tokens/')
 @login_required
 def token_list():
-    page = int(request.args.get('page', 1))
+    page = int(request.args.get('page', default=1))
     only_bad = bool(request.args.get('only_bad', False))
 
     if only_bad:
-        tokens = db.session.query(Token).filter_by(marked_as_bad=True).paginate(page,
+        tokens = db.session.query(Token).filter_by(marked_as_bad=True).order_by(
+            resolve_order(Token, request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc'))).paginate(page,
             per_page=app.config['TOKEN_PAGINATION'])
     else:
-        tokens = Token.query.paginate(page,
+        tokens = Token.query.order_by(resolve_order(Token,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc'))).paginate(page,
             per_page=app.config['TOKEN_PAGINATION'])
 
     return render_template('token_list.jinja', tokens=tokens, only_bad=only_bad, section='token')
@@ -399,8 +415,10 @@ def recording_list():
         recordings = db.session.query(Recording).filter_by(marked_as_bad=True).paginate(page,
             per_page=app.config['RECORDING_PAGINATION'])
     else:
-        recordings = Recording.query.order_by(Recording.created_at.desc()).paginate(page,
-            per_page=app.config['RECORDING_PAGINATION'])
+        recordings = Recording.query.order_by(resolve_order(Recording,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc')))\
+            .paginate(page, per_page=app.config['RECORDING_PAGINATION'])
 
     return render_template('recording_list.jinja', recordings=recordings, only_bad=only_bad,
         section='recording')
@@ -460,7 +478,9 @@ def download_recording(id):
 @login_required
 def rec_session_list():
     page = int(request.args.get('page', 1))
-    sessions = Session.query.order_by(Session.created_at.desc()).paginate(page,
+    sessions = Session.query.order_by(resolve_order(Token,
+        request.args.get('sort_by', default='created_at'),
+        order=request.args.get('order', default='desc'))).paginate(page,
         per_page=app.config['SESSION_PAGINATION'])
     return render_template('session_list.jinja', sessions=sessions,
         section='session')
@@ -506,7 +526,10 @@ def delete_session(id):
 @roles_required('admin')
 def user_list():
     page = int(request.args.get('page', 1))
-    users = User.query.paginate(page, app.config['USER_PAGINATION'])
+    users = User.query.order_by(resolve_order(User,
+            request.args.get('sort_by', default='name'),
+            order=request.args.get('order', default='desc')))\
+            .paginate(page, app.config['USER_PAGINATION'])
     return render_template('user_list.jinja', users=users, section='user')
 
 @app.route('/users/<int:id>/')
@@ -514,8 +537,10 @@ def user_list():
 def user(id):
     page = int(request.args.get('page', 1))
     user = User.query.get(id)
-    recordings = ListPagination(user.recordings, page,
-        app.config['RECORDING_PAGINATION'])
+    recordings = Recording.query.filter(Recording.user_id==id).order_by(resolve_order(Recording,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc')))\
+            .paginate(page, app.config['RECORDING_PAGINATION'])
     return render_template("user.jinja", user=user, recordings=recordings,
         section='user')
 

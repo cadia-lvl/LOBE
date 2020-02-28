@@ -15,7 +15,7 @@
 </div>
 <div class='row'>
     <div class='col-12'>
-        {% with recordings=recordings.items %}
+        {% with recordings=recordings.items, url=url_for('recording_list') %}
             {% include '_recording_table.jinja'%}
         {% endwith%}
     </div>

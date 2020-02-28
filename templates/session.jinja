@@ -35,7 +35,7 @@
             <h3 class='font-weight-bold'>Upptökur</h3>
         </div>
         <div class='col-12'>
-            {% with recordings=session.recordings %}
+            {% with recordings=session.recordings, url=url_for('session', id=session.id) %}
                 {% include '_recording_table.jinja'%}
             {% endwith %}
         </div>

@@ -47,7 +47,7 @@
             <p>Fjöldi: {{token.num_recordings}}</p>
         </div>
         <div class='col-12'>
-            {% with recordings=token.recordings %}
+            {% with recordings=token.recordings, url=url_for('token', id=token.id) %}
                 {% include '_recording_table.jinja'%}
             {% endwith %}
         </div>

@@ -4,8 +4,8 @@
     </span>
 {% endmacro %}
 
-{% macro sort_th_a(sort_by) %}
-    <a href="{{request.path}}?sort_by={{sort_by}}&order={% if request.args.get('sort_by')==sort_by and request.args.get('order', 'desc')=='desc' %}asc{% else %}desc{% endif %}">
+{% macro sort_th_a(sort_by, url) %}
+    <a href="{{url}}?sort_by={{sort_by}}&order={% if request.args.get('sort_by')==sort_by and request.args.get('order', 'desc')=='desc' %}asc{% else %}desc{% endif %}">
         {% if request.args.get('sort_by')==sort_by%}
             {% if request.args.get('order')=='asc' %}
                 {{btn_icon('sort-up', '')}}
@@ -19,11 +19,10 @@
 {% endmacro %}
 
 {% macro pagination(items, url) %}
-    <!-- TODO: Remove the url parameter -->
     <nav>
         <ul class="pagination justify-content-center">
             {% if items.has_prev %}
-                <li class="page-item"><a class="page-link" href="{{request.path}}?page={{items.prev_num}}{% if request.args.get('sort_by')%}&sort_by={{request.args.get('sort_by')}}{% endif %}{% if request.args.get('order')%}&order={{request.args.get('order')}}{% endif %}">
+                <li class="page-item"><a class="page-link" href="{{url}}?page={{items.prev_num}}{% if request.args.get('sort_by')%}&sort_by={{request.args.get('sort_by')}}{% endif %}{% if request.args.get('order')%}&order={{request.args.get('order')}}{% endif %}">
                     {{ btn_icon('arrow-left', 'r')}}
                     Fyrri
                 </a></li>
@@ -37,7 +36,7 @@
                 <span class='page-link'>{{items.page}} af {{items.pages}}</span>
             </li>
             {% if items.has_next %}
-                <li class="page-item"> <a class="page-link" href="{{request.path}}?page={{items.next_num}}{% if request.args.get('sort_by')%}&sort_by={{request.args.get('sort_by')}}{% endif %}{% if request.args.get('order')%}&order={{request.args.get('order')}}{% endif %}">
+                <li class="page-item"> <a class="page-link" href="{{url}}?page={{items.next_num}}{% if request.args.get('sort_by')%}&sort_by={{request.args.get('sort_by')}}{% endif %}{% if request.args.get('order')%}&order={{request.args.get('order')}}{% endif %}">
                     Næsta
                     {{ btn_icon('arrow-right', 'l')}}
                 </a></li>

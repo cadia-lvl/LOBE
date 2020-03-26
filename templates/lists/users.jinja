@@ -1,0 +1,33 @@
+{% extends "lists/_list.jinja" %}
+{% block title %}Notendur{% endblock %}
+{% block total %}{{users.total}}{% endblock %}
+{% block buttons %}
+    {% if current_user.is_admin() %}
+        <a href='{{url_for("user_create")}}' class='btn btn-success float-right'>
+            {{macros.btn_icon('plus', 'r')}}
+            Búa til
+        </a>
+    {% endif %}
+{% endblock %}
+{% block table %}
+    {% if users.total > 0 %}
+        {% with users=users.items %}
+            {% include 'tables/users.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if users.total > 0 %}
+        {{macros.pagination(users, url_for('user_list'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if users.total == 0 %}
+        {{macros.no_results("Engir notendur",
+            "Til að taka upp söfnun þarf að búa til notendur",
+            url_for('create_user'),
+            "Búa til")}}
+    {% endif %}
+{% endblock %}

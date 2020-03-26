@@ -1,0 +1,20 @@
+<div id='tokenCard' class="card">
+    <div class="card-body d-flex flex-column justify-content-between">
+        <h3 class='card-text' id='tokenText'>{{token.text}}</h3>
+        <p class='card-text mb-0'>
+            <a id="tokenHref" target="_blank" rel="noopener noreferrer" href='#'><code id="tokenFileID"></code></a>
+            <span class='float-right rounded-pill bg-secondary text-success px-2 py-1'><span id='currentIndexSpan'></span>/<span id='totalIndexSpan'></span></span>
+        </p>
+    </div>
+    <ul id='recordingInfoList' class="list-group list-group-flush">
+        <li id='analyzeLi' class='list-group-item' style='display: none;'>
+            <i id='analyzeIcn' class='fa mr-2'></i>
+            <span id="analyzeMsg"></span>
+        </li>
+        <li id="transcriptionLi" class="list-group-item" style="font-style: italic;">
+            <p id='finalTranscriptionElement' class='mb-0'></p>
+            <p id="transcriptionElement" class="mb-0"></p>
+            <small class="float-right" style="font-style: initial;">Rafrænt afrit</small>
+        </li>
+    </ul>
+</div>

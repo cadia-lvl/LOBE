@@ -4,7 +4,7 @@
         <div class='col-12'>
             <h2 class='font-weight-bold'>Tímaskýrsla</h2>
             <h3>{{user.name if user.name != None else 'Ekki skráð'}}</h3>
-            <a href="{{url_for('user', id=user.id)}}" class='btn btn-primary float-right'>
+            <a href="{{url_for('user', id=user.id)}}" class='btn btn-secondary text-success float-right'>
                 Notandi
                 {{macros.btn_icon('arrow-right', 'l')}}
             </a>

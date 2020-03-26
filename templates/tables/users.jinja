@@ -1,0 +1,39 @@
+<table class='table'>
+    <thead>
+        <th>
+            Nafn
+            {{macros.sort_th_a('name')}}
+        </th>
+        <th>
+            Tölvupóstur
+            {{macros.sort_th_a('email')}}
+        </th>
+        <th>
+            Kyn
+            {{macros.sort_th_a('sex')}}
+        </th>
+        <th>
+            Aldur
+            {{macros.sort_th_a('age')}}
+        </th>
+        <th>
+            Mállýska
+            {{macros.sort_th_a('dialect')}}
+        </th>
+        <th>
+            Staða
+        </th>
+    </thead>
+    <tbody>
+        {% for user in users %}
+            <tr>
+                <td><a href={{user.get_url()}}>{{user.get_printable_name()}}</a></td>
+                <td>{{user.email}}</td>
+                <td>{{user.sex | default("Ekki tilgreint", true)}}</td>
+                <td>{{user.age | default("Ekki tilgreint", true)}}</td>
+                <td>{{user.dialect | default("Ekki tilgreint", true)}}</td>
+                <td>{% for role in user.roles %}{{role.name}}{% endfor %}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

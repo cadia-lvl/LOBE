@@ -1,0 +1,28 @@
+{% extends "__base.jinja" %}
+{% block body %}
+        <div class='row'>
+            <div class='col-12'>
+                <h1 class='font-weight-bold'>{% block title %}{% endblock %}</h1>
+                <p>Fjöldi: {% block total %}{% endblock %}</p>
+            </div>
+            <div class='col-12 mb-3'>
+                {% block buttons %}{% endblock %}
+            </div>
+        </div>
+        <div class='row'>
+            <div class='col-12 table-responsive'>
+                {% block table %}{% endblock %}
+            </div>
+        </div>
+        <div class='row mt-3'>
+            <div class='col-12'>
+                {% block pagination %}{% endblock %}
+            </div>
+        </div>
+        <div class='row mt-4'>
+            <div class='col-12'>
+                {% block no_results %}
+                {% endblock %}
+            </div>
+        </div>
+{% endblock %}

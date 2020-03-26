@@ -1,0 +1,18 @@
+<table class='table'>
+    <thead>
+        <th>Nafn</th>
+        <th>Lesnar setningar í safni</th>
+        <th>Lesnar setningar í söfnun</th>
+        <th>Setningar í söfnun</th>
+    </thead>
+    <tbody>
+        {% for zip in zips %}
+            <tr>
+                <td><a href={{collection.get_url()}}>{{zip.name}}</a></td>
+                <td>{{zip.zip_token_count}}</td>
+                <td>{{zip.num_tokens - zip.num_nonrecorded_tokens}}</td>
+                <td>{{zip.num_tokens}}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

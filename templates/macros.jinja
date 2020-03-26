@@ -19,7 +19,6 @@
 {% endmacro %}
 
 {% macro pagination(items, url) %}
-    <!-- TODO: Remove the url parameter -->
     <nav>
         <ul class="pagination justify-content-center">
             {% if items.has_prev %}
@@ -50,4 +49,64 @@
 
         </ul>
     </nav>
+{% endmacro %}
+
+{% macro recording_analysis(recording) %}
+        {% if recording.analysis %}
+            {% if recording.analysis == 'ok' %}
+                <span class='text-success'>
+                    <i class='fa fa-thumbs-up mr-2'></i>
+                    Góð
+                </span>
+            {% elif recording.analysis == 'high' %}
+                <span class='text-danger'>
+                    <i class='fa fa-thumbs-down mr-2'></i>
+                    Of há
+                </span>
+            {% elif recording.analysis == 'low' %}
+                <span class='text-danger'>
+                    <i class='fa fa-thumbs-down mr-2'></i>
+                    Of lág
+                </span>
+            {% endif %}
+        {% else %}
+            <span class='text-warning'>
+                <i class='fa fa-question-circle mr-2'></i>
+                Ekki greint
+            </span>
+        {% endif %}
+{% endmacro %}
+
+{% macro pron_spans(prons) %}
+    {% for pron in prons %}
+        <span class='mr-1 mt-1 px-2 rounded bg-secondary' style="white-space: nowrap; display:inline-block;">{{pron | safe}}</span>
+    {% endfor %}
+{% endmacro %}
+
+{% macro default(val, def) %}
+    {% if val %}
+        {{val}}
+    {% elif def %}
+        {{val}}
+    {% else %}
+        Ekki tilgreint
+    {% endif %}
+{% endmacro %}
+
+{% macro no_results(title, text, link, link_text, icon, type) %}
+    <div class='jumbotron'>
+        <h3 class='font-weight-bold'>
+            <span class='text-{% if type %}{{type}}{% else %}warning{% endif %}'>
+                <i class='fa fa-{% if icon %}{{icon}}{% else %}exclamation-triangle{% endif%}'></i>
+            </span>
+            {{title}}
+        </h3>
+        <p>{{text}}</p>
+        {% if link %}
+            <a href={{link}} class='btn btn-secondary text-success float-sm-right'>
+                {{link_text}}
+                {{btn_icon('fa fa-arrow-right', '')}}
+            </a>
+        {% endif %}
+    </div>
 {% endmacro %}

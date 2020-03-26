@@ -9,7 +9,7 @@
             <a class="nav-link {% if section == 'collection' %}text-success{% endif %}" href="{{url_for('collection_list')}}">Safnanir</a>
         </li>
         <li class="nav-item {% if section == 'token' %}active{% endif %}">
-            <a class="nav-link {% if section == 'token' %}text-success{% endif %}" href="{{url_for('token_list')}}">Textar</a>
+            <a class="nav-link {% if section == 'token' %}text-success{% endif %}" href="{{url_for('token_list')}}">Setningar</a>
         </li>
         <li class="nav-item {% if section == 'recording' %}active{% endif %}">
             <a class="nav-link {% if section == 'recording' %}text-success{% endif %}" href="{{url_for('recording_list')}}">Upptökur</a>
@@ -24,8 +24,8 @@
         {% endif %}
         {% if not current_user.is_anonymous %}
             <li class="nav-item dropdown">
-                <a class="nav-link dropdow\n-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown">
-                <span class='font-weight-bold'>{{current_user.name}}</span>
+                <a class="nav-link" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown">
+                <span>{{current_user.name}}</span>
                 {{macros.btn_icon('user-circle', '')}}
                 </a>
                 <div class="dropdown-menu">
@@ -34,14 +34,15 @@
                 </div>
             </li>
         {% endif %}
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdow\n-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown">
-            <span class='font-weight-bold'>Annað</span>
+        <li class="nav-item dropdown {% if section == 'other' %}active{% endif %}">
+            <a class="nav-link {% if section == 'other' %}text-success{% endif %}" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown">
+            <span>Annað</span>
             {{macros.btn_icon('info-circle','')}}
             </a>
             <div class="dropdown-menu">
                 <a class="dropdown-item" href="{{url_for('download_manual')}}">Leiðbeiningar</a>
                 <a class="dropdown-item" href="{{url_for('test_record')}}">Hljóðprufa</a>
+                <a class="dropdown-item" href="{{url_for('conf_list')}}">Stillingar</a>
             </div>
         </li>
     </ul>

@@ -7,17 +7,17 @@ import traceback
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from functools import partialmethod
-
+from flask import flash
 from models import Collection, Recording, Session, Token, db
-from settings.common import RECORDING_BIT_DEPTH
-
 
 def create_tokens(collection_id, files, is_g2p):
     tokens = []
+    num_errors = 0
+    error_line, error_file = None, None
     for file in files:
         if is_g2p:
             i_f = file.stream.read().decode("utf-8").split('\n')
-            for line in i_f:
+            for idx, line in enumerate(i_f):
                 try:
                     text, src, scr, *pron = line.split('\t')[0:]
                     pron = '\t'.join(p for p in pron)
@@ -25,7 +25,10 @@ def create_tokens(collection_id, files, is_g2p):
                         pron=pron, source=src)
                     tokens.append(token)
                     db.session.add(token)
-                except ValueError:
+                except ValueError as error:
+                    num_errors += 1
+                    error_line = idx + 1
+                    error_file = file.filename
                     continue
         else:
             content = file.stream.read().decode("utf-8").strip().split('\n')
@@ -38,10 +41,16 @@ def create_tokens(collection_id, files, is_g2p):
                 tokens.append(token)
                 # add token to database
                 db.session.add(token)
+
+    if num_errors > 0:
+        flash(f'{num_errors} villur komu upp, fyrsta villan í {error_file} í línu {error_line}',
+            category='danger')
+
     db.session.commit()
 
     # save token text to file
     for token in tokens:
+        print(token)
         token.save_to_disk()
     db.session.commit()
 
@@ -54,15 +63,14 @@ def create_tokens(collection_id, files, is_g2p):
 
 def insert_collection(form):
     collection = Collection(form.name.data, form.sort_by.data,
-        has_video=form.has_video.data,
-        assigned_user_id=form.assigned_user_id.data)
+        assigned_user_id=form.assigned_user_id.data,
+        configuration_id=form.configuration_id.data)
     db.session.add(collection)
     db.session.flush()
 
     dirs = [collection.get_record_dir(), collection.get_token_dir(),
+        collection.get_video_dir(), collection.get_wav_audio_dir(),
         collection.zip_path]
-    if collection.has_video:
-        dirs.append(collection.get_video_dir())
     # create dirs for tokens and records
     for dir in dirs:
         if not os.path.exists(dir): os.makedirs(dir)
@@ -88,22 +96,31 @@ def save_recording_session(form, files):
     user_id = int(form['user_id'])
     manager_id = int(form['manager_id'])
     collection_id = int(form['collection_id'])
+    collection = Collection.query.get(collection_id)
+    has_video = collection.configuration.has_video
     recording_objs = json.loads(form['recordings'])
+    skipped = json.loads(form['skipped'])
     record_session = None
-    if len(recording_objs) > 0:
+    if len(recording_objs) > 0 or len(skipped):
         record_session = Session(user_id, collection_id, manager_id,
-            duration=duration)
+            duration=duration, has_video=has_video)
         db.session.add(record_session)
         db.session.flush()
     for token_id, recording_obj in recording_objs.items():
         # this token has a recording
         file_obj = files.get('file_{}'.format(token_id))
         recording = Recording(int(token_id), file_obj.filename, user_id,
-            recording_obj['transcript'], RECORDING_BIT_DEPTH,
-            session_id=record_session.id)
+            session_id=record_session.id, has_video=has_video)
+        if "analysis" in recording_obj:
+            recording.analysis = recording_obj['analysis']
+        if "cut" in recording_obj:
+            recording.start = recording_obj['cut']['start']
+            recording.end = recording_obj['cut']['end']
+        if "transcription" in recording_obj and recording_obj['transcription']:
+            recording.transcription = recording_obj['transcription']
         db.session.add(recording)
         db.session.flush()
-        recording.add_file_obj(file_obj)
+        recording.add_file_obj(file_obj, recording_obj['settings'])
     db.session.commit()
 
     for token_id in recording_objs:
@@ -111,27 +128,17 @@ def save_recording_session(form, files):
         token.update_numbers()
     db.session.commit()
 
-    for token_id in json.loads(form['skipped']):
+    for token_id in skipped:
         # this token was skipped and has no token
         token = Token.query.get(int(token_id))
         token.marked_as_bad = True
+        token.marked_as_bad_session_id = record_session.id
     db.session.commit()
 
     # then update the numbers of the collection
-    collection = Collection.query.get(collection_id)
     collection.update_numbers()
     db.session.commit()
-
     return record_session.id if record_session else None
-
-def newest_collections(num=4):
-    ''' Get the num newest collections '''
-    return Collection.query.order_by(Collection.created_at.desc()).limit(num)
-
-
-def newest_sessions(user_id, num=4):
-    ''' Get the num newest collections '''
-    return Session.query.filter(Session.user_id==user_id,).order_by(Session.created_at.desc()).limit(num)
 
 def sessions_day_info(sessions, user):
     # insert by dates
@@ -141,17 +148,15 @@ def sessions_day_info(sessions, user):
 
     day_info = dict()
     for day, sessions in days.items():
-        is_voice = False
-        is_manager = False
+        is_voice, is_manager = False, False
+        role = "voice"
         for s in sessions:
             if is_voice and is_manager: break
-            is_voice == is_voice or user.id == s.user_id
-            is_manager == is_manager or user.id == s.manager_id
-        role = "voice"
-        if is_voice and is_manager:
-            role = "both"
-        else:
-            role = "manager"
+            is_voice = is_voice or user.id == s.user_id
+            is_manager = is_manager or user.id == s.manager_id
+        if is_manager:
+            if is_voice: role = "both"
+            else: role = "manager"
         day_info[day] = {
             'sessions': sessions,
             'role': role,
@@ -185,6 +190,29 @@ def delete_recording_db(recording):
     db.session.commit()
     return True
 
+def delete_token_db(token):
+    try:
+        os.remove(token.get_path())
+    except Exception as error:
+        print(f'{error}\n{traceback.format_exc()}')
+        return False
+
+    recordings = token.recordings
+    collection = token.collection
+    db.session.delete(token)
+    for recording in recordings:
+        try:
+            os.remove(recording.get_path())
+        except Exception as error:
+            print(f'{error}\n{traceback.format_exc()}')
+            return False
+        db.session.delete(recording)
+
+    collection.update_numbers()
+    db.session.commit()
+    return True
+
+
 def delete_session_db(record_session):
     tokens = [r.get_token() for r in record_session.recordings]
     collection = Collection.query.get(record_session.collection_id)
@@ -206,3 +234,12 @@ def delete_session_db(record_session):
     collection.update_numbers()
     db.session.commit()
     return True
+
+def resolve_order(object, sort_by, order='desc'):
+    ordering = getattr(object, sort_by)
+    if callable(ordering):
+        ordering = ordering()
+    if str(order) == 'asc':
+        return ordering.asc()
+    else:
+        return ordering.desc()

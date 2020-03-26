@@ -2,18 +2,28 @@ import contextlib
 import os
 import wave
 import json
+import subprocess
 from datetime import datetime, timedelta
 
 from flask import current_app as app
 from flask import url_for
 from flask_security import RoleMixin, UserMixin
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func, select
+from sqlalchemy import func, select, MetaData
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug import secure_filename
 
-from settings.common import USE_ECHO_CANCELLATION, VIDEO_W, VIDEO_H
-
+'''
+convention = {
+    "ix": 'ix_%(column_0_label)s',
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s"
+}
+meta = MetaData(naming_convention=convention)
+db = SQLAlchemy(metadata=meta)
+'''
 db = SQLAlchemy()
 
 ADMIN_ROLE_ID = 1
@@ -36,11 +46,12 @@ class BaseModel(db.Model):
 class Collection(BaseModel, db.Model):
     __tablename__ = 'Collection'
 
-    def __init__(self, name, sort_by, has_video=False, assigned_user_id=None):
+    def __init__(self, name, sort_by, assigned_user_id=None,
+        configuration_id=None):
         self.name = name
         self.sort_by = sort_by
         self.assigned_user_id = assigned_user_id
-        self.has_video = has_video
+        self.configuration_id = configuration_id
 
     @hybrid_property
     def num_nonrecorded_tokens(self):
@@ -84,6 +95,9 @@ class Collection(BaseModel, db.Model):
 
     def get_video_dir(self):
         return os.path.join(app.config['VIDEO_DIR'], str(self.id))
+
+    def get_wav_audio_dir(self):
+        return os.path.join(app.config['WAV_AUDIO_DIR'], str(self.id))
 
     def has_assigned_user(self):
         return self.assigned_user_id is not None
@@ -136,24 +150,10 @@ class Collection(BaseModel, db.Model):
             *ESTIMATED_AVERAGE_RECORD_LENGTH/3600, 1)
 
     @hybrid_property
-    def json_media_constraints(self):
-        media_constraints = {'audio':{
-            'echoCancellation': {'exact': app.config['USE_ECHO_CANCELLATION']},
-            'channelCount': {'exact': app.config['CHANNEL_COUNT']},
-            'sampleRate': {'exact': app.config['SAMPLE_RATE']},
-            'sampleSize': {'exact': app.config['SAMPLE_SIZE']}}}
-        if self.has_video:
-            media_constraints['video']: {
-                'width': app.config['VIDEO_W'],
-                'height': app.config['VIDEO_H']}
-        return json.dumps(media_constraints)
-
-    @hybrid_property
-    def json_recorder_options(self):
-        options = {
-            'mimeType': f'{"video" if self.has_video else "audio"}/webm; codecs=' +\
-                 f'\"{"vp8, " if self.has_video else ""}pcm\"'}
-        return json.dumps(options)
+    def configuration(self):
+        if self.configuration_id is not None:
+            return Configuration.query.get(self.configuration_id)
+        return None
 
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
@@ -161,20 +161,122 @@ class Collection(BaseModel, db.Model):
 
     # the assigned user
     assigned_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    tokens = db.relationship(
-        "Token", lazy='select', backref='collection',
+    configuration_id = db.Column(db.Integer, db.ForeignKey('Configuration.id'))
+    tokens = db.relationship("Token", lazy='select', backref='collection',
         cascade='all, delete, delete-orphan')
-    sessions = db.relationship("Session", lazy='select', backref='collection', cascade='all, delete, delete-orphan')
+    sessions = db.relationship("Session", lazy='select',
+        backref='collection', cascade='all, delete, delete-orphan')
     active = db.Column(db.Boolean, default=True)
     sort_by = db.Column(db.String)
-    has_video = db.Column(db.Boolean, default=False)
     num_tokens = db.Column(db.Integer, default=0)
     num_recorded_tokens = db.Column(db.Integer, default=0)
     num_invalid_tokens = db.Column(db.Integer, default=0)
     has_zip = db.Column(db.Boolean, default=False)
     zip_token_count = db.Column(db.Integer, default=0)
-    #recordings = db.relationship("Recording", lazy='joined', backref='collection')
 
+
+class Configuration(BaseModel, db.Model):
+    __tablename__ = 'Configuration'
+
+    def __init__(self):
+        pass
+
+    @hybrid_property
+    def printable_name(self):
+        if self.name:
+            return self.name
+        else:
+            return "Conf-{:03d}".format(self.id)
+
+    @hybrid_property
+    def url(self):
+        return url_for("conf", id=self.id)
+
+    @hybrid_property
+    def delete_url(self):
+        return url_for("delete_conf", id=self.id)
+
+    @hybrid_property
+    def edit_url(self):
+        return url_for("edit_conf", id=self.id)
+
+    @hybrid_property
+    def codec(self):
+        codec = self.audio_codec
+        if self.has_video:
+            codec = f'{self.video_codec}, {codec}'
+
+    @hybrid_property
+    def media_constraints(self):
+        constraints = {'audio':{
+            'channelCount': self.channel_count,
+            'sampleSize': self.sample_size,
+            'sampleRate': self.sample_rate,
+            'noiseSuppression': self.noise_suppression,
+            'autoGainControl': self.auto_gain_control
+        }}
+        if self.has_video:
+            constraints['video'] = {
+                'width': self.video_w,
+                'height': self.video_h}
+        return constraints
+
+    @hybrid_property
+    def mime_type(self):
+        return f'{"video" if self.has_video else "audio"}/webm; codecs=' +\
+                 f'"{"vp8, " if self.has_video else ""}pcm"'
+
+    @hybrid_property
+    def json(self):
+        return json.dumps({
+            'has_video': self.has_video,
+            'live_transcribe': self.live_transcribe,
+            'visualize_mic': self.visualize_mic,
+            'analyze_sound': self.analyze_sound,
+            'auto_trim': self.auto_trim,
+            'media_constraints': self.media_constraints,
+            'mime_type': self.mime_type,
+            'codec': self.codec,
+            'blob_slice': self.blob_slice,
+            'trim_threshold': self.trim_threshold,
+            'low_threshold': self.too_low_threshold,
+            'high_threshold': self.too_high_threshold,
+            'high_frames': self.too_high_frames})
+
+    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    name = db.Column(db.String)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    is_default = db.Column(db.Boolean, default=False)
+    # general configuration
+    session_sz = db.Column(db.Integer, default=50)
+    live_transcribe = db.Column(db.Boolean, default=True)
+    visualize_mic = db.Column(db.Boolean, default=True)
+    auto_trim = db.Column(db.Boolean, default=True)
+    analyze_sound = db.Column(db.Boolean, default=True)
+
+    # recording configuration
+    auto_gain_control = db.Column(db.Boolean, default=False)
+    noise_suppression = db.Column(db.Boolean, default=False)
+    channel_count = db.Column(db.Integer, default=1)
+    sample_rate = db.Column(db.Integer, default=48000)
+    sample_size = db.Column(db.Integer, default=16)
+
+    # MediaRecorder configuration
+    blob_slice = db.Column(db.Integer, default=10)
+    audio_codec = db.Column(db.String, default='pcm')
+
+    # Video configuration
+    video_w = db.Column(db.Integer, default=1280)
+    video_h = db.Column(db.Integer, default=720)
+    video_codec = db.Column(db.String, default='vp8')
+    has_video = db.Column(db.Boolean, default=False)
+
+    # Other
+    trim_threshold = db.Column(db.Float, default=40)
+    too_low_threshold = db.Column(db.Float, default=-15)
+    too_high_threshold = db.Column(db.Float, default=-4.5)
+    too_high_frames = db.Column(db.Integer, default=10)
 
 class Token(BaseModel, db.Model):
     __tablename__ = 'Token'
@@ -197,6 +299,10 @@ class Token(BaseModel, db.Model):
     def get_record_url(self):
         return url_for('record_single', tok_id=self.id)
 
+    @hybrid_property
+    def mark_bad_url(self):
+        return url_for('toggle_token_bad', id=self.id)
+
     def get_path(self):
         return self.path
 
@@ -218,6 +324,10 @@ class Token(BaseModel, db.Model):
         f = open(self.path, 'w')
         f.write(self.text)
         f.close()
+
+    @hybrid_property
+    def pron_list(self):
+        return self.pron[1:-1].split('\t')
 
     def set_path(self):
         self.fname = secure_filename("{}_{:09d}.token".format(
@@ -252,6 +362,10 @@ class Token(BaseModel, db.Model):
     def get_download_url(self):
         return url_for('download_token', id=self.id)
 
+    @hybrid_property
+    def delete_url(self):
+        return url_for('delete_token', id=self.id)
+
     def update_numbers(self):
         self.num_recordings = Recording.query.filter(
             Recording.token_id==self.id).count()
@@ -274,10 +388,7 @@ class Token(BaseModel, db.Model):
     path = db.Column(db.String)
     marked_as_bad = db.Column(db.Boolean, default=False)
     num_recordings = db.Column(db.Integer, default=0)
-    # a tab seperated string of word pronounciations
-    # where phones in each word is space seperated
     pron = db.Column(db.String)
-    # default score is -1
     score = db.Column(db.Float, default=-1)
     source = db.Column(db.String)
 
@@ -301,33 +412,30 @@ class Recording(BaseModel, db.Model):
     __tablename__ = 'Recording'
 
     def __init__(self, token_id, original_fname, user_id,
-        transcription, bit_depth, session_id=None):
-
+        bit_depth=None, session_id=None, has_video=False):
         self.token_id = token_id
-        # as determined by the browser / client side
         self.original_fname = original_fname
         self.user_id = user_id
-        if transcription is not None:
-            self.transcription = transcription
         self.marked_as_bad = False
-        self.bit_depth = bit_depth
+        if bit_depth is not None:
+            self.bit_depth = bit_depth
         if session_id is not None:
             self.session_id = session_id
+        self.has_video = has_video
 
     def set_session_id(self, session_id):
         self.session_id = session_id
 
-    def set_wave_params(self):
-        '''
-        Should only be callable after self.save_to_disk() has
-        been called
-        '''
-        with contextlib.closing(wave.open(self.path,'r')) as f:
-            w_params = f.getparams()
-            self.sr = w_params.framerate
-            self.num_frames = w_params.nframes
-            self.duration = self.num_frames / float(self.sr)
-            self.num_channels = w_params.nchannels
+    def _set_wave_params(self, recorder_settings):
+        self.sr = recorder_settings['sampleRate']
+        self.bit_depth = recorder_settings['sampleSize']
+        self.num_channels = recorder_settings['channelCount']
+        self.latency = recorder_settings['latency']
+        self.auto_gain_control = recorder_settings['autoGainControl']
+        self.echo_cancellation = recorder_settings['echoCancellation']
+        self.noise_suppression = recorder_settings['noiseSuppression']
+        with contextlib.closing(wave.open(self.wav_path, 'r')) as f:
+            self.duration = f.getnframes()/float(f.getframerate())
 
     def get_url(self):
         return url_for('recording', id=self.id)
@@ -358,23 +466,31 @@ class Recording(BaseModel, db.Model):
         file_obj.filename = self.fname
         file_obj.save(self.path)
 
-    def add_file_obj(self, obj):
+    def _save_wav_to_disk(self):
+        subprocess.call(['ffmpeg', '-i', self.path, self.wav_path])
+
+    def add_file_obj(self, obj, recorder_settings):
         '''
         performs, in order, :
         * self.set_path()
         * self.save_to_disk(obj)
         * self.set_wave_params()
         '''
-        self.set_path()
+        self._set_path()
         self.save_to_disk(obj)
-        self.set_wave_params()
+        self._save_wav_to_disk()
+        self._set_wave_params(recorder_settings)
 
-    def set_path(self):
+    def _set_path(self):
+        # TODO: deal with file endings
         self.file_id = '{}_r{:09d}_t{:09d}'.format(
             os.path.splitext(self.original_fname)[0], self.id, self.token_id)
-        self.fname = secure_filename('{}.wav'.format(self.file_id))
-        self.path = os.path.join(app.config['RECORD_DIR'],
+        self.fname = secure_filename(f'{self.file_id}.webm')
+        self.path = os.path.join(app.config['VIDEO_DIR'] if self.has_video else app.config['RECORD_DIR'],
             str(self.token.collection_id), self.fname)
+        self.wav_path = os.path.join(app.config['WAV_AUDIO_DIR'],
+            str(self.token.collection_id),
+            secure_filename(f'{self.file_id}.wav'))
 
     def get_configured_path(self):
         '''
@@ -386,7 +502,6 @@ class Recording(BaseModel, db.Model):
         path = os.path.join(app.config['RECORD_DIR'],
             str(self.token.collection_id), self.fname)
         return path
-
 
     def get_file_id(self):
         if self.fname is not None:
@@ -421,7 +536,6 @@ class Recording(BaseModel, db.Model):
     def get_dict(self):
         return {'id':self.id, 'token': self.token.get_dict()}
 
-    #@hybrid_property
     def get_collection_id(self):
         return Token.query.get(self.token_id).collection_id
 
@@ -434,9 +548,15 @@ class Recording(BaseModel, db.Model):
     session_id = db.Column(db.Integer, db.ForeignKey('Session.id'))
 
     sr = db.Column(db.Integer)
-    num_channels = db.Column(db.Integer, default=2)
+    num_channels = db.Column(db.Integer, default=1)
+    latency = db.Column(db.Float)
+    auto_gain_control = db.Column(db.Boolean)
+    echo_cancellation = db.Column(db.Boolean)
+    noise_suppression = db.Column(db.Boolean)
+
+    analysis = db.Column(db.String)
+
     duration = db.Column(db.Float)
-    num_frames = db.Column(db.Integer)
     bit_depth = db.Column(db.Integer)
 
     transcription = db.Column(db.String)
@@ -444,22 +564,28 @@ class Recording(BaseModel, db.Model):
     fname = db.Column(db.String)
     file_id = db.Column(db.String)
     path = db.Column(db.String)
+    wav_path = db.Column(db.String)
+
+    start = db.Column(db.Float)
+    end = db.Column(db.Float)
 
     marked_as_bad = db.Column(db.Boolean, default=False)
+    has_video = db.Column(db.Boolean, default=False)
 
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
 
     def __init__(self, user_id, collection_id, manager_id,
-        duration=None):
+        duration=None, has_video=False):
         self.user_id = user_id
         self.manager_id = manager_id
         self.collection_id = collection_id
+        self.has_video = has_video
         if duration is not None:
             self.duration = duration
 
     def get_printable_id(self):
-        return "S-{:09d}".format(self.id)
+        return "S-{:06d}".format(self.id)
 
     def get_url(self):
         return url_for('rec_session', id=self.id)
@@ -498,6 +624,7 @@ class Session(BaseModel, db.Model):
     collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
     duration = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    has_video = db.Column(db.Boolean, default=False)
     recordings = db.relationship("Recording", lazy='joined', backref='session', cascade='all, delete, delete-orphan')
 
 # Define models

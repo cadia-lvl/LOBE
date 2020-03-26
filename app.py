@@ -5,13 +5,12 @@ import zipfile
 import tempfile
 import traceback
 import shutil
-import subprocess
 import logging
 from logging.handlers import RotatingFileHandler
 
 from collections import defaultdict
 from flask import (Flask, Response, flash, redirect, render_template, request,
-    send_from_directory, send_file, session, url_for, after_this_request, flash)
+    send_from_directory, send_file, session, url_for, after_this_request, flash, jsonify)
 from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
     roles_required, current_user)
 from flask_security.utils import hash_password
@@ -19,17 +18,17 @@ from flask_executor import Executor
 from sqlalchemy import or_
 from sqlalchemy.sql.expression import func, select
 from werkzeug import secure_filename, Request
-from db import (create_tokens, insert_collection, newest_sessions, save_recording_session,
-    sessions_day_info, delete_recording_db, delete_session_db)
+from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
+    delete_session_db, delete_token_db, save_recording_session, resolve_order)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
-    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm)
-from models import Collection, Recording, Role, Token, User, Session, db
+    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm, collection_edit_form)
+from models import Collection, Recording, Role, Token, User, Session, Configuration, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
 from managers import ZipManager, RecordingInfoManager, IndexManager, create_collection_zip
-from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
+from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low, find_segment
 
 # initialize the logger
 logHandler = RotatingFileHandler('logs/info.log', maxBytes=1000,
@@ -46,7 +45,7 @@ def create_app():
         app.config.from_pyfile('{}.py'.format(os.path.join('settings/','semi_production')))
     else:
         app.config.from_pyfile('{}.py'.format(os.path.join('settings/',
-            os.getenv('FLASK_printENV', 'development'))))
+            os.getenv('FLASK_ENV', 'development'))))
     app.logger.setLevel(logging.DEBUG)
     app.logger.addHandler(logHandler)
     if 'REVERSE_PROXY_PATH' in app.config:
@@ -95,89 +94,42 @@ def post_recording():
     else:
         return Response(url_for('rec_session', id=session_id), status=200)
 
-
 # RECORD ROUTES
-
-@app.route('/record/<int:coll_id>/')
+@app.route('/record/<int:coll_id>/', methods=['GET'])
 @login_required
 def record_session(coll_id):
     collection = Collection.query.get(coll_id)
     user_id = request.args.get('user_id')
     if not user_id:
         flash("Villa kom upp. Vinsamlega veljið rödd til að taka upp", category="danger")
-        return redirect(url_for('index'))
+        return redirect(url_for('collection', id=coll_id))
+    if not collection.configuration:
+        flash("Villa kom upp. Vinsamlega veljið stillingar fyrir söfnunina", category="danger")
+        return redirect(url_for('collection', id=coll_id))
     user_id = int(user_id)
     user = User.query.get(user_id)
-    if not user:
-        flash("Notandi er ekki þekktur. Vinsamlega hafið samband við kerfisstjóra",
-            category="danger")
-        app.logger.error("User with id {} does not exist when trying to record".format(
-            user_id))
-        return redirect(url_for('index'))
-
     if collection.has_assigned_user():
         if user_id != collection.assigned_user_id:
-            flash("Aðeins skráð rödd getur tekið upp í þessari söfnun", category="danger")
-            return redirect(url_for('index'))
-
-    tokens = Token.query.filter(Token.collection_id==coll_id,
-        Token.num_recordings==0, Token.marked_as_bad!=True).order_by(
-            collection.get_sortby_function()).limit(app.config['SESSION_SZ'])
-    for token in tokens:
-        print(token.num_recordings)
-    if tokens.count() == 0:
-        flash("Engar ólesnar eða ómerktar setningar eru eftir í þessari söfnun", category="warning")
-        return redirect(url_for("collection", id=coll_id))
-
-    return render_template('record.jinja', section='record',
-        collection=collection,  tokens=tokens,
-        json_tokens=json.dumps([t.get_dict() for t in tokens]),
-        tal_api_token=app.config['TAL_API_TOKEN'], user=user,
-        manager=current_user)
-
-@app.route('/record_beta/<int:coll_id>/', methods=['GET'])
-@login_required
-def record_session_beta(coll_id):
-    collection = Collection.query.get(coll_id)
-
-    if collection.has_assigned_user():
-        if current_user.id != collection.assigned_user_id:
             flash("Aðeins skráð rödd getur tekið upp í þessari söfnun",
                 category="danger")
             return redirect(url_for('index'))
 
     tokens = Token.query.filter(Token.collection_id==coll_id,
         Token.num_recordings==0, Token.marked_as_bad!=True).order_by(
-            func.random()).limit(app.config['SESSION_SZ'])
+            collection.get_sortby_function()).limit(collection.configuration.session_sz)
 
     if tokens.count() == 0:
         flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun",
             category="warning")
         return redirect(url_for("collection", id=coll_id))
 
-    return render_template('record_beta.jinja', section='record',
-        collection=collection, token=tokens, json_tokens=json.dumps(
-            [t.get_dict() for t in tokens]),
+    return render_template('record.jinja', section='record',
+        collection=collection, token=tokens,
+        json_tokens=json.dumps([t.get_dict() for t in tokens]),
+        user=user, manager=current_user,
         tal_api_token=app.config['TAL_API_TOKEN'])
 
-@app.route('/record_beta/<int:coll_id>/post/', methods=['GET', 'POST'])
-@login_required
-def post_recording_beta(coll_id):
-    if request.method == 'POST':
-        print(request.form)
-        for name in request.form:
-            print(name)
-        for file in request.files:
-            file_obj = request.files.get(file)
-            fname = file_obj.filename
-            file_obj.save(fname)
-            print(fname)
-            command = "ffmpeg -i {} -vn audio_test.wav".format(fname)
-            subprocess.call(command, shell=True)
-
-    return redirect(url_for('record_session_beta', coll_id=coll_id))
-
-@app.route('/record_beta/analyze/', methods=['POST'])
+@app.route('/record/analyze/', methods=['POST'])
 @login_required
 def analyze_audio():
     # save to disk, only one file in the form
@@ -185,15 +137,29 @@ def analyze_audio():
     file_path = os.path.join(app.config['TEMP_DIR'], file_obj.filename)
     file_obj.save(file_path)
 
-    # load the sample
-    sample, _ = load_sample(file_path)
+    high_thresh = float(request.form['high_thresh'])
+    high_frames = int(request.form['high_frames'])
+    low_thresh = float(request.form['low_thresh'])
+    top_db = float(request.form['top_db'])
 
+    # load the sample
+    sample, sr = load_sample(file_path)
+    segment_times = find_segment(sample, sr, top_db=top_db)
     # check the sample and return the response
-    if signal_is_too_high(sample):
-        return Response('high', 200)
-    elif signal_is_too_low(sample):
-        return Response('low', 200)
-    return Response('ok', 200)
+    message = 'ok'
+    if signal_is_too_high(sample, thresh=high_thresh, num_frames=high_frames):
+        message = 'high'
+    elif signal_is_too_low(sample, thresh=low_thresh):
+        message = 'low'
+
+    body = {
+        'analysis': message,
+        'segment': {
+            'start': float(segment_times[0]),
+            'end': float(segment_times[1])
+        }
+    }
+    return jsonify(body), 200
 
 @app.route('/record/token/<int:tok_id>/')
 @login_required
@@ -203,15 +169,6 @@ def record_single(tok_id):
         single=True, json_tokens=json.dumps([token.get_dict()]),
         tal_api_token=app.config['TAL_API_TOKEN'])
 
-# RATING ROUTES
-@app.route('/rate/<int:coll_id>')
-@login_required
-def rate_session(coll_id):
-    collection = Collection.query.get(coll_id)
-    recordings = db.session.query(Recording).order_by(func.random()).limit(app.config['SESSION_SZ'])
-    return render_template('rate.jinja', section='rate',
-        json_recordings=json.dumps([r.get_dict() for r in recordings]),
-        collection=collection,  recordings=recordings)
 
 # COLLECTION ROUTES
 
@@ -228,7 +185,7 @@ def create_collection():
         except Exception as error:
             flash("Error creating collection.", category="danger")
             app.logger.error("Error creating collection {}\n{}".format(error,traceback.format_exc()))
-    return render_template('collection_create.jinja', form=form,
+    return render_template('forms/model.jinja', form=form, type='create',
         section='collection')
 
 @app.route('/collections/')
@@ -241,7 +198,7 @@ def collection_list():
             request.args.get('sort_by', default='name'),
             order=request.args.get('order', default='desc')))\
             .paginate(page,per_page=app.config['COLLECTION_PAGINATION'])
-    return render_template('collection_list.jinja', collections=collections,
+    return render_template('lists/collections.jinja', collections=collections,
         section='collection')
 
 @app.route('/collections/zip_list/')
@@ -252,7 +209,7 @@ def collection_zip_list():
     sort_by = request.args.get('sort_by', 'name')
     collections = db.session.query(Collection).filter_by(has_zip=True).paginate(page,
         per_page=app.config['COLLECTION_PAGINATION'], )
-    return render_template('zip_list.jinja', collections=collections,
+    return render_template('lists/zips.jinja', zips=collections,
         section='collection')
 
 @app.route('/collections/<int:id>/', methods=['GET', 'POST'])
@@ -275,15 +232,6 @@ def collection(id):
         collection=collection, token_form=token_form, tokens=tokens,
         users=User.query.all(), section='collection')
 
-def resolve_order(object, sort_by, order='desc'):
-    ordering = getattr(object, sort_by)
-    if callable(ordering):
-        ordering = ordering()
-    if str(order) == 'asc':
-        return ordering.asc()
-    else:
-        return ordering.desc()
-
 
 @app.route('/collections/<int:id>/sessions', methods=['GET'])
 @login_required
@@ -292,7 +240,7 @@ def collection_sessions(id):
     collection = Collection.query.get(id)
     rec_sessions = ListPagination(collection.sessions, page,
         app.config['SESSION_PAGINATION'])
-    return render_template('collection_sessions.jinja',
+    return render_template('lists/collection_sessions.jinja',
         collection=collection, sessions=rec_sessions, section='collection')
 
 
@@ -323,23 +271,21 @@ def stream_collection_zip(id):
 @login_required
 def edit_collection(id):
     collection = Collection.query.get(id)
-    form = CollectionForm(request.form, obj=collection)
-    try:
-        if request.method == 'POST' and form.validate():
-            form.populate_obj(collection)
-            db.session.commit()
-            collection = Collection.query.get(id)
-            if collection.has_video:
-                # create the video directory for the collection
-                if not os.path.exists(collection.get_video_dir()):
-                    os.makedirs(collection.get_video_dir())
-            flash("Söfnun hefur verið breytt", category='success')
-            return redirect(url_for('collection', id=id))
-    except Exception as error:
-        app.logger.error('Error updating a collection : {}\n{}'.format(
-            error, traceback.format_exc()))
+    form = collection_edit_form(collection)
+    if request.method == 'POST':
+        try:
+            form = CollectionForm(request.form, obj=conf)
+            if form.validate():
+                form.populate_obj(collection)
+                db.session.commit()
+                collection = Collection.query.get(id)
+                flash("Söfnun hefur verið breytt", category='success')
+                return redirect(url_for('collection', id=id))
+        except Exception as error:
+            app.logger.error('Error updating a collection : {}\n{}'.format(
+                error, traceback.format_exc()))
 
-    return render_template('model_form.jinja', collection=collection,
+    return render_template('forms/model.jinja', collection=collection,
         form=form, type='edit', action=url_for('edit_collection', id=id),
         section='collection')
 
@@ -349,14 +295,15 @@ def edit_collection(id):
 def delete_collection(id):
     collection = db.session.query(Collection).get(id)
     name = collection.name
-    is_video = collection.has_video
+    has_zip = collection.has_zip
+    zip_path = collection.zip_path
     try:
         db.session.delete(collection)
         db.session.commit()
         shutil.rmtree(collection.get_record_dir())
         shutil.rmtree(collection.get_token_dir())
-        if is_video:
-            shutil.rmtree(collection.get_video_dir())
+        shutil.rmtree(collection.get_video_dir())
+        if has_zip: os.remove(zip_path)
         flash("{} var eytt".format(name), category='success')
     except Exception as error:
         flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
@@ -377,20 +324,12 @@ def token(id):
 @login_required
 def token_list():
     page = int(request.args.get('page', default=1))
-    only_bad = bool(request.args.get('only_bad', False))
+    tokens = Token.query.order_by(resolve_order(Token,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc'))).paginate(page,
+        per_page=app.config['TOKEN_PAGINATION'])
 
-    if only_bad:
-        tokens = db.session.query(Token).filter_by(marked_as_bad=True).order_by(
-            resolve_order(Token, request.args.get('sort_by', default='created_at'),
-                order=request.args.get('order', default='desc'))).paginate(page,
-            per_page=app.config['TOKEN_PAGINATION'])
-    else:
-        tokens = Token.query.order_by(resolve_order(Token,
-                request.args.get('sort_by', default='created_at'),
-                order=request.args.get('order', default='desc'))).paginate(page,
-            per_page=app.config['TOKEN_PAGINATION'])
-
-    return render_template('token_list.jinja', tokens=tokens, only_bad=only_bad, section='token')
+    return render_template('lists/tokens.jinja', tokens=tokens, section='token')
 
 @app.route('/tokens/<int:id>/download/')
 @login_required
@@ -402,6 +341,28 @@ def download_token(id):
     except Exception as error:
         app.logger.error(
             "Error downloading a token : {}\n{}".format(error,traceback.format_exc()))
+
+@app.route('/tokens/<int:id>/delete/', methods=['GET'])
+@login_required
+@roles_required('admin')
+def delete_token(id):
+    token = Token.query.get(id)
+    did_delete = delete_token_db(token)
+    if did_delete:
+        flash("Setningu var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða setningu", category='warning')
+    return redirect(request.args.get('backref', url_for('index')))
+
+
+@app.route('/token/<int:id>/mark_bad/')
+@login_required
+def toggle_token_bad(id):
+    token = Token.query.get(id)
+    token.marked_as_bad = not token.marked_as_bad
+    token.collection.update_numbers()
+    db.session.commit()
+    return redirect(url_for('token', id=token.id))
 
 # RECORDING ROUTES
 
@@ -420,7 +381,7 @@ def recording_list():
             order=request.args.get('order', default='desc')))\
             .paginate(page, per_page=app.config['RECORDING_PAGINATION'])
 
-    return render_template('recording_list.jinja', recordings=recordings, only_bad=only_bad,
+    return render_template('lists/recordings.jinja', recordings=recordings, only_bad=only_bad,
         section='recording')
 
 @app.route('/recordings/<int:id>/')
@@ -448,7 +409,6 @@ def toggle_recording_bad(id):
     recording = Recording.query.get(id)
     recording.marked_as_bad = not recording.marked_as_bad
     db.session.commit()
-
     return redirect(url_for('recording', id=recording.id))
 
 @app.route('/recordings/<int:id>/mark_bad_ajax/')
@@ -472,24 +432,99 @@ def download_recording(id):
         app.logger.error(
             "Error downloading a recording : {}\n{}".format(error,traceback.format_exc()))
 
+# CONFIGURATION ROUTES
+@app.route('/confs/')
+@login_required
+def conf_list():
+    page = int(request.args.get('page', 1))
+    confs = Configuration.query.order_by(resolve_order(Configuration,
+        request.args.get('sort_by', default='created_at'),
+        order=request.args.get('order', default='desc'))).paginate(page,
+        per_page=app.config['CONF_PAGINATION'])
+    return render_template('lists/confs.jinja', confs=confs, section='other')
+
+@app.route('/confs/<int:id>/')
+@login_required
+def conf(id):
+    conf = Configuration.query.get(id)
+    collections = Collection.query.filter(Collection.configuration_id==id)
+    return render_template('conf.jinja', conf=conf, collections=collections,
+        section='other')
+
+@app.route('/confs/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+def edit_conf(id):
+    conf = Configuration.query.get(id)
+    form = ConfigurationForm(obj=conf)
+    if request.method == 'POST':
+        try:
+            form = ConfigurationForm(request.form, obj=conf)
+            if form.validate():
+                form.populate_obj(conf)
+                db.session.commit()
+                flash("Stillingum var breytt", category='success')
+                return redirect(url_for("conf", id=conf.id))
+        except Exception as error:
+            app.logger.error('Error updating a configuration : {}\n{}'.format(error, traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form, type='edit',
+        action=url_for('edit_conf', id=id), section='other')
+
+
+@app.route('/confs/create/', methods=['GET', 'POST'])
+@login_required
+def create_conf():
+    form = ConfigurationForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            configuration = Configuration()
+            form.populate_obj(configuration)
+            db.session.add(configuration)
+            db.session.commit()
+            return redirect(url_for('conf', id=configuration.id))
+        except Exception as error:
+            flash("Error creating configuration.", category="danger")
+            app.logger.error("Error creating configuration {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('create_conf'), section='other')
+
+
+@app.route('/confs/<int:id>/delete/', methods=['GET'])
+@login_required
+@roles_required('admin')
+def delete_conf(id):
+    conf = Configuration.query.get(id)
+    name = conf.printable_name
+    if conf.is_default:
+        flash("Ekki er hægt að eyða aðalstillingum", category='warning')
+        return redirect(conf.url)
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        flash(f"{name} var eytt", category='success')
+    except Exception as error:
+        app.logger.error('Error deleting a configuration : {}\n{}'.format(error, traceback.format_exc()))
+    return redirect(url_for('rec_session_list'))
+
+
 # SESSION ROUTES
 
 @app.route('/sessions/')
 @login_required
 def rec_session_list():
     page = int(request.args.get('page', 1))
-    sessions = Session.query.order_by(resolve_order(Token,
+    sessions = Session.query.order_by(resolve_order(Session,
         request.args.get('sort_by', default='created_at'),
         order=request.args.get('order', default='desc'))).paginate(page,
         per_page=app.config['SESSION_PAGINATION'])
-    return render_template('session_list.jinja', sessions=sessions,
+    return render_template('lists/sessions.jinja', sessions=sessions,
         section='session')
 
 @app.route('/sessions/<int:id>/')
 @login_required
 def rec_session(id):
     session = Session.query.get(id)
-    return render_template('session.jinja', session=session, section='session')
+    return render_template('session.jinja', session=session,
+        section='session')
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
@@ -504,7 +539,7 @@ def session_edit(id):
             flash("Lotu var breytt", category='success')
     except Exception as error:
         app.logger.error('Error updating a session : {}\n{}'.format(error, traceback.format_exc()))
-    return render_template('model_form.jinja', form=form, type='edit',
+    return render_template('forms/model.jinja', form=form, type='edit',
         action=url_for('session_edit', id=id), section='session')
 
 @app.route('/sessions/<int:id>/delete/', methods=['GET'])
@@ -530,7 +565,7 @@ def user_list():
             request.args.get('sort_by', default='name'),
             order=request.args.get('order', default='desc')))\
             .paginate(page, app.config['USER_PAGINATION'])
-    return render_template('user_list.jinja', users=users, section='user')
+    return render_template('lists/users.jinja', users=users, section='user')
 
 @app.route('/users/<int:id>/')
 @login_required
@@ -572,7 +607,7 @@ def user_edit(id):
     except Exception as error:
         app.logger.error('Error updating a user : {}\n{}'.format(error, traceback.format_exc()))
 
-    return render_template('model_form.jinja', user=user, form=form, type='edit',
+    return render_template('forms/model.jinja', user=user, form=form, type='edit',
         action=url_for('user_edit', id=id), section='user')
 
 @app.route('/users/create/', methods=['GET', 'POST'])
@@ -589,7 +624,7 @@ def user_create():
             return redirect(url_for('user_list'))
         except Exception as error:
             app.logger.error('Error creating a user : {}\n{}'.format(error,traceback.format_exc()))
-    return render_template('model_form.jinja', form=form, type='create',
+    return render_template('forms/model.jinja', form=form, type='create',
         action=url_for('user_create'), section='user')
 
 @app.route('/users/<int:id>/delete/')
@@ -616,7 +651,7 @@ def role_create():
             db.session.commit()
         except Exception as error:
             app.logger.error('Error creating a role : {}\n{}'.format(error,traceback.format_exc()))
-    return render_template('model_form.jinja', form=form, type='create',
+    return render_template('forms/model.jinja', form=form, type='create',
         action=url_for('role_create'), section='role')
 
 @app.route('/roles/<int:id>/edit/', methods=['GET', 'POST'])
@@ -632,7 +667,7 @@ def role_edit(id):
             flash("Hlutverki var breytt", category='success')
         except Exception as error:
             app.logger.error('Error updating a role : {}\n{}'.format(error,traceback.format_exc()))
-    return render_template('model_form.jinja', role=role, form=form, type='edit',
+    return render_template('forms/model.jinja', role=role, form=form, type='edit',
         action=url_for('role_edit', id=id), section='role')
 
 # OTHER ROUTES
@@ -652,10 +687,14 @@ def download_manual():
 def test_record():
     token = Token.query.filter(Token.marked_as_bad!=True).order_by(
         func.random()).limit(1)[0]
-    return render_template('record.jinja', tokens=token, section='record',
+    return render_template('record.jinja', tokens=token, section='other',
         single=True, record_test=True, json_tokens=json.dumps([token.get_dict()]),
         tal_api_token=app.config['TAL_API_TOKEN'])
 
+@app.route('/other/test_media_device')
+@login_required
+def test_media_device():
+    return render_template('media_device_test.jinja')
 
 @app.errorhandler(404)
 def page_not_found(error):

@@ -11,12 +11,13 @@ from flask_migrate import Migrate, MigrateCommand
 from flask_script import Command, Manager
 from flask_security.utils import hash_password
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from termcolor import colored
 from collections import defaultdict
 
 from app import app, db, user_datastore
-from models import Recording, Token, User, Role, Collection
-
+from models import Recording, Token, User, Role, Collection, Configuration
+from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
 migrate = Migrate(app, db)
 manager = Manager(app)
 
@@ -33,6 +34,14 @@ class AddDefaultRoles(Command):
         db.session.add(admin_role)
         db.session.add(user_role)
         db.session.commit()
+
+class AddDefaultConfiguration(Command):
+    def run(self):
+        conf = Configuration()
+        conf.name = 'Aðalstilling'
+        db.session.add(conf)
+        db.session.commit()
+
 
 class AddUser(Command):
     def run(self):
@@ -256,11 +265,65 @@ def update_numbers():
         collection.update_numbers()
     db.session.commit()
 
+
+@manager.command
+def update_analysis():
+    '''
+    Performs analysis on all recordings that don't have analysis
+    '''
+    recordings = Recording.query.filter(Recording.analysis == None)
+    for r in tqdm(recordings):
+        # load the sample
+        sample, _ = load_sample(r.path)
+        # check the sample and return the response
+        if signal_is_too_high(sample):
+            r.analysis = 'high'
+        elif signal_is_too_low(sample):
+            r.analysis = 'low'
+        else:
+            r.analysis = 'ok'
+    db.session.commit()
+
+@manager.command
+def update_collection_configuration():
+    '''
+    Sets the configuration of all non-configured
+    collections to the default configuration
+    '''
+    try:
+        default_config = Configuration.query.filter(
+            Configuration.is_default==True)
+    except MultipleResultsFound as e:
+        print(e)
+    except NoResultFound as e:
+        print(e)
+    collections = Collection.query.filter(Collection.configuration_id != None)
+    for collection in collections:
+        collection.configuration_id = default_config
+    db.session.commit()
+
+
+@manager.command
+def debug_numbers(collection_id):
+    '''
+    Return a list of all tokens that have been recorded
+    but do not have exactly one associated recording
+    '''
+    tokens = Collection.query.get(collection_id).tokens
+    for token in tokens:
+        recordings = token.recordings
+        print(len(recordings))
+        if(len(recordings) > 0):
+            if(len(recordings) != token.num_recordings):
+                print("error")
+
+
 manager.add_command('db', MigrateCommand)
-manager.add_command('adduser', AddUser)
-manager.add_command('changepass', changePass)
-manager.add_command('changedataroot', changeDataRoot)
-manager.add_command('adddefaultroles', AddDefaultRoles)
+manager.add_command('add_user', AddUser)
+manager.add_command('change_pass', changePass)
+manager.add_command('change_dataroot', changeDataRoot)
+manager.add_command('add_default_roles', AddDefaultRoles)
+manager.add_command('add_default_configuration', AddDefaultConfiguration)
 
 if __name__ == '__main__':
     manager.run()

@@ -3,6 +3,30 @@ import os
 import librosa
 import numpy as np
 
+def load_sample(path:str):
+    #wf = wave.open(path, 'rb')
+    #sr, nchannels = wf.getparams().framerate, wf.getparams().nchannels
+    y, sr = librosa.core.load(path, sr=None, mono=True)
+    return y, sr
+
+
+def find_segment(y:np.ndarray, sr:int, top_db:int = 10):
+    '''
+    Notes:
+    * We add a 0.25 sec of padding to the region to avoid cut-offs.
+    * Some microphones will generate a short and loud popping sound
+    at the start of recording. To avoid this, we don't consider the
+    first 0.5 seconds of each recording for silence detection.
+    '''
+    cut_off = librosa.time_to_samples(0.5, sr=sr)
+    y_cut = y[cut_off:-1]
+    y_t, index = librosa.effects.trim(y_cut, top_db=top_db)
+    index += cut_off
+    index[0] -= cut_off/2
+    index[1] += cut_off/2
+    index = librosa.core.samples_to_time(index, sr=sr)
+    return index
+
 def check_sample(y:np.ndarray, checks: list):
     '''
     Returns True if sample passes all checks.
@@ -15,13 +39,6 @@ def check_sample(y:np.ndarray, checks: list):
         if check(y):
             return True, check.__name__
     return False
-
-
-def load_sample(path:str):
-    #wf = wave.open(path, 'rb')
-    #sr, nchannels = wf.getparams().framerate, wf.getparams().nchannels
-    y, sr = librosa.core.load(path, sr=None, mono=True)
-    return y, sr
 
 
 def signal_is_too_high(y:np.ndarray, thresh: float = -4.5, num_frames :int = 1):

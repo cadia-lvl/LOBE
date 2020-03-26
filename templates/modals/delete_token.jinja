@@ -1,0 +1,30 @@
+<div class="modal fade" id='deleteTokenModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú ert við það að eyða setningu!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                Með því að eyða setningu eyðast allar upptökur sem settar hafa verið
+                lesnar fyrir setningu: {{token.get_printable_id()}}.
+                <br><br>
+                Þessi setning hefur verið tekin upp {{token.recordings | length}} sinnum
+                <br><br>
+                Ertu viss um að þú viljir eyða þessari setningu?
+                </p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a href={{token.delete_url}} class='btn btn-danger'>
+                    Eyða
+                    {{macros.btn_icon('times', 'l')}}
+                </a>
+            </div>
+            </div>
+        </div>
+    </div>

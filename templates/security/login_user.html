@@ -5,7 +5,7 @@
             <div class='card card-body'>
                 <form method="POST" action="{{ url_for('security.login') }}">
                     {% with form=login_user_form %}
-                        {% include '_form.jinja' %}
+                        {% include 'forms/_form.jinja' %}
                     {% endwith %}
                     <button type='submit' class='btn btn-primary'>
                         Skrá inn

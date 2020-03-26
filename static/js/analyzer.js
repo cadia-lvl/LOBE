@@ -1,4 +1,4 @@
-function analyzeAudio(recordedBlobs, postURL){
+function analyzeAudio(recordedBlobs, postURL, conf){
     /**
      * Returns:
      *  * 'ok' if recording is ok
@@ -9,12 +9,16 @@ function analyzeAudio(recordedBlobs, postURL){
     const blob = new Blob(recordedBlobs, {type: 'audio/webm'});
     var msg = "";
     var fd = new FormData();
-    fd.append("audio", blob, 'test.webm');
+    fd.append("audio", blob, 'analyze.webm');
+    fd.append("top_db", conf.trim_threshold);
+    fd.append("low_thresh", conf.low_threshold);
+    fd.append("high_thresh", conf.high_threshold);
+    fd.append("high_frames", conf.high_frames);
+
     var xhr = new XMLHttpRequest();
     xhr.onload = function(e){
         if(this.readyState === XMLHttpRequest.DONE) {
             if(xhr.status == '200'){
-                var b =0;
                 msg = xhr.responseText;
             } else{
                 promptError('Villa kom upp við að greina hljóðskrá', xhr.responseText);
@@ -22,8 +26,7 @@ function analyzeAudio(recordedBlobs, postURL){
             }
         }
     }
-    xhr.on
-    xhr.open('POST', postURL, false)
+    xhr.open('POST', postURL, false);
     xhr.send(fd);
     return msg;
 }

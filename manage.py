@@ -256,6 +256,23 @@ def update_numbers():
         collection.update_numbers()
     db.session.commit()
 
+@manager.command
+def debug_numbers(collection_id):
+    '''
+    Return a list of all tokens that have been recorded
+    but do not have exactly one associated recording
+    '''
+    tokens = Collection.query.get(collection_id).tokens
+    for token in tqdm(tokens):
+        recordings = token.recordings
+        if(len(recordings) > 0):
+            if(len(recordings) != token.num_recordings):
+                print(f'Token {token.id} has {token.num_recordings} but there are actually {len(recordings)}')
+            elif(len(recordings) == 2):
+                print(f'Token {token.id} has {len(recordings)}')
+
+                print(' '.join(str(r.session_id) for r in recordings))
+
 manager.add_command('db', MigrateCommand)
 manager.add_command('adduser', AddUser)
 manager.add_command('changepass', changePass)

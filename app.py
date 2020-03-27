@@ -478,7 +478,7 @@ def download_recording(id):
 @login_required
 def rec_session_list():
     page = int(request.args.get('page', 1))
-    sessions = Session.query.order_by(resolve_order(Token,
+    sessions = Session.query.order_by(resolve_order(Session,
         request.args.get('sort_by', default='created_at'),
         order=request.args.get('order', default='desc'))).paginate(page,
         per_page=app.config['SESSION_PAGINATION'])

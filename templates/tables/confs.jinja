@@ -1,0 +1,22 @@
+<div class='table-responsive'>
+    <table class='table'>
+        <thead>
+            <th>
+                Nafn
+                {{macros.sort_th_a('id')}}
+            </th>
+            <th>
+                Dagsetning
+                {{macros.sort_th_a('created_at')}}
+            </th>
+        </thead>
+        <tbody>
+            {% for conf in confs %}
+                <tr>
+                    <td><a href={{conf.url}}>{{conf.printable_name}}</a></td>
+                    <td>{{conf.created_at | datetime(format='medium')}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

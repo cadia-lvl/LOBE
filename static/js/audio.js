@@ -337,8 +337,8 @@ function sendAction(){
 				var session_url = xhr.responseText;
 				finishButtonIcon.addClass('fa-check');
 
-				window.onbeforeunload = null;
-				window.location = session_url;
+				//window.onbeforeunload = null;
+				//window.location = session_url;
 			} else{
 				finishButtonIcon.addClass('fa-times');
 				finishButton.addClass('btn-danger');
@@ -359,8 +359,10 @@ function sendAction(){
 	fd.append('user_id', user_id);
 	fd.append('manager_id', manager_id);
 	fd.append('collection_id', collection_id);
+	console.log(numTokens);
 	for(var i=0; i<numTokens; i++){
 		if('recording' in tokens[i]){
+			console.log(i);
 			recordings[tokens[i]['id']] = tokens[i]['recording'];
 			//fd.append(tokens[i]['id'], JSON.stringify(tokens[i]['recording']));
 			fd.append("file_"+tokens[i]['id'], tokens[i]['recording']['blob'], tokens[i]['recording']['filename']);

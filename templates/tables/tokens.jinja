@@ -31,7 +31,7 @@
                     <td class='text-right'>{{token.length}}</td>
                     <td>{{token.created_at | datetime('med-low')}}</td>
                     <td class='text-right'>{{token.recordings | length}}</td>
-                    <td>{% if token.score is not none %}{{token.get_printable_score()}}{% endif %}</td>
+                    <td class='text-right'>{% if token.score is not none %}{{token.get_printable_score()}}{% endif %}</td>
                     <td>{{token.text}}</td>
                 </tr>
             {% endfor %}

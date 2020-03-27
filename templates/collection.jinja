@@ -49,9 +49,15 @@
                     <p>Tegund:</p>
                 </div>
                 <div class='col-8 text-right'>
-                    <code>{%if collection.has_video %}{{macros.btn_icon('video', 'r')}} Myndbandssöfnun
+                    <code>{%if collection.configuration.has_video %}{{macros.btn_icon('video', 'r')}} Myndbandssöfnun
                     {% else %}{{macros.btn_icon('microphone', 'r')}} Hljóðsöfnun{% endif %}
                     </code>
+                </div>
+                <div class='col-4'>
+                    <p>Stillingar:</p>
+                </div>
+                <div class='col-8 text-right'>
+                    <code>{% if collection.configuration %}{{collection.configuration.printable_name}}{% else %}Ekki stillt{% endif %}</code>
                 </div>
             </div>
         </div>
@@ -60,7 +66,7 @@
                 <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
                 <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.get_invalid_ratio(as_percent=True)}}%"></div>
             </div>
-            <button type='button' class='btn btn-success btn-sm float-right mb-2 ml-2' data-toggle='modal', data-target='#confirmModal'>
+            <button class='btn btn-sm btn-secondary text-success float-right mb-2 ml-2', data-toggle='modal', data-target='#confirmModal'>
                 {{macros.btn_icon('microphone', 'r')}}
                 Taka upp
             </button>
@@ -69,45 +75,61 @@
                 Lotur
             </a>
             {% if current_user.is_admin() %}
-                <a href='{{url_for("record_session_beta", coll_id=collection.id)}}' class='btn btn-sm btn-success float-right mb-2 ml-2'>
-                    {{macros.btn_icon('microphone', 'r')}}
-                    WebRTC (beta)
-                </a>
-                <button type='button' class='btn btn-secondary btn-sm float-right mb-2 ml-2' data-toggle='modal', data-target='#addTokensModal'>
-                    {{macros.btn_icon('plus', 'r')}}
-                    Bæta við
-                </button>
                 <button class="btn btn-secondary float-right ml-2 mb-2 btn-sm" type="button" data-toggle='modal', data-target='#downloadModal'>
                     {{macros.btn_icon('download', 'r')}}
                     Sækja
                 </button>
-                <a href='{{collection.get_edit_url()}}' class='btn btn-warning btn-sm mb-2 ml-2 float-right'>
+                <button type='button' class='btn btn-sm btn-secondary float-right text-warning dropdown-toggle' data-toggle='dropdown'>
                     {{macros.btn_icon('edit', 'r')}}
                     Breyta
-                </a>
-                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-danger btn-sm float-right mb-2'>
-                    {{macros.btn_icon('trash', 'r')}}
-                    Eyða söfnun
                 </button>
+                <div class='dropdown-menu'>
+                    <a href='{{collection.get_edit_url()}}' class='dropdown-item'>
+                        {{macros.btn_icon("database", "r")}}
+                        Breyta söfnun
+                    </a>
+                    <a href='{{collection.configuration.edit_url}}' class='dropdown-item'>
+                        {{macros.btn_icon("cog", "r")}}
+                        Breyta stillingum
+                    </a>
+                    <button type='button' class='dropdown-item text-danger' data-toggle='modal', data-target='#deleteModal'>
+                        {{macros.btn_icon("times", "r")}}
+                        Eyða söfnun
+                    </button>
+                    <div class='dropdown-divider'></div>
+                    <button type='button' class='dropdown-item' data-toggle='modal', data-target='#addTokensModal'>
+                        {{macros.btn_icon("plus", "r")}}
+                        Bæta við setningum
+                    </button>
+                </div>
             {% endif %}
         </div>
     </div>
-    <div class='row mt-2'>
-        <div class='col-12'>
-            <h3 class='font-weight-bold'>Textar</h3>
+    {% if tokens.total > 0 %}
+        <div class='row mt-2'>
+            <div class='col-12'>
+                <h3 class='font-weight-bold'>Textar</h3>
+            </div>
+            <div class='col-12'>
+                {% with tokens=tokens.items %}
+                    {% include 'tables/tokens.jinja'%}
+                {% endwith %}
+            </div>
         </div>
-        <div class='col-12'>
-            {% with tokens=tokens.items %}
-                {% include '_token_table.jinja'%}
-            {% endwith %}
+        <div class='row mt-3'>
+            <div class='col-12'>
+                {{macros.pagination(tokens, url_for("collection", id=collection.id))}}
+            </div>
         </div>
-    </div>
-    <div class='row mt-3'>
-        <div class='col-12'>
-            <!-- Quick fix for compiling, replace token_list with collection -->
-            {{macros.pagination(tokens, url_for("collection", id=collection.id))}}
+    {% else %}
+        <div class='row mt-4'>
+            <div class='col-12'>
+                {{macros.no_results("Engar setningar",
+                    "Byrjaðu á að bæta við setningum í söfnunina með því að smella á breyta hér fyrir ofan")}}
+
+            </div>
         </div>
-    </div>
+    {% endif %}
 {% endblock %}
 
 {% block modals %}
@@ -122,21 +144,22 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                        <p>
-                            Veljið eitt eða fleiri skjöl hér að neðan. Textaskjal sem inniheldur fleiri en eina línu er túlkað
-                            sem margir textabútar og textaskjölin vistast sem slík (5 línur í textaskrá samsvarar 5 textum til dæmis).
+                    <p>
+                        Veljið eitt eða fleiri skjöl hér að neðan. Textaskjal sem inniheldur fleiri en eina línu er túlkað
+                        sem margir textabútar og textaskjölin vistast sem slík (5 línur í textaskrá samsvarar 5 textum til dæmis).
 
-                            G2P skjal þarf að vera að vera tab-seperated listi af setningum þannig að hver lína inniheldur
-                            <ul class="list-group">
-                                <li class="list-group-item">Sjálfa setninguna</li>
-                                <li class="list-group-item">Uppruna setningar (t.d. "risamálheild")</li>
-                                <li class="list-group-item">Röðunarstuðul (einhver fleytitala, hærri því fyrr birtist setningin)</li>
-                                <li class="list-group-item">Framburð (t.d. "~ uː t s m ɔi j ɪ n ~")</li>
-                            </ul>
-                        </p>
-                        {% with form=token_form %}
-                            {% include '_form.jinja' %}
-                        {% endwith %}
+                        G2P skjal þarf að vera að vera tab-seperated listi af setningum þannig að hver lína inniheldur
+                        <ul class="list-group">
+                            <li class="list-group-item">Sjálfa setninguna</li>
+                            <li class="list-group-item">Uppruna setningar (t.d. "risamálheild")</li>
+                            <li class="list-group-item">Röðunarstuðul (einhver fleytitala, hærri því fyrr birtist setningin)</li>
+                            <li class="list-group-item">Framburð (t.d. "~ uː t s m ɔi j ɪ n ~")</li>
+                        </ul>
+                    </p>
+                    {% with form=token_form %}
+                        {% include 'forms/_form.jinja' %}
+                    {% endwith %}
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
@@ -228,6 +251,16 @@
             </div>
         </div>
     </div>
-
-    {% include '_user_confirm_modal.jinja' %}
+    {% include 'modals/user_confirm.jinja' %}
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+    <script>
+        $('#files').on('change',function(){
+            //get the file name
+            var fileName = $(this).val();
+            //replace the "Choose a file" label
+            $(this).next('.custom-file-label').html(fileName);
+        });
+    </script>
 {% endblock %}

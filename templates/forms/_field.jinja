@@ -3,15 +3,16 @@
     {% else%}form-group{% endif%}">
     {% if field.type != 'HiddenField' and field.type != 'CSRFTokenField' and field.type != 'RecaptchaField'
         and field.type != 'BooleanField' and field.type != 'MultipleFileField' %}
-            {{ field.label }}
+        {{ field.label }} {% if field.flags.required %}*{% endif %}
     {% endif %}
 
     {% if field.type == 'BooleanField' %}
         {{field(class_="custom-control-input")}}
-        {{ field.label(class_="custom-control-label") }}
+        {{field.label(class_="custom-control-label")}}
+        {% if field.flags.required %}*{% endif %}
     {% elif field.type == 'MultipleFileField' %}
         {{field(class_='custom-file-input')}}
-        {{ field.label(class_="custom-file-label") }}
+        {{field.label(class_="custom-file-label")}}
     {% else %}
         {{ field(class_='form-control') }}
     {% endif %}

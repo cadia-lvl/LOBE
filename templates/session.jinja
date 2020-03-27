@@ -9,22 +9,22 @@
             <p>Setningar teknar upp: {{session.num_recordings}}</p>
             <p>Lengd lotu: {{session.get_printable_duration() | default("N/A")}}</p>
             <a href='{{url_for("record_session", coll_id=session.collection.id)}}?user_id={{session.user_id}}'
-                class='btn btn-success float-right'
+                class='btn btn-success btn-sm float-right mb-2 ml-2'
                 data-toggle="tooltip" data-placement="bottom" title="Sama rödd, {{session.get_user}}, verður notuð.">
                 {{macros.btn_icon('microphone', 'r')}}
                 Taka upp fleiri
             </a>
             {% if current_user.is_admin() %}
-                <a href='{{url_for("session_edit", id=session.id)}}' class='btn btn-secondary text-success float-right mr-2'>
+                <a href='{{url_for("session_edit", id=session.id)}}' class='btn btn-sm btn-secondary text-warning float-right mb-2 ml-2'>
                     {{macros.btn_icon('edit', 'r')}}
                     Breyta
                 </a>
-                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-danger float-right mr-2'>
+                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-sm btn-secondary text-danger float-right mb-2 ml-2'>
                     {{macros.btn_icon('trash', 'r')}}
                     Eyða
                 </button>
             {% endif %}
-            <a href='{{url_for("collection", id=session.collection.id)}}' class='btn btn-secondary float-right mr-2'>
+            <a href='{{url_for("collection", id=session.collection.id)}}' class='btn btn-sm btn-secondary float-right'>
                 {{macros.btn_icon('arrow-left', 'r')}}
                 Til baka í {{session.collection.name}}
             </a>
@@ -35,8 +35,8 @@
             <h3 class='font-weight-bold'>Upptökur</h3>
         </div>
         <div class='col-12'>
-            {% with recordings=session.recordings, url=url_for('rec_session', id=session.id) %}
-                {% include '_recording_table.jinja'%}
+            {% with recordings=session.recordings %}
+                {% include 'tables/recordings.jinja'%}
             {% endwith %}
         </div>
     </div>

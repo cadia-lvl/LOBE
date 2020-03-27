@@ -1,0 +1,6 @@
+{% for field in form %}
+    {% if field.type != 'SubmitField' %}
+        {% include 'forms/_field.jinja' %}
+    {% endif %}
+{% endfor %}
+<p class='text-right'>(*) Stjörnumerkta reiti þarf að filla</p>

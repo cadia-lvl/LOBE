@@ -5,18 +5,18 @@
             <h1 class='font-weight-bold'>{{user.name if user.name != None else 'Ekki skráð'}}</h1>
             <p>{{user.email}}</p>
             {% if current_user.is_admin() %}
-                <a href="{{url_for('user_edit', id=user.id)}}" class='btn btn-secondary float-right text-success'>
+                <a href="{{url_for('user_edit', id=user.id)}}" class='btn btn-secondary text-secondary float-right text-success'>
                     Breyta
                     {{macros.btn_icon('edit', 'l')}}
                 </a>
-                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-danger float-right mr-2'>
+                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-secondary text-danger float-right mr-2'>
                     {{macros.btn_icon('trash', 'r')}}
                     Eyða notanda
                 </button>
             {% endif %}
-            <a href="{{url_for('user_time_info', id=user.id)}}" class='btn btn-primary float-right mr-2'>
-                    Tímaskýrsla
-                    {{macros.btn_icon('clock', 'l')}}
+            <a href="{{url_for('user_time_info', id=user.id)}}" class='btn btn-secondary text-success float-right mr-2'>
+                Tímaskýrsla
+                {{macros.btn_icon('clock', 'l')}}
             </a>
 
         </div>
@@ -26,18 +26,29 @@
             <h3 class='font-weight-bold'>Upptökur</h3>
         </div>
         <div class='col-12'>
-        {% if recordings %}
-            {% with recordings=recordings.items, url=url_for('user', id=user.id)%}
-                {% include '_recording_table.jinja'%}
-            {% endwith %}
-        {% endif %}
+            {% if recordings.total > 0 %}
+                {% with recordings=recordings.items %}
+                    {% include 'tables/recordings.jinja'%}
+                {% endwith %}
+            {% else %}
+                <div class='jumbotron'>
+                    <h3 class='font-weight-bold'>
+                        <span class='text-warning'>
+                            <i class='fa fa-exclamation-triangle'></i>
+                        </span>
+                        Engar upptökur
+                    </h3>
+                </div>
+            {% endif %}
         </div>
     </div>
-    <div class='row mt-3'>
-        <div class='col-12'>
-            {{macros.pagination(recordings, url_for("user", id=user.id))}}
+    {% if recordings.total > 0 %}
+        <div class='row mt-3'>
+            <div class='col-12'>
+                {{macros.pagination(recordings, url_for("user", id=user.id))}}
+            </div>
         </div>
-    </div>
+    {% endif %}
 {% endblock %}
 
 {% block modals %}

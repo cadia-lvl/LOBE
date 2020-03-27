@@ -1,0 +1,36 @@
+<table class='table'>
+    <thead>
+        <th>
+            Söfnun
+            {{macros.sort_th_a('name')}}
+        </th>
+        <th>
+            Búin til
+            {{macros.sort_th_a('created_at')}}
+        </th>
+        <th>
+            Setningar
+            {{macros.sort_th_a('num_tokens')}}
+        </th>
+        <th>
+            Gangur
+        </th>
+    </thead>
+    <tbody>
+        {% for collection in collections %}
+            <tr>
+                <td>
+                    <a href={{collection.get_url()}}>{{collection.name}}</a>
+                </td>
+                <td>{{collection.created_at | datetime('low')}}</td>
+                <td>{{collection.num_tokens}}</td>
+                <td>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
+                        <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.get_invalid_ratio(as_percent=True)}}%"></div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -29,6 +29,9 @@
                 Lengd
                 {{macros.sort_th_a('duration', url)}}
             </th>
+            <th>
+                Gæði
+            </th>
         </thead>
         <tbody>
             {% for recording in recordings %}
@@ -91,6 +94,9 @@
                         <td>n/a</td>
                     {% endif %}
                     <td>{{recording.get_printable_duration()}}</td>
+                    <td>
+                        {{macros.recording_analysis(recording)}}
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

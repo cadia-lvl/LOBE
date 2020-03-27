@@ -15,7 +15,7 @@
                 <div class='col-6 text-right'><p>{{recording.created_at | datetime(format='medium')}}</p></div>
 
                 <div class='col-6'><p>Lesið af:</p></div>
-                <div class='col-6 text-right'><p>{{recording.user | default("ekki skráð", true)}}</p></div>
+                <div class='col-6 text-right'><p>{{recording.get_user().name | default("ekki skráð", true)}}</p></div>
 
                 <div class='col-6'><p>Lengd:</p></div>
                 <div class='col-6 text-right'><p>{{recording.get_printable_duration()}}</p></div>
@@ -29,7 +29,7 @@
         </div>
         <div class='col-md-6 col-12'>
             <div class='row'>
-                <div class='col-6'><p>Sample rate:</p></div>
+                <div class='col-6'><p>Upptökutíðni:</p></div>
                 <div class='col-6 text-right'><p>{{recording.sr}}</p></div>
 
                 <div class='col-6'><p>Fjöldi rása:</p></div>
@@ -38,46 +38,96 @@
                 <div class='col-6'><p>Fjöldi ramma:</p></div>
                 <div class='col-6 text-right'><p>{{recording.num_frames}}</p></div>
 
-                <div class='col-6'><p>Bitadjúp:</p></div>
+                <div class='col-6'><p>Sýnisstærð:</p></div>
                 <div class='col-6 text-right'><p>{% if recording.bit_depth %}{{recording.bit_depth}}{% else %}Ekki skráð{% endif %}</p></div>
             </div>
         </div>
     </div>
     <div class='row'>
         <div class='col-12'>
-            <a class='btn btn-danger float-right ml-1' href="{{url_for('delete_recording', id=recording.id)}}">
-                {{macros.btn_icon('trash', 'r')}}
-                Eyða
-            </a>
-            <a href="{{url_for('token', id=recording.token.id)}}" class='btn btn-secondary float-right ml-1'>
+            <a href="{{url_for('token', id=recording.token.id)}}" class='btn btn-sm btn-secondary float-right ml-1'>
+                {{macros.btn_icon('file', 'r')}}
                 Skoða setningu
             </a>
             <form method="POST" action=>
                 {% if recording.marked_as_bad %}
-                    <a href="{{url_for('toggle_recording_bad', id=recording.id)}}" class='btn btn-success float-right ml-1'>
+                    <a href="{{url_for('toggle_recording_bad', id=recording.id)}}" class='btn btn-sm btn-success float-right ml-1'>
                         {{macros.btn_icon('check', 'r')}}
                         Merkja sem góð
                     </a>
                 {% else %}
-                    <a href="{{url_for('toggle_recording_bad', id=recording.id)}}" class='btn btn-warning float-right ml-1'>
+                    <a href="{{url_for('toggle_recording_bad', id=recording.id)}}" class='btn btn-sm btn-secondary text-warning float-right ml-1'>
                         {{macros.btn_icon('times', 'r')}}
                         Merkja sem léleg
                     </a>
                 {% endif%}
             </form>
-            <div>
-                <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
-                <a class='btn btn-secondary float-right ml-1' href='{{recording.get_download_url()}}'><i class='fa fa-download'></i></a>
-                <button type='button' class='btn btn-secondary float-right ml-1' onClick="play({{recording.id}})">
-                    <i id='playButtonIcon-{{recording.id}}' class='fa fa-play'></i>
-                </button>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <div id='recordingCard' class='card mt-2'>
+                <div class='card-body'>
+                    <div id="waveform"></div>
+                </div>
+                <ul class='list-group list-group-flush'>
+                    <li class='list-group-item'>
+                        <code>{{recording.fname}}</code>
+                        <div class='btn-group float-right' role='group'>
+                            <button id='play' type='button' class='btn btn-secondary btn-sm'>
+                                <i id='playButtonIcon' class='fa fa-play'></i>
+                            </button>
+                            <a class="btn btn-secondary btn-sm" href='{{recording.get_download_url()}}'><i class='fa fa-download'></i></a>
+                            <a href="{{url_for('delete_recording', id=recording.id)}}" type='button' class='btn btn-secondary btn-sm text-danger'>
+                                <i class='fa fa-trash'></i>
+                            </a>
+                        </div>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
+    {% if recording.has_video%}
+        <div class='row mt-2'>
+            <div class='col-12'>
+                <video playsinline src={{recording.get_download_url()}} style='border-radius: 0.25rem;'>
+                </video>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}
+{% block modals %}
 
+{% endblock %}
 {% block scripts %}
     {{super()}}
-    <script src='{{url_for("static", filename="js/listControls.js")}}'></script>
-    <!--<script src='{{url_for("static", filename="js/audioViz.js")}}'></script>-->
+    <script src="https://unpkg.com/wavesurfer.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.regions.min.js"></script>
+    <script src='{{url_for("static", filename="js/surf.js")}}'></script>
+    <script>
+        //TODO: add region support on playback and reconsider wavesurfer + video binding
+        const playButtonIcon = document.querySelector('#playButtonIcon');
+        const video = document.querySelector('video');
+        {% if recording.has_video %}
+            const wavesurfer = createSimpleWaveSurfer('#waveform', true, playButtonIcon);
+        {% else %}
+            const wavesurfer = createSimpleWaveSurfer('#waveform', false, playButtonIcon);
+        {% endif %}
+        wavesurfer.load("{{recording.get_download_url()}}");
+
+        if({{recording.start}}){
+            wavesurfer.addRegion({
+                color: "rgba(243, 156, 18, 0.1)",
+                start: {{recording.start}},
+                end: {{recording.end}}});
+        }
+        document.querySelector('button#play').addEventListener('click', function(){
+            if(wavesurfer.isPlaying()){
+                wavesurfer.pause();
+            } else{
+                wavesurfer.play();
+                video.play();
+            }
+        })
+    </script>
 {% endblock %}

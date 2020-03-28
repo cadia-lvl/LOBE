@@ -458,6 +458,9 @@ class Recording(BaseModel, db.Model):
     def get_path(self):
         return self.path
 
+    def get_wav_path(self):
+        return self.wav_path
+
     def save_to_disk(self, file_obj):
         '''
         Can only be called after being committed
@@ -467,7 +470,11 @@ class Recording(BaseModel, db.Model):
         file_obj.save(self.path)
 
     def _save_wav_to_disk(self):
-        subprocess.call(['ffmpeg', '-i', self.path, self.wav_path])
+        # there is no ffmpeg on Eyra
+        if os.getenv('SEMI_PROD', False):
+            subprocess.call(['avconv', '-i', self.path, self.wav_path])
+        else:
+            subprocess.call(['ffmpeg', '-i', self.path, self.wav_path])
 
     def add_file_obj(self, obj, recorder_settings):
         '''

@@ -317,8 +317,16 @@ def debug_numbers(collection_id):
                 print(f'Token {token.id} has {token.num_recordings} but there are actually {len(recordings)}')
             elif(len(recordings) == 2):
                 print(f'Token {token.id} has {len(recordings)}')
-
                 print(' '.join(str(r.session_id) for r in recordings))
+
+@manager.command
+def add_missing_dirs():
+    colls = Collection.query.all()
+    for coll in colls:
+        if not os.path.exists(coll.get_video_dir()):
+            os.makedirs(coll.get_video_dir())
+        if not os.path.exists(coll.get_wav_audio_dir()):
+            os.makedirs(coll.get_wav_audio_dir())
 
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)

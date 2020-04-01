@@ -31,7 +31,6 @@ class ZipManager:
             meta['speakers'].append(User.query.get(id).get_meta())
         meta['collection'] = self.collection.get_meta()
         meta_f = open (self.meta_path, 'w', encoding='utf-8')
-        print(self.meta_path)
         json.dump(meta, meta_f, ensure_ascii=False, indent=4)
         meta_f.close()
         self.zf.write(self.meta_path, 'meta.json')
@@ -75,6 +74,7 @@ class RecordingInfoManager:
                 'recording_fname': recording.get_fname(),
                 'text_fname': token.get_fname(),
                 'text': token.text,
+                'score': token.score,
                 'user_name': user_name,
                 'user_id': recording.user_id,
                 'session_id': recording.session.id if recording.session else 'n/a'

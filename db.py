@@ -177,6 +177,8 @@ def delete_recording_db(recording):
     token = recording.get_token()
     try:
         os.remove(recording.get_path())
+        if recording.get_wav_path is not None:
+            os.remove(recording.get_wav_path())
     except Exception as error:
         print(f'{error}\n{traceback.format_exc()}')
         return False
@@ -219,6 +221,10 @@ def delete_session_db(record_session):
     try:
         for recording in record_session.recordings:
             os.remove(recording.get_path())
+            if recording.get_wav_path() is not None:
+                os.remove(recording.get_wav_path())
+    except FileNotFoundError:
+        pass
     except Exception as error:
         print(f'{error}\n{traceback.format_exc()}')
         return False

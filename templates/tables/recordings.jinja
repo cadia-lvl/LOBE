@@ -4,30 +4,30 @@
             <th id="btn-th"></th>
             <th>
                 Lesið þann
-                {{macros.sort_th_a('created_at')}}
+                {{macros.sort_th_a('created_at', url)}}
             </th>
             <th>
                 Auðkenni
-                {{macros.sort_th_a('id')}}
+                {{macros.sort_th_a('id', url)}}
             </th>
             <th>
                 Texti
-                {{macros.sort_th_a('token_id')}}
+                {{macros.sort_th_a('token_id', url)}}
             </th>
             <th>
                 Lota
-                {{macros.sort_th_a('session_id')}}
+                {{macros.sort_th_a('session_id', url)}}
             </th>
             <th>
                 Lesið af
-                {{macros.sort_th_a('user_id')}}
+                {{macros.sort_th_a('user_id', url)}}
             </th>
             <th>
                 Texti lesinn
             </th>
             <th>
                 Lengd
-                {{macros.sort_th_a('duration')}}
+                {{macros.sort_th_a('duration', url)}}
             </th>
             <th>
                 Gæði
@@ -68,7 +68,11 @@
                     <td>{{recording.created_at | datetime(format='low')}}</td>
                     <td><a id="{{recording.id}}-name" href={{recording.get_url()}} class='{% if recording.marked_as_bad %} text-warning {% endif %}'><code>#{{recording.id}}</code></a></td>
                     <td>
+                    {% if recording.get_token() %}
                         <a href="{{url_for('token', id=recording.token.id)}}"><code>{{recording.token.get_printable_id()}}</code></a>
+                    {% else %}
+                        n/a
+                    {% endif %}
                     </td>
                     <td>
                         {% if recording.session%}

@@ -71,14 +71,16 @@ class RecordingInfoManager:
     def add(self, recording, token, user_name):
         self.info[recording.id] = {
             'collection_info':{
-                'recording_fname': recording.get_fname(),
-                'text_fname': token.get_fname(),
-                'text': token.text,
-                'score': token.score,
                 'user_name': user_name,
                 'user_id': recording.user_id,
                 'session_id': recording.session.id if recording.session else 'n/a'
+            },'text_info':{
+                'id': token.id,
+                'fname': token.get_fname(),
+                'score': token.score,
+                'text': token.text,
             },'recording_info':{
+                'recording_fname': recording.get_fname(),
                 'sr': recording.sr,
                 'num_channels': recording.num_channels,
                 'bit_depth': recording.bit_depth,

@@ -170,6 +170,7 @@ class Collection(BaseModel, db.Model):
     num_invalid_tokens = db.Column(db.Integer, default=0)
     has_zip = db.Column(db.Boolean, default=False)
     zip_token_count = db.Column(db.Integer, default=0)
+    zip_created_at = db.Column(db.DateTime)
 
 
 class Configuration(BaseModel, db.Model):

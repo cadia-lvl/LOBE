@@ -1,18 +1,28 @@
-<table class='table'>
-    <thead>
-        <th>Nafn</th>
-        <th>Lesnar setningar í safni</th>
-        <th>Lesnar setningar í söfnun</th>
-        <th>Setningar í söfnun</th>
-    </thead>
-    <tbody>
-        {% for zip in zips %}
-            <tr>
-                <td><a href={{zip.get_download_url()}}>{{zip.name}}</a></td>
-                <td>{{zip.zip_token_count}}</td>
-                <td>{{zip.num_tokens - zip.num_nonrecorded_tokens}}</td>
-                <td>{{zip.num_tokens}}</td>
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class='table-responsive'>
+    <table class='table table-sm table-no-break'>
+        <thead>
+            <th></th>
+            <th>Nafn söfnunar</th>
+            <th>Gert þann</th>
+            <th>Lesnar setningar í safni</th>
+            <th>Lesnar setningar í söfnun</th>
+            <th>Setningar í söfnun</th>
+        </thead>
+        <tbody>
+            {% for zip in zips %}
+                <tr>
+                    <td>
+                        <a href={{zip.get_download_url()}} class='btn btn-link btn-sm text-success'>
+                            {{macros.btn_icon('download')}}
+                        </a>
+                    </td>
+                    <td>{{zip.name}}</td>
+                    <td>{{zip.zip_created_at| datetime('low')}}</td>
+                    <td>{{zip.zip_token_count}}</td>
+                    <td>{{zip.num_tokens - zip.num_nonrecorded_tokens}}</td>
+                    <td>{{zip.num_tokens}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

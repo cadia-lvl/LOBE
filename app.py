@@ -65,7 +65,6 @@ def create_app():
 app = create_app()
 executor = Executor(app)
 
-
 # GENERAL ROUTES
 @app.route('/')
 @login_required
@@ -180,7 +179,6 @@ def create_collection():
         try:
             # add collection to database
             collection = insert_collection(form)
-
             return redirect(url_for('collection', id=collection.id))
         except Exception as error:
             flash("Error creating collection.", category="danger")
@@ -309,9 +307,34 @@ def delete_collection(id):
         flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
         app.logger.error('Error updating a collection : {}\n{}'.format(
             error, traceback.format_exc()))
-
     return redirect(url_for('collection_list'))
 
+
+@app.route('/collections/<int:id>/delete_archive/')
+@login_required
+@roles_required('admin')
+def delete_collection_archive(id):
+    collection = db.session.query(Collection).get(id)
+    if collection.has_zip:
+        do_delete = True
+        try:
+            os.remove(collection.zip_path)
+        except FileNotFoundError:
+            pass
+        except Exception as error:
+            flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
+            app.logger.error('Error deleting an archive : {}\n{}'.format(
+                error, traceback.format_exc()))
+            do_delete = False
+        if do_delete:
+            collection.has_zip = False
+            collection.zip_token_count = 0
+            collection.zip_created_at = None
+            db.session.commit()
+            flash("Skjalasafni var eytt", category='success')
+    else:
+        flash("Söfnun hefur ekkert skjalasafn", category='warning')
+    return redirect(url_for('collection', id=id))
 # TOKEN ROUTES
 
 @app.route('/tokens/<int:id>/')
@@ -598,8 +621,6 @@ def user_time_info(id):
 def user_edit(id):
     user = User.query.get(id)
     form = UserEditForm(obj=user)
-    for field in form:
-        print(field)
     if request.method == 'POST' :
         try:
             form = UserEditForm(request.form, obj=user)

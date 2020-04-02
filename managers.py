@@ -1,3 +1,4 @@
+import datetime
 import os
 import json
 import zipfile
@@ -16,8 +17,8 @@ class ZipManager:
     def add_token(self, token):
         self.zf.write(token.get_path(), 'text/{}'.format(token.get_fname()))
 
-    def add_recording(self, recording, user_name):
-        self.zf.write(recording.get_path(), 'audio/{}/{}'.format(user_name, recording.get_fname()))
+    def add_recording(self, recording, user_id):
+        self.zf.write(recording.get_path(), 'audio/{}/{}'.format(user_id, recording.get_fname()))
 
     def add_recording_info(self, info_path):
         self.zf.write(info_path, 'info.json')
@@ -79,6 +80,7 @@ class RecordingInfoManager:
                 'fname': token.get_fname(),
                 'score': token.score,
                 'text': token.text,
+                'pron': token.pron
             },'recording_info':{
                 'recording_fname': recording.get_fname(),
                 'sr': recording.sr,
@@ -120,9 +122,9 @@ def create_collection_zip(id):
                 speaker_ids.add(recording.user_id)
                 # HACK
                 if recording.get_path() is not None:
-                    zip_manager.add_recording(recording, speaker_name)
+                    zip_manager.add_recording(recording, recording.user_id)
                     recording_info_manager.add(recording, token, speaker_name)
-                    index_manager.add(recording, token, speaker_name)
+                    index_manager.add(recording, token, recording.user_id)
                 else:
                     print("Error - token {} does not have a recording".format(token.id))
 
@@ -150,4 +152,5 @@ def create_collection_zip(id):
     # update the zip info for the collection
     collection.has_zip = True
     collection.zip_token_count = len(dl_tokens)
+    collection.zip_created_at = datetime.datetime.now()
     db.session.commit()

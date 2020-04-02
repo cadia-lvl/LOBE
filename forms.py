@@ -39,15 +39,10 @@ class CollectionForm(Form):
         # HACK to user the QuerySelectField on User objects
         # but then later populate the field with only the pk.
         if field.data is not None:
-            print(field.data)
-            print(field.data.id)
             field.data = field.data.id
 
     def validate_configuration_id(self, field):
-        print(field.data)
         if field.data is not None:
-            print(field.data)
-            print(field.data.id)
             field.data = field.data.id
 
 

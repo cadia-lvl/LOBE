@@ -50,7 +50,6 @@ def create_tokens(collection_id, files, is_g2p):
 
     # save token text to file
     for token in tokens:
-        print(token)
         token.save_to_disk()
     db.session.commit()
 
@@ -86,7 +85,6 @@ def insert_collection(form):
 
                 Perhaps some of the source folders have never been created before.
                 """.format(dir))
-
     db.session.commit()
     return collection
 

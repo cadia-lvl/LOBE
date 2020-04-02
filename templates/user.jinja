@@ -5,16 +5,30 @@
             <h1 class='font-weight-bold'>{{user.name if user.name != None else 'Ekki skráð'}}</h1>
             <p>{{user.email}}</p>
             {% if current_user.is_admin() %}
-                <a href="{{url_for('user_edit', id=user.id)}}" class='btn btn-secondary text-secondary float-right text-success'>
+                <button type='button' class='btn btn-sm btn-secondary float-right text-warning dropdown-toggle' data-toggle='dropdown'>
+                    {{macros.btn_icon('edit', 'r')}}
                     Breyta
-                    {{macros.btn_icon('edit', 'l')}}
-                </a>
-                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-secondary text-danger float-right mr-2'>
+                </button>
+                <div class='dropdown-menu'>
+                    <a href="{{url_for('user_edit', id=user.id)}}" class='dropdown-item'>
+                        {{macros.btn_icon('edit', 'r')}}
+                        Breyta notanda
+                    </a>
+                    <a href="{{url_for('user_toggle_admin', id=user.id)}}" class='dropdown-item text-warning'>
+                        {{macros.btn_icon('key', 'r')}}
+                        {% if user.is_admin() %}
+                            Gera að notanda
+                        {% else %}
+                            Gera að vefstjóra
+                        {% endif %}
+                    </a>
+                </div>
+                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-sm btn-secondary text-danger float-right mr-2'>
                     {{macros.btn_icon('trash', 'r')}}
                     Eyða notanda
                 </button>
             {% endif %}
-            <a href="{{url_for('user_time_info', id=user.id)}}" class='btn btn-secondary text-success float-right mr-2'>
+            <a href="{{url_for('user_time_info', id=user.id)}}" class='btn btn-sm btn-secondary text-success float-right mr-2'>
                 Tímaskýrsla
                 {{macros.btn_icon('clock', 'l')}}
             </a>

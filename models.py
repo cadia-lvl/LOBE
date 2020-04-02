@@ -671,7 +671,7 @@ class User(db.Model, UserMixin):
             return "Nafnlaus notandi"
 
     def is_admin(self):
-        return self.roles[0].id == ADMIN_ROLE_ID
+        return len(self.roles) > 0 and self.roles[0].id == ADMIN_ROLE_ID
 
     def __str__(self):
         if type(self.name) != str:

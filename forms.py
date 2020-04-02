@@ -96,21 +96,16 @@ class ExtendedRegisterForm(RegisterForm):
         choices=dialect_choices)
     age = IntegerField('Aldur', [validators.required(),
         validators.NumberRange(min=18, max=100)])
-    role = QuerySelectField('Hlutverk', query_factory=lambda: Role.query, get_label='name',
-                            validators=[validators.required()])
-
+    is_admin = BooleanField("Notandi er vefstjóri")
 
 class UserEditForm(Form):
     name = TextField('Nafn')
     email = TextField('Netfang')
-    role = QuerySelectField('Hlutverk', query_factory=lambda: Role.query, get_label='name',
-                            validators=[validators.required()])
     dialect = SelectField('Framburður', [validators.required()],
         choices=dialect_choices)
     sex = SelectField('Kyn',
         [validators.required()], choices=sex_choices)
     age = IntegerField('Aldur')
-
 
 class SessionEditForm(Form):
     manager_id = QuerySelectField('Stjórnandi', query_factory=lambda: User.query, get_label='name',

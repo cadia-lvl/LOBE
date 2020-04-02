@@ -597,18 +597,38 @@ def user_time_info(id):
 @login_required
 def user_edit(id):
     user = User.query.get(id)
-    form = UserEditForm(request.form, obj=user)
-
-    try:
-        if request.method == 'POST' and form.validate():
-            form.populate_obj(user)
-            db.session.commit()
-            flash("Notanda var breytt", category='success')
-    except Exception as error:
-        app.logger.error('Error updating a user : {}\n{}'.format(error, traceback.format_exc()))
+    form = UserEditForm(obj=user)
+    for field in form:
+        print(field)
+    if request.method == 'POST' :
+        try:
+            form = UserEditForm(request.form, obj=user)
+            if form.validate():
+                form.populate_obj(user)
+                db.session.commit()
+                flash("Notanda var breytt", category='success')
+        except Exception as error:
+            app.logger.error('Error updating a user : {}\n{}'.format(error, traceback.format_exc()))
 
     return render_template('forms/model.jinja', user=user, form=form, type='edit',
         action=url_for('user_edit', id=id), section='user')
+
+
+@app.route('/users/<int:id>/toggle_admin/', methods=['GET', 'POST'])
+@login_required
+def user_toggle_admin(id):
+    user = User.query.get(id)
+    ds_user = user_datastore.get_user(id)
+    if ds_user.has_role('admin'):
+        user_datastore.remove_role_from_user(ds_user, 'admin')
+        user_datastore.add_role_to_user(ds_user, 'Notandi')
+        flash("Notandi er ekki lengur vefstjóri", category='success')
+    else:
+        user_datastore.add_role_to_user(ds_user, 'admin')
+        user_datastore.remove_role_from_user(ds_user, 'Notandi')
+        flash("Notandi er nú vefstjóri", category='success')
+    db.session.commit()
+    return redirect(url_for('user', id=id))
 
 @app.route('/users/create/', methods=['GET', 'POST'])
 @login_required
@@ -617,13 +637,17 @@ def user_create():
     form = ExtendedRegisterForm(request.form)
     if request.method == 'POST' and form.validate():
         try:
-            user_datastore.create_user(name=form.name.data, email=form.email.data,
-                password=hash_password(form.password.data), roles=[form.role.data])
+            new_user = user_datastore.create_user(name=form.name.data, email=form.email.data,
+                password=hash_password(form.password.data), roles=['admin' if form.is_admin.data else 'Notandi'])
+            form.populate_obj(new_user)
             db.session.commit()
+
             flash("Nýr notandi var búinn til", category='success')
             return redirect(url_for('user_list'))
         except Exception as error:
             app.logger.error('Error creating a user : {}\n{}'.format(error,traceback.format_exc()))
+            flash("Villa kom upp við að búa til nýjan notanda", category='warning')
+
     return render_template('forms/model.jinja', form=form, type='create',
         action=url_for('user_create'), section='user')
 

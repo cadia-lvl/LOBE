@@ -79,10 +79,7 @@ class Collection(BaseModel, db.Model):
         return url_for('collection', id=self.id)
 
     def get_download_url(self):
-        return url_for('download_collection', id=self.id)
-
-    def get_download_index_url(self):
-        return url_for('download_collection_index', id=self.id)
+        return url_for('stream_collection_zip', id=self.id)
 
     def get_edit_url(self):
         return url_for('edit_collection', id=self.id)

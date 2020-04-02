@@ -69,8 +69,7 @@ def insert_collection(form):
     db.session.flush()
 
     dirs = [collection.get_record_dir(), collection.get_token_dir(),
-        collection.get_video_dir(), collection.get_wav_audio_dir(),
-        collection.zip_path]
+        collection.get_video_dir(), collection.get_wav_audio_dir()]
     # create dirs for tokens and records
     for dir in dirs:
         if not os.path.exists(dir): os.makedirs(dir)

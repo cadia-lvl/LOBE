@@ -8,7 +8,7 @@
     <tbody>
         {% for zip in zips %}
             <tr>
-                <td><a href={{collection.get_url()}}>{{zip.name}}</a></td>
+                <td><a href={{zip.get_download_url()}}>{{zip.name}}</a></td>
                 <td>{{zip.zip_token_count}}</td>
                 <td>{{zip.num_tokens - zip.num_nonrecorded_tokens}}</td>
                 <td>{{zip.num_tokens}}</td>

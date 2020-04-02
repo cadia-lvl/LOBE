@@ -17,7 +17,7 @@
 
 {% block pagination %}
     {% if zips.total > 0 %}
-        {{macros.pagination(zips, url_for('zip_list'))}}
+        {{macros.pagination(zips, url_for('collection_zip_list'))}}
     {% endif %}
 {% endblock %}
 

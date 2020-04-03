@@ -31,8 +31,12 @@ from managers import ZipManager, RecordingInfoManager, IndexManager, create_coll
 from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low, find_segment
 
 # initialize the logger
-logHandler = RotatingFileHandler('logs/info.log', maxBytes=1000,
-    backupCount=1)
+logfile_name = 'logs/info.log'
+logfile_mode = 'w'
+if os.path.exists(logfile_name):
+    logfile_mode = 'a'
+logHandler = RotatingFileHandler(logfile_name, maxBytes=1000,
+    backupCount=1, mode=logfile_mode)
 logHandler.setLevel(logging.DEBUG)
 logHandler.setFormatter(logging.Formatter(
     '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'

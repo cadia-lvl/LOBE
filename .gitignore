@@ -5,7 +5,7 @@ data_old/
 data_backup/
 migrations_old/
 temp/
-logs/
+logs/[^\.]*
 .vscode/
 __pycache__/
 settings/production.py

@@ -10,6 +10,19 @@ LOBE is a recording client made specifically for TTS data collections. It suppor
 * Create a Postgres database. Relevant parameters need to be supplied to the flask via the setting files at `settings/development.py` or `settings/production.py`.
 * Spin up a simple development server using `./dev.sh`.
 
+# Creating a development database
+Start by creating a databese and a user:
+´´´bash
+# Log in as postgres user
+sudo -u postgres -i
+# Create role for lobe and select password
+createuser lobe --pwprompt
+# Create lobe databese with the new user as owner
+createdb lobe --owner=lobe
+´´´
+Remember to change settings/development.py accordingly.
+Finally run ´python manage.py db upgrade´
+
 # Backing up & restoring
 1. Create a new database.
     1. sudo su postgres

@@ -10,6 +10,7 @@ RECORD_DIR = os.path.join(DATA_BASE_DIR, 'records/')
 VIDEO_DIR = os.path.join(DATA_BASE_DIR, 'videos/')
 ZIP_DIR = os.path.join(DATA_BASE_DIR, 'zips/')
 TEMP_DIR = os.path.join(DATA_BASE_DIR, 'temp/')
+WAV_AUDIO_DIR = os.path.join(DATA_BASE_DIR, 'wav_audio/')
 
 OTHER_PATH = os.path.join(APP_ROOT, 'other')
 MANUAL_FNAME = 'LOBE_manual.pdf'

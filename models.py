@@ -469,7 +469,7 @@ class Recording(BaseModel, db.Model):
 
     def _save_wav_to_disk(self):
         # there is no ffmpeg on Eyra
-        if os.getenv('SEMI_PROD', False):
+        if os.getenv('SEMI_PROD', False) or os.getenv('FLASK_ENV', 'development') == 'production':
             subprocess.call(['avconv', '-i', self.path, self.wav_path])
         else:
             subprocess.call(['ffmpeg', '-i', self.path, self.wav_path])

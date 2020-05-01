@@ -319,7 +319,7 @@ class Token(BaseModel, db.Model):
 
     def save_to_disk(self):
         self.set_path()
-        f = open(self.path, 'w')
+        f = open(self.path, 'w', encoding='utf-8')
         f.write(self.text)
         f.close()
 

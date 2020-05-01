@@ -7,13 +7,11 @@
         var tokens = {{json_tokens}};
         var analyze_url = "{{url_for('analyze_audio')}}";
         var talAPIToken = "{{tal_api_token}}";
-        {% if not record_test %}
-            var postRecordingRoute = "{{url_for('post_recording')}}";
-            var user_id = {{user.id}};
-            var manager_id = {{manager.id}};
-            var collection_id = {{collection.id}};
-            var conf = {{collection.configuration.json}};
-        {% endif %}
+        var postRecordingRoute = "{{url_for('post_recording')}}";
+        var user_id = {{user.id}};
+        var manager_id = {{manager.id}};
+        var collection_id = {{collection.id}};
+        var conf = {{collection.configuration.json}};
     </script>
 {% endblock %}
 {% block body %}

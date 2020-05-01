@@ -103,6 +103,7 @@ def post_recording():
 def record_session(coll_id):
     collection = Collection.query.get(coll_id)
     user_id = request.args.get('user_id')
+
     if not user_id:
         flash("Villa kom upp. Vinsamlega veljið rödd til að taka upp", category="danger")
         return redirect(url_for('collection', id=coll_id))
@@ -339,6 +340,7 @@ def delete_collection_archive(id):
     else:
         flash("Söfnun hefur ekkert skjalasafn", category='warning')
     return redirect(url_for('collection', id=id))
+
 # TOKEN ROUTES
 
 @app.route('/tokens/<int:id>/')
@@ -730,15 +732,6 @@ def download_manual():
         flash("Error downloading manual", category="danger")
         app.logger.error(
             "Error downloading manual : {}\n{}".format(error,traceback.format_exc()))
-
-@app.route('/other/test_record/')
-@login_required
-def test_record():
-    token = Token.query.filter(Token.marked_as_bad!=True).order_by(
-        func.random()).limit(1)[0]
-    return render_template('record.jinja', tokens=token, section='other',
-        single=True, record_test=True, json_tokens=json.dumps([token.get_dict()]),
-        tal_api_token=app.config['TAL_API_TOKEN'])
 
 @app.route('/other/test_media_device')
 @login_required

@@ -14,7 +14,7 @@
             {% for conf in confs %}
                 <tr>
                     <td><a href={{conf.url}}>{{conf.printable_name}}</a></td>
-                    <td>{{conf.created_at | datetime(format='medium')}}</td>
+                    <td>{{conf.created_at | datetime(format='low')}}</td>
                 </tr>
             {% endfor %}
         </tbody>

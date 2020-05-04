@@ -29,7 +29,7 @@
         <tbody>
             {% for session in sessions %}
                 <tr>
-                    <td>{{session.created_at | datetime(format='medium')}}</td>
+                    <td>{{session.created_at | datetime(format='low')}}</td>
                     <td><a href={{session.get_url()}}>{{session.get_printable_id()}}</a></td>
                     <td>{{session.num_recordings}}</td>
                     <td>{{session.get_printable_duration() | default("N/A")}}</td>

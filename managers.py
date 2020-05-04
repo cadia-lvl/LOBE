@@ -3,22 +3,31 @@ import os
 import json
 import zipfile
 import traceback
+from random import randint
 
 from flask import current_app as app
 
 from models import User, Collection, db
 
+def pseudo_unique():
+    '''
+    TODO: replace with something better.
+    I used this to add some entropy to filenames in case multiple archives
+    are created at the same time.
+    '''
+    return str(randint(10000, 99999))
+
 class ZipManager:
     def __init__(self, collection):
         self.collection = collection
-        self.meta_path = os.path.join(app.config['TEMP_DIR'], 'meta.json')
+        self.meta_path = os.path.join(app.config['TEMP_DIR'], f'meta_{pseudo_unique()}.json')
         self.zf = zipfile.ZipFile(self.collection.zip_path, mode='w')
 
     def add_token(self, token):
         self.zf.write(token.get_path(), 'text/{}'.format(token.get_fname()))
 
     def add_recording(self, recording, user_id):
-        self.zf.write(recording.get_path(), 'audio/{}/{}'.format(user_id, recording.get_fname()))
+        self.zf.write(recording.get_zip_path(), 'audio/{}/{}'.format(user_id, recording.get_zip_fname()))
 
     def add_recording_info(self, info_path):
         self.zf.write(info_path, 'info.json')
@@ -44,13 +53,13 @@ class ZipManager:
 
 class IndexManager:
     def __init__(self):
-        self.path = os.path.join(app.config['TEMP_DIR'], 'index.tsv')
+        self.path = os.path.join(app.config['TEMP_DIR'], f'index_{pseudo_unique()}.tsv')
         self.index = open(self.path, 'w')
         self.is_closed = False
 
     def add(self, recording, token, user_name):
         self.index.write('{}\t{}\t{}\n'.format(
-            user_name, recording.get_fname(), token.get_fname()))
+            user_name, recording.get_zip_fname(), token.get_fname()))
 
     def close(self):
         self.index.close()
@@ -66,7 +75,7 @@ class IndexManager:
 class RecordingInfoManager:
     def __init__(self):
         self.info = {}
-        self.path = os.path.join(app.config['TEMP_DIR'], 'info.json')
+        self.path = os.path.join(app.config['TEMP_DIR'], f'info_{pseudo_unique()}.json')
         self.is_closed = False
 
     def add(self, recording, token, user_name):
@@ -82,7 +91,7 @@ class RecordingInfoManager:
                 'text': token.text,
                 'pron': token.pron
             },'recording_info':{
-                'recording_fname': recording.get_fname(),
+                'recording_fname': recording.get_zip_fname(),
                 'sr': recording.sr,
                 'num_channels': recording.num_channels,
                 'bit_depth': recording.bit_depth,
@@ -124,7 +133,7 @@ def create_collection_zip(id):
                 speaker_name = recording.get_user().name
                 speaker_ids.add(recording.user_id)
                 # HACK
-                if recording.get_path() is not None:
+                if recording.get_zip_path() is not None:
                     zip_manager.add_recording(recording, recording.user_id)
                     recording_info_manager.add(recording, token, speaker_name)
                     index_manager.add(recording, token, recording.user_id)

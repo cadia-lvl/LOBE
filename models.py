@@ -459,6 +459,16 @@ class Recording(BaseModel, db.Model):
     def get_wav_path(self):
         return self.wav_path
 
+    def get_zip_fname(self):
+        if self.wav_path is not None:
+            return os.path.split(self.wav_path)[1]
+        return self.fname
+
+    def get_zip_path(self):
+        if self.wav_path is not None:
+            return self.wav_path
+        return self.path
+
     def save_to_disk(self, file_obj):
         '''
         Can only be called after being committed

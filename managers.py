@@ -91,6 +91,9 @@ class RecordingInfoManager:
                 'transcription': recording.transcription,
                 'recording_marked_bad': recording.marked_as_bad,
                 'text_marked_bad': token.marked_as_bad}}
+        if recording.start is not None and recording.end is not None:
+            self.info[recording.id]['start'] = recording.start
+            self.info[recording.id]['end'] = recording.end
 
     def close(self):
         with open(self.path, 'w', encoding='utf-8') as info_f:

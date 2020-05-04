@@ -75,7 +75,7 @@ executor = Executor(app)
 def index():
     return redirect(url_for('collection_list'))
 
-@app.route('/lobe/')
+@app.route(f"/{os.getenv('LOBE_REDIRECT','lobe')}/")
 @login_required
 def index_redirect():
     return redirect(url_for('collection_list'))

@@ -14,11 +14,11 @@ LOBE is a recording client made specifically for TTS data collections. It suppor
 Start by creating a databese and a user:
 ´´´bash
 # Log in as postgres user
-sudo -u postgres -i
+`sudo -u postgres -i`
 # Create role for lobe and select password
-createuser lobe --pwprompt
+`createuser lobe --pwprompt`
 # Create lobe databese with the new user as owner
-createdb lobe --owner=lobe
+`createdb lobe --owner=lobe`
 ´´´
 Remember to change settings/development.py accordingly.
 Finally run ´python manage.py db upgrade´

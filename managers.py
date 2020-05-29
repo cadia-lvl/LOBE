@@ -7,6 +7,7 @@ from random import randint
 
 from flask import current_app as app
 
+from tools.analyze import load_sample, find_segment
 from models import User, Collection, db
 
 def pseudo_unique():
@@ -165,4 +166,22 @@ def create_collection_zip(id):
     collection.has_zip = True
     collection.zip_token_count = len(dl_tokens)
     collection.zip_created_at = datetime.datetime.now()
+    db.session.commit()
+
+
+def trim_collection_handler(id, trim_type):
+    collection = Collection.query.get(id)
+    if trim_type == 2:
+        for token in collection.tokens:
+            for recording in token.recordings:
+                recording.reset_trim()
+    else:
+        tokens = [t for t in collection.tokens if t.num_recordings > 0]
+        for token in tokens:
+            for recording in token.recordings:
+                if trim_type == 0 and not recording.has_trim or trim_type == 1:
+                    sample, sr = load_sample(recording.get_path())
+                    stamps = find_segment(sample, sr,
+                        top_db=collection.configuration.trim_threshold)
+                    recording.set_trim(float(stamps[0]), float(stamps[1]))
     db.session.commit()

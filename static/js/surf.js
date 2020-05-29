@@ -127,4 +127,36 @@ function createMicSurfer(context, container){
     return wavesurfer;
 }
 
+// wavesurfer specifically for the /recordings/<id> route
+function createRecordWaveSurfer(container, has_video, playButtonIcon){
+    let options = {
+        container:container,
+        plugins: [
+            WaveSurfer.regions.create({
+                dragSelection: {slop: 5},
+                color: "rgba(243, 156, 18, 0.1)"
+            })]}
+    if(has_video){
+        options = {...options, ...{backend: 'MediaElement'}};
+    }
 
+    const wavesurfer =  WaveSurfer.create(surfOptions(options));
+
+    wavesurfer.on('finish',function(){
+        playButtonIcon.classList.remove('fa-pause');
+        playButtonIcon.classList.add('fa-play');
+    });
+
+    wavesurfer.on('play', function(){
+        playButtonIcon.classList.remove('fa-play');
+        playButtonIcon.classList.add('fa-pause');
+    });
+
+    wavesurfer.on('pause', function(){
+        playButtonIcon.classList.remove('fa-pause');
+        playButtonIcon.classList.add('fa-play');
+    });
+
+    return wavesurfer;
+
+}

@@ -27,7 +27,7 @@ from models import Collection, Recording, Role, Token, User, Session, Configurat
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
-from managers import ZipManager, RecordingInfoManager, IndexManager, create_collection_zip
+from managers import ZipManager, RecordingInfoManager, IndexManager, create_collection_zip, trim_collection_handler
 from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low, find_segment
 
 # initialize the logger
@@ -165,6 +165,22 @@ def analyze_audio():
     }
     return jsonify(body), 200
 
+@app.route('/recording/<int:id>/cut/', methods=['POST'])
+@login_required
+def cut_recording(id):
+    recording = Recording.query.get(id)
+    start = float(request.form['start'])
+    end = float(request.form['end'])
+
+    if start == -1 and end == -1:
+        recording.start = None;
+        recording.end = None;
+    else:
+        recording.start = start
+        recording.end = end
+    db.session.commit()
+    return "ok", 200
+
 @app.route('/record/token/<int:tok_id>/')
 @login_required
 def record_single(tok_id):
@@ -246,6 +262,16 @@ def collection_sessions(id):
     return render_template('lists/collection_sessions.jinja',
         collection=collection, sessions=rec_sessions, section='collection')
 
+@app.route('/collections/<int:id>/trim', methods=['GET'])
+@login_required
+def trim_collection(id):
+    '''
+    Trim all recordings in the collection
+    '''
+    trim_type = int(request.args.get('trim_type', default=0))
+    executor.submit(trim_collection_handler, id, trim_type)
+    flash('Söfnun verður klippt vonbráðar.', category='success')
+    return redirect(url_for('collection', id=id))
 
 @app.route('/collections/<int:id>/generate_zip')
 @login_required

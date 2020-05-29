@@ -92,6 +92,10 @@
                         {{macros.btn_icon("cog", "r")}}
                         Breyta stillingum
                     </a>
+                    <button type='button' class='dropdown-item text-warning' data-toggle='modal', data-target='#trimModal'>
+                        {{macros.btn_icon("cut", "r")}}
+                        Klippa söfnun
+                    </button>
                     <button type='button' class='dropdown-item text-danger' data-toggle='modal', data-target='#deleteModal'>
                         {{macros.btn_icon("times", "r")}}
                         Eyða söfnun
@@ -139,6 +143,49 @@
 {% endblock %}
 
 {% block modals %}
+    <div class="modal fade" id='trimModal' tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Klippa upptökur í söfnun</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Það eru þrír valmöguleikar:</p>
+                    <ul>
+                        <li>Óklipptar: klippir bara upptökur sem er ekki búið að klippa</li>
+                        <li>Allar: klippir allar upptökur</li>
+                        <li>Endurræsa: Fjarlægir klippingar af öllum upptökum</li>
+                    </ul>
+                    <p>
+                        Þagnarþröskuldurinn úr stillingum er notaður til að klippa setningarnar.
+                        Fyrir þessa söfnun er þröskuldurinn {{collection.configuration.trim_threshold}} dB.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type='button' class='btn btn-sm btn-success float-right dropdown-toggle' data-toggle='dropdown'>
+                        Veljið
+                    </button>
+                    <div class='dropdown-menu'>
+                        <a href='{{collection.get_trim_url(0)}}' class='dropdown-item'>
+                            Óklipptar
+                        </a>
+                        <a href='{{collection.get_trim_url(1)}}' class='dropdown-item'>
+                            Allar
+                        </a>
+                        <a href='{{collection.get_trim_url(2)}}' class='dropdown-item'>
+                            Endurræsa
+                        </a>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
     <div class="modal fade" id='addTokensModal' tabindex="-1">
         <form method='POST' enctype="multipart/form-data">
             <div class="modal-dialog">

@@ -84,6 +84,9 @@ class Collection(BaseModel, db.Model):
     def get_edit_url(self):
         return url_for('edit_collection', id=self.id)
 
+    def get_trim_url(self, trim_type):
+        return url_for('trim_collection', id=self.id) + f'?trim_type={trim_type}'
+
     def get_record_dir(self):
         return os.path.join(app.config['RECORD_DIR'], str(self.id))
 
@@ -553,6 +556,17 @@ class Recording(BaseModel, db.Model):
 
     def get_collection_id(self):
         return Token.query.get(self.token_id).collection_id
+
+    def set_trim(self, start, end):
+        self.start = start
+        self.end = end
+
+    @property
+    def has_trim(self):
+        return self.start is not None and self.end is not None
+
+    def reset_trim(self):
+        self.set_trim(None, None)
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())

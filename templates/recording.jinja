@@ -74,6 +74,10 @@
                     <li class='list-group-item'>
                         <code>{{recording.fname}}</code>
                         <div class='btn-group float-right' role='group'>
+                            <button id='cut' type='button' class='btn btn-secondary btn-sm' disabled>
+                                <span id='cutButtonText'>Klippa</span>
+                                <i id='cutButtonIcon' class='fa fa-cut text-success ml-1'></i>
+                            </button>
                             <button id='play' type='button' class='btn btn-secondary btn-sm'>
                                 <i id='playButtonIcon' class='fa fa-play'></i>
                             </button>
@@ -107,20 +111,38 @@
     <script>
         //TODO: add region support on playback and reconsider wavesurfer + video binding
         const playButtonIcon = document.querySelector('#playButtonIcon');
+        const cutButton = document.querySelector('button#cut');
+        const cutButtonIcon = document.querySelector('#cutButtonIcon');
+        const cutButtonText = document.querySelector('#cutButtonText');
         const video = document.querySelector('video');
-        {% if recording.has_video %}
-            const wavesurfer = createSimpleWaveSurfer('#waveform', true, playButtonIcon);
-        {% else %}
-            const wavesurfer = createSimpleWaveSurfer('#waveform', false, playButtonIcon);
-        {% endif %}
-        wavesurfer.load("{{recording.get_download_url()}}");
+        let start = 0;
+        let end = 0;
+        let newCut = false;
 
-        if({{recording.start}}){
+        {% if recording.has_video %}
+            // Does not currently support trimming
+            let wavesurfer = createSimpleWaveSurfer('#waveform', true, playButtonIcon);
+        {% else %}
+            let wavesurfer = createRecordWaveSurfer('#waveform', false, playButtonIcon);
+            wavesurfer.on('region-update-end', function(){
+                setCut();
+                newCut = true;
+                setCutButtonUI();
+            });
+
+        {% endif %}
+
+        wavesurfer.load("{{recording.get_download_url()}}");
+        if(typeof {{recording.start}} === 'number' && typeof {{recording.end}} == 'number'){
+            // recording has been trimmed, disable cut button
             wavesurfer.addRegion({
                 color: "rgba(243, 156, 18, 0.1)",
                 start: {{recording.start}},
                 end: {{recording.end}}});
+            setCut();
         }
+        setCutButtonUI();
+
         document.querySelector('button#play').addEventListener('click', function(){
             if(wavesurfer.isPlaying()){
                 wavesurfer.pause();
@@ -129,5 +151,76 @@
                 video.play();
             }
         })
+
+        cutButton.addEventListener('click', async function(){
+            if(hasCut){
+                if(newCut){
+                    await sendCut('{{url_for("cut_recording", id=recording.id)}}');
+                    newCut = false;
+                } else{
+                    // we are deleting a cut
+                    await sendCutDelete('{{url_for("cut_recording", id=recording.id)}}');
+                    wavesurfer.clearRegions();
+                    start = 0;
+                    end = 0;
+                }
+            };
+            setCutButtonUI();
+        })
+
+        function hasCut(){
+            return start !== end;
+        }
+
+        function setCut(){
+            var region = wavesurfer.regions.list[Object.keys(wavesurfer.regions.list)[0]];
+            start = region.start;
+            end = region.end;
+        }
+
+        function setCutButtonUI(){
+            if(hasCut()){
+                if(newCut){
+                    // we have a cut that is new
+                    cutButton.disabled = false;
+                } else{
+                    // else we allow for deleting cut
+                    cutButtonIcon.classList.remove('text-success');
+                    cutButtonIcon.classList.add('text-danger');
+                    cutButtonText.innerHTML = 'Afklippa';                }
+                    cutButton.disabled = false;
+            } else{
+                // we don't have any cut
+                cutButtonIcon.classList.remove('text-danger');
+                cutButtonIcon.classList.add('text-success');
+                cutButtonText.innerHTML = 'Klippa';
+                cutButton.disabled = true;
+            }
+        };
+
+        function sendCut(postURL){
+            var msg = "";
+            var fd = new FormData();
+            fd.append("start", start);
+            fd.append("end", end);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', postURL, false);
+            xhr.send(fd);
+            return msg;
+        }
+
+        function sendCutDelete(postURL){
+            var msg = "";
+            var fd = new FormData();
+            fd.append("start", -1);
+            fd.append("end", -1);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', postURL, false);
+            xhr.send(fd);
+            return msg;
+        }
+
     </script>
 {% endblock %}

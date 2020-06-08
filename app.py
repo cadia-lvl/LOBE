@@ -581,6 +581,29 @@ def rec_session(id):
     return render_template('session.jinja', session=session,
         section='session')
 
+@app.route('/sessions/<int:id>/verify')
+@login_required
+def verify_session(id):
+    session = Session.query.get(id)
+    session_dict = {
+        'id': session.id,
+        'collection_id': session.collection.id,
+        'recordings': []}
+    for recording in session.recordings:
+        session_dict['recordings'].append({
+            'rec_id': recording.id,
+            'rec_fname': recording.fname,
+            'rec_url': recording.get_download_url(),
+            'rec_trim': {'start':recording.start, 'end':recording.end},
+            'text': recording.token.text,
+            'text_file_id': recording.token.fname,
+            'text_url': recording.token.get_url(),
+            'token_id': recording.token.id})
+
+    return render_template('verify_session.jinja', session=session,
+        json_session=json.dumps(session_dict))
+
+
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
@@ -608,6 +631,7 @@ def delete_session(id):
     else:
         flash("Ekki gekk að eyða lotu", category='warning')
     return redirect(url_for('rec_session_list'))
+
 
 # USER ROUTES
 

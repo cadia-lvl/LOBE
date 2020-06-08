@@ -157,6 +157,20 @@ function createRecordWaveSurfer(container, has_video, playButtonIcon){
         playButtonIcon.classList.add('fa-play');
     });
 
+    wavesurfer.on('region-created', function(){
+        //if(Object.keys(wavesurfer.regions.list).length > 0){
+        //    wavesurfer.clearRegions();
+        //}
+        //wavesurfer.clearRegions();
+    })
+
+    wavesurfer.on('region-update-end', function(){
+    })
+
+    wavesurfer.on('region-dblclick', function(region, event){
+        region.remove();
+    })
+
     return wavesurfer;
 
 }

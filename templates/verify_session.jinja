@@ -1,0 +1,229 @@
+{% extends "__base.jinja" %}
+{% block headscripts %}
+    <script src="https://unpkg.com/wavesurfer.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.regions.min.js"></script>
+{% endblock %}
+{% block body %}
+    <div class='row mb-3 mt-md-0 mt-n4'>
+        <div class='col-12'>
+            <div class="progress">
+                <div class="progress-bar bg-success" id='progressBar' role="progressbar"></div>
+            </div>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12 controls mb-3 d-flex justify-content-{% if single %}around{% else%}between{% endif %}'>
+            <button id='prev' class='btn btn-sm btn-secondary rounded-pill' type='button'>
+                <i class='fa fa-arrow-left mr-1 ml-1'></i>
+                <span class='font-weight-bold mr-1'>Fyrri</span>
+            </button>
+            <button id='next' class='btn btn-sm btn-secondary rounded-pill' type='button'>
+                <span class='font-weight-bold ml-1 mr-1'>Næsti</span>
+                <i class='fa fa-arrow-right mr-1'></i>
+            </button>
+        </div>
+    </div>
+
+    <div class='row'>
+        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
+            <div id='tokenCard' class="card">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <h3 class='card-text' id='tokenText'></h3>
+                    <p class='card-text mb-0'>
+                        <a id="tokenHref" target="_blank" rel="noopener noreferrer" href='#'><code id="tokenFileID"></code></a>
+                        <span class='float-right rounded-pill bg-secondary text-success px-2 py-1'><span id='currentIndexSpan'></span>/<span id='totalIndexSpan'></span></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class='row'>
+        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
+            <div id='recordingCard' class='card'>
+                <div class='card-body'>
+                    <div id="waveform"></div>
+                </div>
+                <ul class='list-group list-group-flush'>
+                    <li class='list-group-item'>
+                        <code id='downloadRecordFName' class='d-none d-md-inline-block'></code>
+                        <div class='btn-group float-right' role='group'>
+                            <button id='cut' type='button' class='btn btn-secondary btn-sm'>
+                                <span id='cutButtonText'>Klippa</span>
+                                <i id='cutButtonIcon' class='fa fa-cut text-success ml-1'></i>
+                            </button>
+                            <button id='play' type='button' class='btn btn-secondary btn-sm'>
+                                <i id='playButtonIcon' class='fa fa-play'></i>
+                            </button>
+                            <button id='download' class="btn btn-secondary btn-sm"><i class='fa fa-download'></i></button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class='row mt-3'>
+        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
+            <button class='btn btn-secondary rounded-pill btn-sm'>
+                <i class='fa fa-volume-mute text-danger mr-1'></i>
+                Of lágt
+            </button>
+            <button class='btn btn-secondary rounded-pill btn-sm'>
+                <i class='fa fa-volume-up text-danger mr-1'></i>
+                Of hátt
+            </button>
+            <button class='btn btn-secondary rounded-pill btn-sm'>
+                <i class='fa fa-comment-slash text-danger mr-1'></i>
+                Rangt sagt
+            </button>
+            <button class='btn btn-secondary rounded-pill btn-sm'>
+                <i class='fa fa-times text-danger mr-1'></i>
+                Gölluð
+            </button>
+            <button class='btn btn-secondary rounded-pill btn-sm float-right'>
+                <i class='fa fa-check mr-1 text-success'></i>
+                Góð
+            </button>
+        </div>
+    </div>
+    <div class='row mt-1'>
+        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
+            <div class="form-group">
+                <label>Athugasemd</label>
+                <textarea class="form-control" rows="2" style='background-color:#000; color:#999'></textarea>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block modals %}{% endblock %}
+{% block scripts %}
+    {{super()}}
+    <script src='{{url_for("static", filename="js/surf.js")}}'></script>
+    <script>
+        let wavesurfer;
+
+        var session = {{json_session}};
+        var recordings = session.recordings;
+        var recIndex = 0;
+        var numRecordings = recordings.length
+
+        const tokenText = document.querySelector("#tokenText");
+        const tokenIDSpan = document.querySelector("#tokenID");
+        const tokenHref= document.querySelector("#tokenHref");
+        const tokenfileIDSpan = document.querySelector("#tokenFileID");
+        const progressBar = document.querySelector('#progressBar');
+        const currentIndexSpan = document.querySelector('#currentIndexSpan');
+        document.querySelector('#totalIndexSpan').innerHTML = numRecordings;
+
+        //buttons
+        const nextButton = document.querySelector('button#next');
+        const prevButton = document.querySelector('button#prev');
+        const playButton = document.querySelector('button#play');
+        const playButtonIcon = document.querySelector('#playButtonIcon');
+
+
+        nextButton.addEventListener('click', nextAction);
+        prevButton.addEventListener('click', prevAction);
+        playButton.addEventListener('click', playAction);
+
+
+        $(window).keyup(function (e) {
+            if(e.keyCode === 37 || e.keyCode === 65){ // arrow-left or "a"
+                prevAction();
+            } else if(e.keyCode === 39 || e.keyCode === 68){ // arrow-right or "d"
+                nextAction();
+            }
+        });
+
+        function nextAction(){
+            // Increment the sentence index and update the UI
+            if(recIndex < numRecordings - 1){
+                if(wavesurfer){wavesurfer.destroy()};
+                recIndex += 1; updateUI();}
+        }
+
+        function prevAction(){
+            // Decrement the sentence index and update the UI
+            if(recIndex > 0){
+                if(wavesurfer){wavesurfer.destroy()};
+                recIndex -= 1; updateUI();
+            }
+        }
+
+        async function playAction(){
+            // Play the recording for the sentence at the current index.
+
+            if(arePlaying()){
+                wavesurfer.pause();
+            } else{
+                if(Object.keys(wavesurfer.regions.list).length > 0){
+                    console.log('play selectio')
+                    playSelections();
+                } else{
+                    wavesurfer.play();
+                }
+            }
+        }
+
+        playSelections = () => {
+            const playlist = Object.values(wavesurfer.regions.list)
+            playlist.sort((a, b) => (a.start > b.start ? 1 : -1))
+            let curr = playlist.shift()
+            console.log(playlist);
+            wavesurfer.on('audioprocess', time => {
+                if (time > curr.end && playlist.length > 0) {
+                    curr = playlist.shift()
+                    curr.play()
+                } else if (time > curr.end && playlist.length === 0) {
+                    wavesurfer.stop()
+                }
+            })
+
+            wavesurfer.play(curr.start)
+        }
+
+
+        function updateTokenUI(){
+            tokenText.innerHTML = recordings[recIndex]['text'];
+            tokenfileIDSpan.innerHTML = recordings[recIndex]['text_file_id'];
+            tokenHref.href = recordings[recIndex]['text_url'];
+        }
+
+        function updateProgressUI(){
+            var ratio = (recIndex + 1 / numRecordings) * 100;
+            progressBar.style.width = `${ratio.toString()}%`;
+            currentIndexSpan.innerHTML = recIndex + 1;
+        }
+
+        function updateRecordingUI(){
+            if(typeof wavesurfer === 'object'){
+                wavesurfer.destroy();
+            }
+            wavesurfer = createRecordWaveSurfer('#waveform', false, playButtonIcon);
+            wavesurfer.load(recordings[recIndex].rec_url);
+
+            if(typeof recordings[recIndex].rec_trim.start === 'number' && typeof recordings[recIndex].rec_trim.end == 'number'){
+                wavesurfer.addRegion({...recordings[recIndex].rec_trim,...{color: "rgba(243, 156, 18, 0.1)"}});
+            }
+            downloadRecordFName.innerHTML = recordings[recIndex].fname;
+        }
+
+        function updateUI(){
+            updateTokenUI();
+            updateProgressUI();
+            updateRecordingUI();
+        }
+
+        updateUI();
+
+        function arePlaying(){
+            if(wavesurfer){
+                return wavesurfer.isPlaying();
+            }
+            return false;
+        }
+
+    </script>
+{% endblock %}

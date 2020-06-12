@@ -23,7 +23,9 @@ createuser lobe --pwprompt
 createdb lobe --owner=lobe
 ```
 
-Remember to change settings/development.py accordingly.
+Remember to change settings/development.py accordingly. Replace all the values in \<BRACKETS\> with the postgres information you created just now.
+`SQLALCHEMY_DATABASE_URI = 'postgresql://<POSTGRES-USERNAME>:<POSTGRES-PWD>@localhost:5432/<DATABASENAME>'`
+
 Finally run `python manage.py db upgrade`
 
 # Backing up & restoring

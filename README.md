@@ -6,6 +6,7 @@ LOBE is a recording client made specifically for TTS data collections. It suppor
     * postgresql
     * python-psycopg2
     * libpq-dev
+    * libffi-dev
 * Install Python requirements using `pip3 install -r requirements.txt`
 * Create a Postgres database. Relevant parameters need to be supplied to the flask via the setting files at `settings/development.py` or `settings/production.py`.
 * Spin up a simple development server using `./dev.sh`.
@@ -23,7 +24,7 @@ createdb lobe --owner=lobe
 ```
 
 Remember to change settings/development.py accordingly.
-Finally run ´python manage.py db upgrade´
+Finally run `python manage.py db upgrade`
 
 # Backing up & restoring
 1. Create a new database.

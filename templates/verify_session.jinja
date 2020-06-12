@@ -192,7 +192,7 @@
         }
 
         function updateProgressUI(){
-            var ratio = (recIndex + 1 / numRecordings) * 100;
+            var ratio = (recIndex + 1) / numRecordings * 100;
             progressBar.style.width = `${ratio.toString()}%`;
             currentIndexSpan.innerHTML = recIndex + 1;
         }

@@ -6,14 +6,14 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 from flask import (Flask, Response, redirect, render_template, request,
-    send_from_directory, url_for, flash, jsonify)
+                   send_from_directory, url_for, flash, jsonify)
 from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
-    roles_accepted, current_user)
+                            current_user, roles_accepted)
 from flask_security.utils import hash_password
 from flask_executor import Executor
 from sqlalchemy import or_
 from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
-    delete_session_db, delete_token_db, save_recording_session, resolve_order, get_verifiers)
+                delete_session_db, delete_token_db, save_recording_session, resolve_order, get_verifiers)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
@@ -38,6 +38,8 @@ logHandler.setFormatter(logging.Formatter(
 ))
 
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+
+
 def create_app():
     app = Flask(__name__)
     if os.getenv('SEMI_PROD', False):
@@ -61,8 +63,10 @@ def create_app():
 
     return app
 
+
 app = create_app()
 executor = Executor(app)
+
 
 # GENERAL ROUTES
 @app.route('/')
@@ -72,12 +76,14 @@ def index():
         return redirect(url_for('verify_index'))
     return redirect(url_for('collection_list'))
 
+
 @app.route(f"/{os.getenv('LOBE_REDIRECT','lobe')}/")
 @login_required
 def index_redirect():
     if current_user.has_role('Greinir'):
         return redirect(url_for('verify_index'))
     return redirect(url_for('collection_list'))
+
 
 @app.route('/post_recording/', methods=['POST'])
 @login_required
@@ -96,6 +102,7 @@ def post_recording():
         return Response(url_for('index'), status=200)
     else:
         return Response(url_for('rec_session', id=session_id), status=200)
+
 
 # RECORD ROUTES
 @app.route('/record/<int:coll_id>/', methods=['GET'])
@@ -134,6 +141,7 @@ def record_session(coll_id):
         user=user, manager=current_user,
         tal_api_token=app.config['TAL_API_TOKEN'])
 
+
 @app.route('/record/analyze/', methods=['POST'])
 @login_required
 @roles_accepted('admin', 'Notandi')
@@ -167,6 +175,7 @@ def analyze_audio():
     }
     return jsonify(body), 200
 
+
 @app.route('/recording/<int:id>/cut/', methods=['POST'])
 @login_required
 @roles_accepted('admin', 'Notandi')
@@ -184,6 +193,7 @@ def cut_recording(id):
     db.session.commit()
     return "ok", 200
 
+
 @app.route('/record/token/<int:tok_id>/')
 @login_required
 @roles_accepted('admin', 'Notandi')
@@ -195,7 +205,6 @@ def record_single(tok_id):
 
 
 # COLLECTION ROUTES
-
 @app.route('/collections/create/', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
@@ -212,6 +221,7 @@ def create_collection():
     return render_template('forms/model.jinja', form=form, type='create',
         section='collection')
 
+
 @app.route('/collections/')
 @login_required
 @roles_accepted('admin', 'Notandi')
@@ -226,6 +236,7 @@ def collection_list():
     return render_template('lists/collections.jinja', collections=collections,
         section='collection')
 
+
 @app.route('/collections/zip_list/')
 @login_required
 @roles_accepted('admin')
@@ -237,6 +248,7 @@ def collection_zip_list():
         per_page=app.config['COLLECTION_PAGINATION'], )
     return render_template('lists/zips.jinja', zips=collections,
         section='collection')
+
 
 @app.route('/collections/<int:id>/', methods=['GET', 'POST'])
 @login_required
@@ -271,6 +283,7 @@ def collection_sessions(id):
     return render_template('lists/collection_sessions.jinja',
         collection=collection, sessions=rec_sessions, section='collection')
 
+
 @app.route('/collections/<int:id>/trim', methods=['GET'])
 @login_required
 @roles_accepted('admin')
@@ -283,6 +296,7 @@ def trim_collection(id):
     flash('Söfnun verður klippt vonbráðar.', category='success')
     return redirect(url_for('collection', id=id))
 
+
 @app.route('/collections/<int:id>/generate_zip')
 @login_required
 @roles_accepted('admin')
@@ -291,6 +305,7 @@ def generate_zip(id):
     executor.submit(create_collection_zip, id)
     flash('Skjalasafn verður tilbúið vonbráðar.', category='success')
     return redirect(url_for('collection', id=id))
+
 
 @app.route('/collections/<int:id>/stream_zip')
 @login_required
@@ -307,6 +322,7 @@ def stream_collection_zip(id):
             ('Content-Disposition', "attachment; filename=\"%s\"" % '{}'.format(collection.zip_fname))
         ],
         direct_passthrough=True)
+
 
 @app.route('/collections/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
@@ -330,6 +346,7 @@ def edit_collection(id):
     return render_template('forms/model.jinja', collection=collection,
         form=form, type='edit', action=url_for('edit_collection', id=id),
         section='collection')
+
 
 @app.route('/collections/<int:id>/delete/')
 @login_required
@@ -380,14 +397,15 @@ def delete_collection_archive(id):
         flash("Söfnun hefur ekkert skjalasafn", category='warning')
     return redirect(url_for('collection', id=id))
 
-# TOKEN ROUTES
 
+# TOKEN ROUTES
 @app.route('/tokens/<int:id>/')
 @login_required
 @roles_accepted('admin', 'Notandi')
 def token(id):
     return render_template('token.jinja', token=Token.query.get(id),
         section='token')
+
 
 @app.route('/tokens/')
 @login_required
@@ -401,6 +419,7 @@ def token_list():
 
     return render_template('lists/tokens.jinja', tokens=tokens, section='token')
 
+
 @app.route('/tokens/<int:id>/download/')
 @login_required
 @roles_accepted('admin', 'Notandi')
@@ -412,6 +431,7 @@ def download_token(id):
     except Exception as error:
         app.logger.error(
             "Error downloading a token : {}\n{}".format(error,traceback.format_exc()))
+
 
 @app.route('/tokens/<int:id>/delete/', methods=['GET'])
 @login_required
@@ -436,8 +456,8 @@ def toggle_token_bad(id):
     db.session.commit()
     return redirect(url_for('token', id=token.id))
 
-# RECORDING ROUTES
 
+# RECORDING ROUTES
 @app.route('/recordings/')
 @login_required
 @roles_accepted('admin', 'Notandi')
@@ -457,12 +477,14 @@ def recording_list():
     return render_template('lists/recordings.jinja', recordings=recordings, only_bad=only_bad,
         section='recording')
 
+
 @app.route('/recordings/<int:id>/')
 @login_required
 @roles_accepted('admin', 'Notandi')
 def recording(id):
     recording = Recording.query.get(id)
     return render_template('recording.jinja', recording=recording, section='recording')
+
 
 @app.route('/recordings/<int:id>/delete/', methods=['GET'])
 @login_required
@@ -486,6 +508,7 @@ def toggle_recording_bad(id):
     db.session.commit()
     return redirect(url_for('recording', id=recording.id))
 
+
 @app.route('/recordings/<int:id>/mark_bad_ajax/')
 @login_required
 @roles_accepted('admin', 'Notandi')
@@ -497,6 +520,7 @@ def toggle_recording_bad_ajax(id):
 
     return Response(str(state), 200)
 
+
 @app.route('/recordings/<int:id>/download/')
 @login_required
 def download_recording(id):
@@ -507,6 +531,7 @@ def download_recording(id):
     except Exception as error:
         app.logger.error(
             "Error downloading a recording : {}\n{}".format(error,traceback.format_exc()))
+
 
 # CONFIGURATION ROUTES
 @app.route('/confs/')
@@ -520,6 +545,7 @@ def conf_list():
         per_page=app.config['CONF_PAGINATION'])
     return render_template('lists/confs.jinja', confs=confs, section='other')
 
+
 @app.route('/confs/<int:id>/')
 @login_required
 @roles_accepted('admin', 'Notandi')
@@ -528,6 +554,7 @@ def conf(id):
     collections = Collection.query.filter(Collection.configuration_id==id)
     return render_template('conf.jinja', conf=conf, collections=collections,
         section='other')
+
 
 @app.route('/confs/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
@@ -587,7 +614,6 @@ def delete_conf(id):
 
 
 # SESSION ROUTES
-
 @app.route('/sessions/')
 @login_required
 @roles_accepted('admin', 'Notandi')
@@ -599,6 +625,7 @@ def rec_session_list():
         per_page=app.config['SESSION_PAGINATION'])
     return render_template('lists/sessions.jinja', sessions=sessions,
         section='session')
+
 
 @app.route('/sessions/<int:id>/')
 @login_required
@@ -752,6 +779,7 @@ def session_edit(id):
     return render_template('forms/model.jinja', form=form, type='edit',
         action=url_for('session_edit', id=id), section='session')
 
+
 @app.route('/sessions/<int:id>/delete/', methods=['GET'])
 @login_required
 @roles_accepted('admin')
@@ -765,7 +793,6 @@ def delete_session(id):
     return redirect(url_for('rec_session_list'))
 
 # USER ROUTES
-
 @app.route('/users/')
 @login_required
 @roles_accepted('admin')
@@ -776,6 +803,7 @@ def user_list():
             order=request.args.get('order', default='desc')))\
             .paginate(page, app.config['USER_PAGINATION'])
     return render_template('lists/users.jinja', users=users, section='user')
+
 
 @app.route('/users/<int:id>/')
 @login_required
@@ -789,6 +817,7 @@ def user(id):
             .paginate(page, app.config['RECORDING_PAGINATION'])
     return render_template("user.jinja", user=user, recordings=recordings,
         section='user')
+
 
 @app.route('/users/<int:id>/times', methods=['GET'])
 @login_required
@@ -841,6 +870,7 @@ def user_toggle_admin(id):
         flash("Notandi er nú vefstjóri", category='success')
     db.session.commit()
     return redirect(url_for('user', id=id))
+
 
 @app.route('/users/create/', methods=['GET', 'POST'])
 @login_required
@@ -897,6 +927,7 @@ def delete_user(id):
     flash("{} var eytt".format(name), category='success')
     return redirect(url_for('user_list'))
 
+
 @app.route('/roles/create/', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
@@ -912,6 +943,7 @@ def role_create():
             app.logger.error('Error creating a role : {}\n{}'.format(error,traceback.format_exc()))
     return render_template('forms/model.jinja', form=form, type='create',
         action=url_for('role_create'), section='role')
+
 
 @app.route('/roles/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
@@ -930,6 +962,7 @@ def role_edit(id):
     return render_template('forms/model.jinja', role=role, form=form, type='edit',
         action=url_for('role_edit', id=id), section='role')
 
+
 # OTHER ROUTES
 @app.route('/other/lobe_manual/')
 @login_required
@@ -942,15 +975,18 @@ def download_manual():
         app.logger.error(
             "Error downloading manual : {}\n{}".format(error,traceback.format_exc()))
 
+
 @app.route('/other/test_media_device')
 @login_required
 def test_media_device():
     return render_template('media_device_test.jinja')
 
+
 @app.errorhandler(404)
 def page_not_found(error):
     flash("Við fundum ekki síðuna sem þú baðst um.", category="warning")
     return redirect(url_for('index'))
+
 
 @app.errorhandler(500)
 def internal_server_error(error):

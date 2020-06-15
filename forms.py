@@ -146,13 +146,13 @@ class SessionVerifyForm(Form):
         (OK, "<i class='fa fa-check mr-1 text-success'></i> Góð"),
     ]
 
-    verdict = MultiCheckboxField("Merki", choices=CHOICES, validators=[InputRequired()])
+    quality = MultiCheckboxField("Gæði", choices=CHOICES, validators=[InputRequired()])
     comment = StringField("Athugasemd", widget=widgets.TextArea())
 
     recording = HiddenField("recording", validators=[InputRequired()])
 
-    def validate_verdict(self, field):
-        data = self.verdict.data
+    def quality_verdict(self, field):
+        data = self.quality.data
         if self.LOW in data and self.HIGH in data:
             raise ValidationError("Upptakan getur ekki verið bæði of lág og of há")
         if self.OK in data and len(data) > 1:

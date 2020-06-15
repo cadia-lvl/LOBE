@@ -1,23 +1,17 @@
 import json
 import os
-import sys
-import zipfile
-import tempfile
 import traceback
 import shutil
 import logging
 from logging.handlers import RotatingFileHandler
 
-from collections import defaultdict
-from flask import (Flask, Response, flash, redirect, render_template, request,
-    send_from_directory, send_file, session, url_for, after_this_request, flash, jsonify)
-from flask_security import (Security, SQLAlchemyUserDatastore, login_required, roles_required,
+from flask import (Flask, Response, redirect, render_template, request,
+    send_from_directory, url_for, flash, jsonify)
+from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
     roles_accepted, current_user)
 from flask_security.utils import hash_password
 from flask_executor import Executor
 from sqlalchemy import or_
-from sqlalchemy.sql.expression import func, select
-from werkzeug import secure_filename, Request
 from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
     delete_session_db, delete_token_db, save_recording_session, resolve_order, get_verifiers)
 from filters import format_date
@@ -28,7 +22,7 @@ from models import Collection, Recording, Role, Token, User, Session, Configurat
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
-from managers import ZipManager, RecordingInfoManager, IndexManager, create_collection_zip, trim_collection_handler
+from managers import create_collection_zip, trim_collection_handler
 from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low, find_segment
 
 # initialize the logger

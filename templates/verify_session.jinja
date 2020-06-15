@@ -69,7 +69,7 @@
         {{ form.recording }}
         <div class="row mt-3">
             <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2">
-                {{ form.verdict }}
+                {{ form.quality }}
             </div>
         </div>
         <div class="row mt-1">
@@ -150,7 +150,7 @@
         let disableShortcuts = false;
         let disableEnterAction = false;
 
-        const verdictSelectors = document.querySelectorAll("#verdict input");
+        const qualitySelectors = document.querySelectorAll("#quality input");
         const commentField = document.querySelector("textarea#comment");
         commentField.addEventListener('focus', function() { disableShortcuts = true; });
         commentField.addEventListener('blur', function() { disableShortcuts = false; });
@@ -205,20 +205,20 @@
             // Check/uncheck form fields
             if (value == "ok") {
                 // If 'ok' deselect others
-                document.querySelectorAll("#verdict input:not([value=ok])").forEach(
+                document.querySelectorAll("#quality input:not([value=ok])").forEach(
                     function(input){ input.checked = false; }
                 );
             } else {
                 // Make sure 'ok' is not selected
-                document.querySelector("#verdict input[value=ok]").checked = false;
+                document.querySelector("#quality input[value=ok]").checked = false;
             }
-            let field = document.querySelector("#verdict input[value=" + value + "]");
+            let field = document.querySelector("#quality input[value=" + value + "]");
             field.checked = !field.checked;
         }
 
         function cleanForm() {
             commentField.value = "";
-            verdictSelectors.forEach(function(input){ input.checked = false; });
+            qualitySelectors.forEach(function(input){ input.checked = false; });
             document.querySelector("input[name=recording]").value = "";
         }
 

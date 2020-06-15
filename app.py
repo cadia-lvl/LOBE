@@ -11,8 +11,8 @@ from logging.handlers import RotatingFileHandler
 from collections import defaultdict
 from flask import (Flask, Response, flash, redirect, render_template, request,
     send_from_directory, send_file, session, url_for, after_this_request, flash, jsonify)
-from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
-    roles_required, current_user)
+from flask_security import (Security, SQLAlchemyUserDatastore, login_required, roles_required,
+    roles_accepted, current_user)
 from flask_security.utils import hash_password
 from flask_executor import Executor
 from sqlalchemy import or_
@@ -83,6 +83,7 @@ def index_redirect():
 
 @app.route('/post_recording/', methods=['POST'])
 @login_required
+@roles_accepted('admin', 'Notandi')
 def post_recording():
     session_id = None
     try:
@@ -101,6 +102,7 @@ def post_recording():
 # RECORD ROUTES
 @app.route('/record/<int:coll_id>/', methods=['GET'])
 @login_required
+@roles_accepted('admin', 'Notandi')
 def record_session(coll_id):
     collection = Collection.query.get(coll_id)
     user_id = request.args.get('user_id')
@@ -136,6 +138,7 @@ def record_session(coll_id):
 
 @app.route('/record/analyze/', methods=['POST'])
 @login_required
+@roles_accepted('admin', 'Notandi')
 def analyze_audio():
     # save to disk, only one file in the form
     file_obj = next(iter(request.files.values()))
@@ -168,6 +171,7 @@ def analyze_audio():
 
 @app.route('/recording/<int:id>/cut/', methods=['POST'])
 @login_required
+@roles_accepted('admin', 'Notandi')
 def cut_recording(id):
     recording = Recording.query.get(id)
     start = float(request.form['start'])
@@ -184,6 +188,7 @@ def cut_recording(id):
 
 @app.route('/record/token/<int:tok_id>/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def record_single(tok_id):
     token = Token.query.get(tok_id)
     return render_template('record.jinja', tokens=token, section='record',
@@ -195,6 +200,7 @@ def record_single(tok_id):
 
 @app.route('/collections/create/', methods=['GET', 'POST'])
 @login_required
+@roles_accepted('admin')
 def create_collection():
     form = CollectionForm(request.form)
     if request.method == 'POST' and form.validate():
@@ -210,6 +216,7 @@ def create_collection():
 
 @app.route('/collections/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def collection_list():
     page = int(request.args.get('page', 1))
     # TODO: sort_by not currently supported
@@ -223,6 +230,7 @@ def collection_list():
 
 @app.route('/collections/zip_list/')
 @login_required
+@roles_accepted('admin')
 def collection_zip_list():
     page = int(request.args.get('page', 1))
     # TODO: sort_by not currently supported
@@ -234,6 +242,7 @@ def collection_zip_list():
 
 @app.route('/collections/<int:id>/', methods=['GET', 'POST'])
 @login_required
+@roles_accepted('admin', 'Notandi')
 def collection(id):
     token_form = BulkTokenForm(request.form)
     if request.method == 'POST':
@@ -255,6 +264,7 @@ def collection(id):
 
 @app.route('/collections/<int:id>/sessions', methods=['GET'])
 @login_required
+@roles_accepted('admin', 'Notandi')
 def collection_sessions(id):
     page = int(request.args.get('page', 1))
     collection = Collection.query.get(id)
@@ -265,6 +275,7 @@ def collection_sessions(id):
 
 @app.route('/collections/<int:id>/trim', methods=['GET'])
 @login_required
+@roles_accepted('admin')
 def trim_collection(id):
     '''
     Trim all recordings in the collection
@@ -276,6 +287,7 @@ def trim_collection(id):
 
 @app.route('/collections/<int:id>/generate_zip')
 @login_required
+@roles_accepted('admin')
 def generate_zip(id):
     # TODO: Send some message in real-time to notify user when finished
     executor.submit(create_collection_zip, id)
@@ -284,6 +296,7 @@ def generate_zip(id):
 
 @app.route('/collections/<int:id>/stream_zip')
 @login_required
+@roles_accepted('admin')
 def stream_collection_zip(id):
     collection = Collection.query.get(id)
     zip_file = open(collection.zip_path, 'rb')
@@ -299,6 +312,7 @@ def stream_collection_zip(id):
 
 @app.route('/collections/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
+@roles_accepted('admin')
 def edit_collection(id):
     collection = Collection.query.get(id)
     form = collection_edit_form(collection)
@@ -321,7 +335,7 @@ def edit_collection(id):
 
 @app.route('/collections/<int:id>/delete/')
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def delete_collection(id):
     collection = db.session.query(Collection).get(id)
     name = collection.name
@@ -344,7 +358,7 @@ def delete_collection(id):
 
 @app.route('/collections/<int:id>/delete_archive/')
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def delete_collection_archive(id):
     collection = db.session.query(Collection).get(id)
     if collection.has_zip:
@@ -372,12 +386,14 @@ def delete_collection_archive(id):
 
 @app.route('/tokens/<int:id>/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def token(id):
     return render_template('token.jinja', token=Token.query.get(id),
         section='token')
 
 @app.route('/tokens/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def token_list():
     page = int(request.args.get('page', default=1))
     tokens = Token.query.order_by(resolve_order(Token,
@@ -389,6 +405,7 @@ def token_list():
 
 @app.route('/tokens/<int:id>/download/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def download_token(id):
     token = Token.query.get(id)
     try:
@@ -400,7 +417,7 @@ def download_token(id):
 
 @app.route('/tokens/<int:id>/delete/', methods=['GET'])
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def delete_token(id):
     token = Token.query.get(id)
     did_delete = delete_token_db(token)
@@ -413,6 +430,7 @@ def delete_token(id):
 
 @app.route('/token/<int:id>/mark_bad/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def toggle_token_bad(id):
     token = Token.query.get(id)
     token.marked_as_bad = not token.marked_as_bad
@@ -424,6 +442,7 @@ def toggle_token_bad(id):
 
 @app.route('/recordings/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def recording_list():
     page = int(request.args.get('page', 1))
     only_bad = bool(request.args.get('only_bad', False))
@@ -442,13 +461,14 @@ def recording_list():
 
 @app.route('/recordings/<int:id>/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def recording(id):
     recording = Recording.query.get(id)
     return render_template('recording.jinja', recording=recording, section='recording')
 
 @app.route('/recordings/<int:id>/delete/', methods=['GET'])
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def delete_recording(id):
     recording = Recording.query.get(id)
     did_delete = delete_recording_db(recording)
@@ -461,6 +481,7 @@ def delete_recording(id):
 
 @app.route('/recordings/<int:id>/mark_bad/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def toggle_recording_bad(id):
     recording = Recording.query.get(id)
     recording.marked_as_bad = not recording.marked_as_bad
@@ -469,6 +490,7 @@ def toggle_recording_bad(id):
 
 @app.route('/recordings/<int:id>/mark_bad_ajax/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def toggle_recording_bad_ajax(id):
     recording = Recording.query.get(id)
     state = not recording.marked_as_bad
@@ -479,6 +501,7 @@ def toggle_recording_bad_ajax(id):
 
 @app.route('/recordings/<int:id>/download/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def download_recording(id):
     recording = Recording.query.get(id)
     try:
@@ -491,6 +514,7 @@ def download_recording(id):
 # CONFIGURATION ROUTES
 @app.route('/confs/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def conf_list():
     page = int(request.args.get('page', 1))
     confs = Configuration.query.order_by(resolve_order(Configuration,
@@ -501,6 +525,7 @@ def conf_list():
 
 @app.route('/confs/<int:id>/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def conf(id):
     conf = Configuration.query.get(id)
     collections = Collection.query.filter(Collection.configuration_id==id)
@@ -509,6 +534,7 @@ def conf(id):
 
 @app.route('/confs/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
+@roles_accepted('admin')
 def edit_conf(id):
     conf = Configuration.query.get(id)
     form = ConfigurationForm(obj=conf)
@@ -528,6 +554,7 @@ def edit_conf(id):
 
 @app.route('/confs/create/', methods=['GET', 'POST'])
 @login_required
+@roles_accepted('admin')
 def create_conf():
     form = ConfigurationForm(request.form)
     if request.method == 'POST' and form.validate():
@@ -546,7 +573,7 @@ def create_conf():
 
 @app.route('/confs/<int:id>/delete/', methods=['GET'])
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def delete_conf(id):
     conf = Configuration.query.get(id)
     name = conf.printable_name
@@ -566,6 +593,7 @@ def delete_conf(id):
 
 @app.route('/sessions/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def rec_session_list():
     page = int(request.args.get('page', 1))
     sessions = Session.query.order_by(resolve_order(Session,
@@ -577,6 +605,7 @@ def rec_session_list():
 
 @app.route('/sessions/<int:id>/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def rec_session(id):
     session = Session.query.get(id)
     return render_template('session.jinja', session=session,
@@ -621,7 +650,7 @@ def verification(id):
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def session_edit(id):
     session = Session.query.get(id)
     form = SessionEditForm(request.form)
@@ -637,7 +666,7 @@ def session_edit(id):
 
 @app.route('/sessions/<int:id>/delete/', methods=['GET'])
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def delete_session(id):
     record_session = Session.query.get(id)
     did_delete = delete_session_db(record_session)
@@ -651,7 +680,7 @@ def delete_session(id):
 
 @app.route('/users/')
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def user_list():
     page = int(request.args.get('page', 1))
     users = User.query.order_by(resolve_order(User,
@@ -662,6 +691,7 @@ def user_list():
 
 @app.route('/users/<int:id>/')
 @login_required
+@roles_accepted('admin', 'Notandi')
 def user(id):
     page = int(request.args.get('page', 1))
     user = User.query.get(id)
@@ -674,6 +704,7 @@ def user(id):
 
 @app.route('/users/<int:id>/times', methods=['GET'])
 @login_required
+@roles_accepted('admin', 'Notandi')
 def user_time_info(id):
     user = User.query.get(id)
     sessions = Session.query.filter(
@@ -688,6 +719,7 @@ def user_time_info(id):
 
 @app.route('/users/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
+@roles_accepted('admin')
 def user_edit(id):
     user = User.query.get(id)
     form = UserEditForm(obj=user)
@@ -707,6 +739,7 @@ def user_edit(id):
 
 @app.route('/users/<int:id>/toggle_admin/', methods=['GET', 'POST'])
 @login_required
+@roles_accepted('admin')
 def user_toggle_admin(id):
     user = User.query.get(id)
     ds_user = user_datastore.get_user(id)
@@ -723,7 +756,7 @@ def user_toggle_admin(id):
 
 @app.route('/users/create/', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def user_create():
     form = ExtendedRegisterForm(request.form)
     if request.method == 'POST' and form.validate():
@@ -745,7 +778,7 @@ def user_create():
 
 @app.route('/users/create_verifier', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def verifier_create():
     form = VerifierRegisterForm(request.form)
     if request.method == 'POST' and form.validate():
@@ -767,7 +800,7 @@ def verifier_create():
 
 @app.route('/users/<int:id>/delete/')
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def delete_user(id):
     user = db.session.query(User).get(id)
     name = user.name
@@ -778,7 +811,7 @@ def delete_user(id):
 
 @app.route('/roles/create/', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@roles_accepted('admin')
 def role_create():
     form = RoleForm(request.form)
     if request.method == 'POST' and form.validate():
@@ -794,6 +827,7 @@ def role_create():
 
 @app.route('/roles/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
+@roles_accepted('admin')
 def role_edit(id):
     role = Role.query.get(id)
     form = RoleForm(request.form, obj=role)

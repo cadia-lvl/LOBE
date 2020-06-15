@@ -656,6 +656,7 @@ class Session(BaseModel, db.Model):
     has_video = db.Column(db.Boolean, default=False)
     recordings = db.relationship("Recording", lazy='joined', backref='session', cascade='all, delete, delete-orphan')
 
+
 # Define models
 roles_users = db.Table('roles_users',
         db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
@@ -667,8 +668,6 @@ class Role(db.Model, RoleMixin):
     description = db.Column(db.String(255))
 
 class User(db.Model, UserMixin):
-    def get_url(self):
-        return url_for('user', id=self.id)
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
@@ -685,6 +684,9 @@ class User(db.Model, UserMixin):
 
     assigned_collections = db.relationship("Collection", cascade='all, delete, delete-orphan')
     recordings = db.relationship("Recording")
+
+    def get_url(self):
+        return url_for('user', id=self.id)
 
     def get_printable_name(self):
         if self.name is not None:
@@ -712,3 +714,6 @@ class User(db.Model, UserMixin):
             'sex': self.sex,
             'age': self.age,
             'dialect': self.dialect}
+
+
+

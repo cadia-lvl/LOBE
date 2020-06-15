@@ -1,0 +1,27 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Gagnagreining</h1>
+        </div>
+
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Greinendur</h3>
+            {% for verifier in verifiers %}
+                <p>{{verifier.name}}</p>
+            {% endfor %}
+        </div>
+
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Staða á söfnunum</h3>
+        </div>
+
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Mínar safnanir</h3>
+        </div>
+
+
+    </div>
+
+
+{% endblock %}

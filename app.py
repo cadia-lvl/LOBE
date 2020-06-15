@@ -19,7 +19,7 @@ from sqlalchemy import or_
 from sqlalchemy.sql.expression import func, select
 from werkzeug import secure_filename, Request
 from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
-    delete_session_db, delete_token_db, save_recording_session, resolve_order)
+    delete_session_db, delete_token_db, save_recording_session, resolve_order, get_verifiers)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
@@ -74,11 +74,15 @@ executor = Executor(app)
 @app.route('/')
 @login_required
 def index():
+    if current_user.has_role('Greinir'):
+        return redirect(url_for('verify_index'))
     return redirect(url_for('collection_list'))
 
 @app.route(f"/{os.getenv('LOBE_REDIRECT','lobe')}/")
 @login_required
 def index_redirect():
+    if current_user.has_role('Greinir'):
+        return redirect(url_for('verify_index'))
     return redirect(url_for('collection_list'))
 
 @app.route('/post_recording/', methods=['POST'])
@@ -646,6 +650,15 @@ def verification(id):
     else:
         errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
         return Response(errorMessage, status=500)
+
+@app.route('/verification', methods=['GET'])
+@login_required
+def verify_index():
+    '''
+    Home screen of the verifiers
+    '''
+    return render_template('verify_index.jinja', verifiers=get_verifiers())
+
 
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])

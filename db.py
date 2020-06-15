@@ -8,7 +8,7 @@ from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from functools import partialmethod
 from flask import flash
-from models import Collection, Recording, Session, Token, db
+from models import Collection, Recording, Session, Token, User, db
 
 def create_tokens(collection_id, files, is_g2p):
     tokens = []
@@ -246,3 +246,7 @@ def resolve_order(object, sort_by, order='desc'):
         return ordering.asc()
     else:
         return ordering.desc()
+
+
+def get_verifiers():
+    return [u for u in User.query.all() if u.roles[0].name == 'Greinir']

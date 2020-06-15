@@ -6,21 +6,66 @@
         </div>
 
         <div class='col-12'>
+            <a href="{{url_for('verify_queue')}}" class='btn btn-success float-right'>
+                Greina
+                {{macros.btn_icon('arrow-right', 'l')}}
+            </a>
+        </div>
+
+        <div class='col-12'>
             <h3 class='font-weight-bold'>Greinendur</h3>
-            {% for verifier in verifiers %}
-                <p>{{verifier.name}}</p>
-            {% endfor %}
+            <table class='table table-striped'>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Nafn</th>
+                        <th>Fjöldi greininga</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for verifier in verifiers %}
+                        <tr>
+                            <th scope='row'>{{loop.index}}</th>
+                            <td>
+                                {{verifier.name}}
+                                {% if loop.index == 1 %}
+                                    <span class='ml-2'><i class='fa fa-crown text-warning'></i></span>
+                                {% endif %}
+                            </td>
+                            <td>1530 greiningar</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
 
         <div class='col-12'>
             <h3 class='font-weight-bold'>Staða á söfnunum</h3>
-        </div>
-
-        <div class='col-12'>
-            <h3 class='font-weight-bold'>Mínar safnanir</h3>
-        </div>
-
-
+            <table class='table table-striped'>
+                <thead>
+                    <tr>
+                        <th>Nafn</th>
+                        <th>Fjöldi upptaka</th>
+                        <th>Fjöldi greininga</th>
+                        <th>Framvinda</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for collection in collections %}
+                        <tr>
+                            <td>{{collection.printable_id}}</td>
+                            <td>11523 upptökur</td>
+                            <td>5032 greiningar</td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.get_invalid_ratio(as_percent=True)}}%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
     </div>
 
 

@@ -10,6 +10,7 @@ from flask import url_for
 from flask_security import RoleMixin, UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, select, MetaData
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug import secure_filename
 
@@ -155,6 +156,10 @@ class Collection(BaseModel, db.Model):
             return Configuration.query.get(self.configuration_id)
         return None
 
+    @property
+    def printable_id(self):
+        return "T-{:04d}".format(self.id)
+
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     name = db.Column(db.String, default=str(datetime.now().date()))
@@ -171,6 +176,7 @@ class Collection(BaseModel, db.Model):
     num_tokens = db.Column(db.Integer, default=0)
     num_recorded_tokens = db.Column(db.Integer, default=0)
     num_invalid_tokens = db.Column(db.Integer, default=0)
+
     has_zip = db.Column(db.Boolean, default=False)
     zip_token_count = db.Column(db.Integer, default=0)
     zip_created_at = db.Column(db.DateTime)
@@ -278,6 +284,7 @@ class Configuration(BaseModel, db.Model):
     too_low_threshold = db.Column(db.Float, default=-15)
     too_high_threshold = db.Column(db.Float, default=-4.5)
     too_high_frames = db.Column(db.Integer, default=10)
+
 
 class Token(BaseModel, db.Model):
     __tablename__ = 'Token'
@@ -395,6 +402,7 @@ class Token(BaseModel, db.Model):
 
     recordings = db.relationship("Recording", lazy='joined', backref='token')
 
+
 class Rating(BaseModel, db.Model):
     __tablename__ = 'Rating'
 
@@ -408,6 +416,7 @@ class Rating(BaseModel, db.Model):
     recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     value = db.Column(db.Boolean, default=False)
+
 
 class Recording(BaseModel, db.Model):
     __tablename__ = 'Recording'
@@ -568,6 +577,14 @@ class Recording(BaseModel, db.Model):
     def reset_trim(self):
         self.set_trim(None, None)
 
+    @property
+    def is_verified(self):
+        return len(self.verifications) == 2
+
+    @property
+    def is_half_verified(self):
+        return len(self.verifications) == 1
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     original_fname = db.Column(db.String, default='Unknown')
@@ -600,6 +617,10 @@ class Recording(BaseModel, db.Model):
 
     marked_as_bad = db.Column(db.Boolean, default=False)
     has_video = db.Column(db.Boolean, default=False)
+
+    verifications = db.relationship("Verification", lazy='select',
+            backref='collection', cascade='all, delete, delete-orphan')
+
 
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
@@ -656,8 +677,26 @@ class Session(BaseModel, db.Model):
     has_video = db.Column(db.Boolean, default=False)
     recordings = db.relationship("Recording", lazy='joined', backref='session', cascade='all, delete, delete-orphan')
 
+    is_secondarily_verified = db.Column(db.Boolean, default=False)
+    is_verified = db.Column(db.Boolean, default=False)
+    verified_by =  db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    secondarily_verified_by = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
 
-# Define models
+
+class Verification(BaseModel, db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    verified_by = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
+
+    volume_is_low = db.Column(db.Boolean, default=False)
+    volume_is_high = db.Column(db.Boolean, default=False)
+    recording_has_glitch = db.Column(db.Boolean, default=False)
+    recording_has_wrong_wording = db.Column(db.Boolean, default=False)
+
+    comment = db.Column(db.String(255))
+
+
 roles_users = db.Table('roles_users',
         db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
         db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
@@ -666,6 +705,7 @@ class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
     description = db.Column(db.String(255))
+
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

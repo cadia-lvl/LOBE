@@ -16,7 +16,7 @@ from termcolor import colored
 from collections import defaultdict
 
 from app import app, db, user_datastore
-from models import Recording, Token, User, Role, Collection, Configuration
+from models import Recording, Token, User, Role, Collection, Configuration, Session
 from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
 migrate = Migrate(app, db)
 manager = Manager(app)
@@ -244,6 +244,22 @@ def download_collection(coll_id, out_dir):
         print("{}\n{}".format(error, traceback.format_exc()))
 
 @manager.command
+def update_session_verifications():
+    '''
+    Sets session.is_verified and session.is_secondarily_verified to False
+    on all prior tuples in Session table
+    '''
+    sessions = Session.query.all()
+    for session in tqdm(sessions):
+        if session.is_verified is None:
+            session.is_verified = False
+        if session.is_secondarily_verified is None:
+            session.is_secondarily_verified = False
+    db.session.commit()
+
+
+
+@manager.command
 def update_numbers():
     '''
     Updates out-of-date values for the following columns in the Colleciton
@@ -274,6 +290,9 @@ def update_numbers():
     for collection in tqdm(collections):
         collection.update_numbers()
     db.session.commit()
+
+
+
 
 
 @manager.command

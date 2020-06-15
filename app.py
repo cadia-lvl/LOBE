@@ -505,7 +505,6 @@ def toggle_recording_bad_ajax(id):
 
 @app.route('/recordings/<int:id>/download/')
 @login_required
-@roles_accepted('admin', 'Notandi')
 def download_recording(id):
     recording = Recording.query.get(id)
     try:
@@ -615,6 +614,57 @@ def rec_session(id):
     return render_template('session.jinja', session=session,
         section='session')
 
+@app.route('/verification/verify_queue')
+@login_required
+def verify_queue():
+    '''
+    Finds the oldest and unverified session and redirects
+    to that session verification. The session must either
+    be assigned to the current user id or no user id
+    '''
+
+    '''
+    Logic of queue priority:
+    1. Check if there are sessions that are not verified
+    2. Check if any are not assigned to other users
+    3. Check if any are not secondarily verified
+    4. Check if any of those are not assigned to other users
+    '''
+
+    unverified_sessions = Session.query.filter(Session.is_verified==False)
+    if unverified_sessions.count() > 0:
+        available_sessions = unverified_sessions.filter(
+            or_(Session.verified_by==current_user.id, Session.verified_by==None))
+
+        if available_sessions.count() > 0:
+            # we have an available session
+            chosen_session = available_sessions[0]
+            chosen_session.verified_by = current_user.id
+
+    else:
+        # check if we can secondarily verify any sesssions
+        secondarily_unverified_sessions = Session.query.filter(Session.is_secondarily_verified==False)
+
+        if secondarily_unverified_sessions.count() > 0:
+            available_sessions = secondarily_unverified_sessions.filter(
+                or_(Session.secondarily_verified_by==current_user.id,
+                    Session.secondarily_verified_by==None))
+
+            if available_sessions.count() > 0:
+                # we have an available session
+                chosen_session = available_sessions[0]
+                chosen_session.secondarily_verified_by = current_user.id
+        else:
+            # there are no sessions left to verify
+            flash("Engar lotur eftir til að greina", category="warning")
+            return redirect(url_for("verify_index"))
+
+    # Once queued, a session is assigned to a user id to avoid
+    # double queueing
+    db.session.commit()
+    return redirect(url_for('verify_session', id=chosen_session.id))
+
+
 @app.route('/sessions/<int:id>/verify/')
 @login_required
 def verify_session(id):
@@ -657,7 +707,8 @@ def verify_index():
     '''
     Home screen of the verifiers
     '''
-    return render_template('verify_index.jinja', verifiers=get_verifiers())
+    return render_template('verify_index.jinja', verifiers=get_verifiers(),
+        collections=Collection.query.all())
 
 
 

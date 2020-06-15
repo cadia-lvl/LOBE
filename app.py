@@ -634,7 +634,7 @@ def verify_queue():
     unverified_sessions = Session.query.filter(Session.is_verified==False)
     if unverified_sessions.count() > 0:
         available_sessions = unverified_sessions.filter(
-            or_(Session.verified_by==current_user.id, Session.verified_by==None))
+            or_(Session.verified_by==None, Session.verified_by==current_user.id))
 
         if available_sessions.count() > 0:
             # we have an available session
@@ -647,8 +647,8 @@ def verify_queue():
 
         if secondarily_unverified_sessions.count() > 0:
             available_sessions = secondarily_unverified_sessions.filter(
-                or_(Session.secondarily_verified_by==current_user.id,
-                    Session.secondarily_verified_by==None))
+                or_(Session.secondarily_verified_by==None,
+                    Session.secondarily_verified_by==current_user.id))
 
             if available_sessions.count() > 0:
                 # we have an available session

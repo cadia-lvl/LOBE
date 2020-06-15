@@ -23,16 +23,26 @@ manager = Manager(app)
 
 class AddDefaultRoles(Command):
     def run(self):
-        admin_role = Role()
-        admin_role.name = 'admin'
-        admin_role.description = 'Umsjónarhlutverk með aðgang að notendastillingum'
+        select = int(input('Select 1-3 for admin, Notandi, Greinir or 4 for all: '))
 
-        user_role = Role()
-        user_role.name = 'Notandi'
-        user_role.description = 'Venjulegur notandi með grunn aðgang'
+        if select == 1 or select == 4:
+            admin_role = Role()
+            admin_role.name = 'admin'
+            admin_role.description = 'Umsjónarhlutverk með aðgang að notendastillingum'
+            db.session.add(admin_role)
 
-        db.session.add(admin_role)
-        db.session.add(user_role)
+        if select == 2 or select == 4:
+            user_role = Role()
+            user_role.name = 'Notandi'
+            user_role.description = 'Venjulegur notandi með grunn aðgang'
+            db.session.add(user_role)
+
+        if select == 3 or select == 4:
+            verifier_role = Role()
+            verifier_role.name = 'Greinir'
+            verifier_role.description = 'Greinir með takmarkað aðgengi'
+            db.session.add(verifier_role)
+
         db.session.commit()
 
 class AddDefaultConfiguration(Command):

@@ -23,7 +23,7 @@ from db import (create_tokens, insert_collection, sessions_day_info, delete_reco
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
-                   collection_edit_form, SessionVerifyForm)
+                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
@@ -647,7 +647,6 @@ def delete_session(id):
         flash("Ekki gekk að eyða lotu", category='warning')
     return redirect(url_for('rec_session_list'))
 
-
 # USER ROUTES
 
 @app.route('/users/')
@@ -742,6 +741,29 @@ def user_create():
 
     return render_template('forms/model.jinja', form=form, type='create',
         action=url_for('user_create'), section='user')
+
+
+@app.route('/users/create_verifier', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
+def verifier_create():
+    form = VerifierRegisterForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            new_user = user_datastore.create_user(name=form.name.data, email=form.email.data,
+                password=hash_password(form.password.data), roles=['Greinir'])
+            form.populate_obj(new_user)
+            db.session.commit()
+            flash("Nýr greinir var búinn til", category='success')
+            return redirect(url_for('user_list'))
+
+        except Exception as error:
+            app.logger.error('Error creating a user : {}\n{}'.format(error,traceback.format_exc()))
+            flash("Villa kom upp við að búa til nýjan greini", category='warning')
+
+    return render_template('forms/model.jinja', form=form, type='create',
+        action=url_for('verifier_create'), section='user')
+
 
 @app.route('/users/<int:id>/delete/')
 @login_required

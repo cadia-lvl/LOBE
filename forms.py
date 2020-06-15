@@ -107,6 +107,9 @@ class ExtendedRegisterForm(RegisterForm):
     is_admin = BooleanField("Notandi er vefstjóri")
 
 
+class VerifierRegisterForm(RegisterForm):
+    name = TextField('Nafn', [validators.required()])
+
 class UserEditForm(Form):
     name = TextField('Nafn')
     email = TextField('Netfang')

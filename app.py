@@ -22,7 +22,8 @@ from db import (create_tokens, insert_collection, sessions_day_info, delete_reco
     delete_session_db, delete_token_db, save_recording_session, resolve_order)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
-    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm, collection_edit_form)
+                   ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
+                   collection_edit_form, SessionVerifyForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
@@ -581,27 +582,41 @@ def rec_session(id):
     return render_template('session.jinja', session=session,
         section='session')
 
-@app.route('/sessions/<int:id>/verify')
+@app.route('/sessions/<int:id>/verify/')
 @login_required
 def verify_session(id):
+    form = SessionVerifyForm()
     session = Session.query.get(id)
     session_dict = {
         'id': session.id,
         'collection_id': session.collection.id,
-        'recordings': []}
+        'recordings': [],
+    }
     for recording in session.recordings:
         session_dict['recordings'].append({
             'rec_id': recording.id,
             'rec_fname': recording.fname,
             'rec_url': recording.get_download_url(),
-            'rec_trim': {'start':recording.start, 'end':recording.end},
+            'rec_trim': {'start': recording.start, 'end': recording.end},
             'text': recording.token.text,
             'text_file_id': recording.token.fname,
             'text_url': recording.token.get_url(),
             'token_id': recording.token.id})
 
-    return render_template('verify_session.jinja', session=session,
+    return render_template('verify_session.jinja', session=session, form=form,
         json_session=json.dumps(session_dict))
+
+
+@app.route('/sessions/<int:id>/verify/verification/', methods=['POST'])
+@login_required
+def verification(id):
+    form = SessionVerifyForm(request.form)
+    if form.validate():
+        # Save validation
+        return Response("ok", status=200)
+    else:
+        errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
+        return Response(errorMessage, status=500)
 
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])

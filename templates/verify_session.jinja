@@ -63,43 +63,61 @@
         </div>
     </div>
 
-    <div class='row mt-3'>
-        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
-            <button class='btn btn-secondary rounded-pill btn-sm'>
-                <i class='fa fa-volume-mute text-danger mr-1'></i>
-                Of lágt
-            </button>
-            <button class='btn btn-secondary rounded-pill btn-sm'>
-                <i class='fa fa-volume-up text-danger mr-1'></i>
-                Of hátt
-            </button>
-            <button class='btn btn-secondary rounded-pill btn-sm'>
-                <i class='fa fa-comment-slash text-danger mr-1'></i>
-                Rangt sagt
-            </button>
-            <button class='btn btn-secondary rounded-pill btn-sm'>
-                <i class='fa fa-times text-danger mr-1'></i>
-                Gölluð
-            </button>
-            <button class='btn btn-secondary rounded-pill btn-sm float-right'>
-                <i class='fa fa-check mr-1 text-success'></i>
-                Góð
-            </button>
+    <form id="verificationForm" action="verification/" method="POST">
+        {{ form.recording }}
+        <div class="row mt-3">
+            <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2">
+                {{ form.verdict }}
+            </div>
         </div>
-    </div>
-    <div class='row mt-1'>
-        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
-            <div class="form-group">
-                <label>Athugasemd</label>
-                <textarea class="form-control" rows="2" style='background-color:#000; color:#999'></textarea>
+        <div class="row mt-1">
+            <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2">
+                <div class="form-group">
+                    <label>Athugasemd</label>
+                    {{ form.comment(class="form-control", rows=2) }}
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2">
+                <button id="verify" class="btn btn-primary float-right">Senda</button>
+            </div>
+        </div>
+    </form>
+
+{% endblock %}
+{% block modals %}
+    <div class="modal fade" id='errorModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Villa!</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class='font-weight-bold' id='errorTitleElement'></p>
+                    <p><code class='font-weight-bold' id='errorMsgElement'></code></p>
+                    <p><code id='errorStackElement'></code></p>
+                    <p>Hafið samband við vefstjóra eða reynið aftur.</p>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                    <a href="{{request.path}}" class='btn btn-primary'>
+                        Reyna aftur
+                        {{macros.btn_icon('redo', 'l')}}
+                    </a>
+                </div>
+                </div>
             </div>
         </div>
     </div>
-
 {% endblock %}
-{% block modals %}{% endblock %}
 {% block scripts %}
     {{super()}}
+    <script src='{{url_for("static", filename="js/error.js")}}'></script>
     <script src='{{url_for("static", filename="js/surf.js")}}'></script>
     <script>
         let wavesurfer;
@@ -123,17 +141,46 @@
         const playButton = document.querySelector('button#play');
         const playButtonIcon = document.querySelector('#playButtonIcon');
 
-
         nextButton.addEventListener('click', nextAction);
         prevButton.addEventListener('click', prevAction);
         playButton.addEventListener('click', playAction);
 
+        let disableShortcuts = false;
+        let disableEnterAction = false;
+
+        const verdictSelectors = document.querySelectorAll("#verdict input");
+        const commentField = document.querySelector("textarea#comment");
+        commentField.addEventListener('focus', function() { disableShortcuts = true; });
+        commentField.addEventListener('blur', function() { disableShortcuts = false; });
+        const sendVerificationButton = document.querySelector("button#verify")
+        sendVerificationButton.addEventListener('focus', function() { disableEnterAction = true; });
+        sendVerificationButton.addEventListener('blur', function() { disableEnterAction = false; });
+        sendVerificationButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            postForm();
+        });
 
         $(window).keyup(function (e) {
+            if (disableShortcuts) return; // For example while inside text field
+
             if(e.keyCode === 37 || e.keyCode === 65){ // arrow-left or "a"
                 prevAction();
             } else if(e.keyCode === 39 || e.keyCode === 68){ // arrow-right or "d"
                 nextAction();
+            } else if(e.keyCode === 83){ // "s"
+                playAction();
+            } else if(e.keyCode === 66){ // "b"
+                formAction("low");
+            } else if(e.keyCode === 72){ // "h"
+                formAction("high");
+            } else if(e.keyCode === 74){ // "j"
+                formAction("wrong");
+            } else if(e.keyCode === 75){ // "k"
+                formAction("glitch");
+            } else if(e.keyCode === 76){ // "l"
+                formAction("ok");
+            } else if(e.keyCode === 13 && !disableEnterAction) { // enter
+                postForm();
             }
         });
 
@@ -150,6 +197,48 @@
                 if(wavesurfer){wavesurfer.destroy()};
                 recIndex -= 1; updateUI();
             }
+        }
+
+        function formAction(value) {
+            // Check/uncheck form fields
+            if (value == "ok") {
+                // If 'ok' deselect others
+                document.querySelectorAll("#verdict input:not([value=ok])").forEach(
+                    function(input){ input.checked = false; }
+                );
+            } else {
+                // Make sure 'ok' is not selected
+                document.querySelector("#verdict input[value=ok]").checked = false;
+            }
+            let field = document.querySelector("#verdict input[value=" + value + "]");
+            field.checked = !field.checked;
+        }
+
+        function cleanForm() {
+            commentField.value = "";
+            verdictSelectors.forEach(function(input){ input.checked = false; });
+            document.querySelector("input[name=recording]").value = "";
+        }
+
+        function postForm() {
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function(e) {
+                if(this.readyState === XMLHttpRequest.DONE) {
+                    if(xhr.status == '200'){
+                        // if we finish we go straight to the next recording
+                        nextAction();
+                    } else{
+                        promptError("Villa koma upp:", xhr.responseText, "");
+                    }
+                }
+            };
+
+            let form = document.querySelector("#verificationForm");
+            form.querySelector("input[name=recording]").value = session.recordings[recIndex].rec_id;
+            let formData = new FormData(form);
+            xhr.open("POST", form.action, true);
+            xhr.send(formData);
+
         }
 
         async function playAction(){
@@ -214,6 +303,7 @@
             updateTokenUI();
             updateProgressUI();
             updateRecordingUI();
+            cleanForm();
         }
 
         updateUI();

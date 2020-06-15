@@ -3,11 +3,12 @@ import os
 from flask import current_app as app
 from flask_security.forms import LoginForm, RegisterForm
 from flask_wtf import RecaptchaField
-from wtforms import (fields, FileField, Form, HiddenField, MultipleFileField,
+from wtforms import (fields, FileField, Form, HiddenField, MultipleFileField, SelectMultipleField,
                      PasswordField, SelectField, TextAreaField, TextField, IntegerField, BooleanField,
-                     validators, ValidationError, FloatField)
+                     validators, ValidationError, FloatField, widgets, StringField)
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms.ext.sqlalchemy.orm import model_form
+from wtforms.validators import InputRequired
 
 from models import Role, User, Collection, Configuration, db
 
@@ -22,6 +23,17 @@ dialect_choices = [('Linmæli', 'Linmæli'),
     ('rn-, rl-framburður', 'rn-, rl-framburður'),
     ('Vestfirskur einhljóðaframburður', 'Vestfirskur einhljóðaframburður'),
     ('Skaftfellskur einhljóðaframburður', 'Skaftfellskur einhljóðaframburður')]
+
+
+class MultiCheckboxField(SelectMultipleField):
+    """
+    A multiple-select, except displays a list of checkboxes.
+
+    Iterating the field will produce subfields, allowing custom rendering of
+    the enclosed checkbox fields.
+    """
+    widget = widgets.ListWidget(prefix_label=False)
+    option_widget = widgets.CheckboxInput()
 
 
 class CollectionForm(Form):
@@ -73,6 +85,7 @@ class BulkTokenForm(Form):
         return
     '''
 
+
 class RecordForm(Form):
     token = HiddenField('Texti')
     recording = HiddenField('Upptaka')
@@ -93,6 +106,7 @@ class ExtendedRegisterForm(RegisterForm):
         validators.NumberRange(min=18, max=100)])
     is_admin = BooleanField("Notandi er vefstjóri")
 
+
 class UserEditForm(Form):
     name = TextField('Nafn')
     email = TextField('Netfang')
@@ -102,6 +116,7 @@ class UserEditForm(Form):
         [validators.required()], choices=sex_choices)
     age = IntegerField('Aldur')
 
+
 class SessionEditForm(Form):
     manager_id = QuerySelectField('Stjórnandi', query_factory=lambda: User.query, get_label='name',
         validators=[validators.required()])
@@ -109,6 +124,37 @@ class SessionEditForm(Form):
     def validate_manager_id(self, field):
         if field.data is not None:
             field.data = field.data.id
+
+
+class SessionVerifyForm(Form):
+    """Form to verify a recording inside a session
+        TODO: This should be a model form when the model object is complete
+    """
+    LOW = "low"
+    HIGH = "high"
+    WRONG = "wrong"
+    GLITCH = "glitch"
+    OK = "ok"
+    CHOICES = [
+        (LOW, "<i class='fa fa-volume-mute text-danger mr-1'></i> Of lágt"),
+        (HIGH, "<i class='fa fa-volume-up text-danger mr-1'></i> of hátt"),
+        (WRONG, "<i class='fa fa-comment-slash text-danger mr-1'></i> Rangt lesið"),
+        (GLITCH, "<i class='fa fa-times text-danger mr-1'></i> Gölluð"),
+        (OK, "<i class='fa fa-check mr-1 text-success'></i> Góð"),
+    ]
+
+    verdict = MultiCheckboxField("Merki", choices=CHOICES, validators=[InputRequired()])
+    comment = StringField("Athugasemd", widget=widgets.TextArea())
+
+    recording = HiddenField("recording", validators=[InputRequired()])
+
+    def validate_verdict(self, field):
+        data = self.verdict.data
+        if self.LOW in data and self.HIGH in data:
+            raise ValidationError("Upptakan getur ekki verið bæði of lág og of há")
+        if self.OK in data and len(data) > 1:
+            raise ValidationError("Upptakan getur ekki verið bæði of góð og slæm")
+
 
 class ConfigurationForm(Form):
     name = TextField('Nafn stillinga')

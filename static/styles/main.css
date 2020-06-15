@@ -76,3 +76,33 @@ video{
 .rounded-pill-left{
     border-radius: 50rem 0 0 50rem !important;
 }
+
+/* Verify form */
+ul#verdict {
+    display: block;
+    padding: 0;
+}
+ul#verdict li {
+    display: inline;
+    margin-right: 10px;
+}
+ul#verdict li:last-child {
+    float: right;
+    margin-right: 0;
+}
+ul#verdict li label {
+    display: inline-block;
+    padding: 8px 12px;
+    background: #333;
+    border-radius: 5px;
+}
+ul#verdict li input[type=checkbox] {
+    display: none;
+}
+ul#verdict li input[type=checkbox]:checked + label {
+    background: #666;
+}
+textarea.form-control {
+    background-color:#000;
+    color:#999;
+}

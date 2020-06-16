@@ -266,7 +266,10 @@ def release_unverified_sessions():
     a session to verify without completing the verification the
     user hogs upp sessions and other users have no sessions to verify.
     This releases the user id from those sessions that have a user id
-    but have not been fully verified
+    but have not been fully verified.
+
+    Note: this likely never happens as the hogging user will be
+    queued with the first session with its user id.
     '''
     releasable_sessions = Session.query.filter(
         and_(Session.is_verified==False, Session.is_secondarily_verified==False))

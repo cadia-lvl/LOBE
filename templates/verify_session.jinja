@@ -34,7 +34,6 @@
                 <div class="card-body d-flex flex-column justify-content-between">
                     <h3 class='card-text' id='tokenText'></h3>
                     <p class='card-text mb-0'>
-                        <a id="tokenHref" target="_blank" rel="noopener noreferrer" href='#'><code id="tokenFileID"></code></a>
                         <span class='float-right rounded-pill bg-secondary text-success px-2 py-1'><span id='currentIndexSpan'></span>/<span id='totalIndexSpan'></span></span>
                     </p>
                 </div>
@@ -279,8 +278,6 @@
 
         function updateTokenUI(){
             tokenText.innerHTML = recordings[recIndex]['text'];
-            tokenfileIDSpan.innerHTML = recordings[recIndex]['text_file_id'];
-            tokenHref.href = recordings[recIndex]['text_url'];
         }
 
         function updateProgressUI(){

@@ -140,7 +140,7 @@ class SessionVerifyForm(Form):
     OK = "ok"
     CHOICES = [
         (LOW, "<i class='fa fa-volume-mute text-danger mr-1'></i> Of lágt"),
-        (HIGH, "<i class='fa fa-volume-up text-danger mr-1'></i> of hátt"),
+        (HIGH, "<i class='fa fa-volume-up text-danger mr-1'></i> Of hátt"),
         (WRONG, "<i class='fa fa-comment-slash text-danger mr-1'></i> Rangt lesið"),
         (GLITCH, "<i class='fa fa-times text-danger mr-1'></i> Gölluð"),
         (OK, "<i class='fa fa-check mr-1 text-success'></i> Góð"),
@@ -156,7 +156,7 @@ class SessionVerifyForm(Form):
         if self.LOW in data and self.HIGH in data:
             raise ValidationError("Upptakan getur ekki verið bæði of lág og of há")
         if self.OK in data and len(data) > 1:
-            raise ValidationError("Upptakan getur ekki verið bæði of góð og slæm")
+            raise ValidationError("Upptakan getur ekki verið bæði góð og slæm")
 
 
 class ConfigurationForm(Form):

@@ -620,8 +620,7 @@ class Recording(BaseModel, db.Model):
     has_video = db.Column(db.Boolean, default=False)
 
     verifications = db.relationship("Verification", lazy='select',
-            backref='collection', cascade='all, delete, delete-orphan')
-
+            backref='recording', cascade='all, delete, delete-orphan')
 
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
@@ -686,6 +685,8 @@ class Session(BaseModel, db.Model):
 
 
 class Verification(BaseModel, db.Model):
+    __tablename__ = 'Verification'
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     verified_by = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
@@ -699,6 +700,20 @@ class Verification(BaseModel, db.Model):
     comment = db.Column(db.String(255))
 
     is_secondary = db.Column(db.Boolean, default=False)
+
+    trims = db.relationship("Trim", lazy='select',
+           backref='verification', cascade='all, delete, delete-orphan')
+
+
+class Trim(BaseModel, db.Model):
+    __tablename__ = 'Trim'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    start = db.Column(db.Float)
+    end = db.Column(db.Float)
+    index = db.Column(db.Integer)
+    verification_id = db.Column(db.Integer, db.ForeignKey('Verification.id'))
 
 
 roles_users = db.Table('roles_users',

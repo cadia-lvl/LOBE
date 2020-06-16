@@ -10,6 +10,7 @@ from tqdm import tqdm
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Command, Manager
 from flask_security.utils import hash_password
+from sqlalchemy import and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from termcolor import colored
@@ -257,7 +258,23 @@ def update_session_verifications():
             session.is_secondarily_verified = False
     db.session.commit()
 
+@manager.command
+def release_unverified_sessions():
+    '''
+    To avoid double verification, a user id is attached to each
+    session before it is verified. If a user repeatedly requests
+    a session to verify without completing the verification the
+    user hogs upp sessions and other users have no sessions to verify.
+    This releases the user id from those sessions that have a user id
+    but have not been fully verified
+    '''
+    releasable_sessions = Session.query.filter(
+        and_(Session.is_verified==False, Session.is_secondarily_verified==False))
 
+    for session in releasable_sessions:
+        session.verified_by = None
+        session.secondarily_verified_by = None
+    db.session.commit()
 
 @manager.command
 def update_numbers():

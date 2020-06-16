@@ -6,6 +6,10 @@
 {% block body %}
     <div class='row mb-3 mt-md-0 mt-n4'>
         <div class='col-12'>
+            <h3 class='font-weight-bold'>Greining</h3>
+            <h4 class='font-weight-bold'>Lota: {{session.get_printable_id()}}</h4>
+        </div>
+        <div class='col-12'>
             <div class="progress">
                 <div class="progress-bar bg-success" id='progressBar' role="progressbar"></div>
             </div>
@@ -46,7 +50,6 @@
                 </div>
                 <ul class='list-group list-group-flush'>
                     <li class='list-group-item'>
-                        <code id='downloadRecordFName' class='d-none d-md-inline-block'></code>
                         <div class='btn-group float-right' role='group'>
                             <button id='cut' type='button' class='btn btn-secondary btn-sm'>
                                 <span id='cutButtonText'>Klippa</span>
@@ -296,7 +299,6 @@
             if(typeof recordings[recIndex].rec_trim.start === 'number' && typeof recordings[recIndex].rec_trim.end == 'number'){
                 wavesurfer.addRegion({...recordings[recIndex].rec_trim,...{color: "rgba(243, 156, 18, 0.1)"}});
             }
-            downloadRecordFName.innerHTML = recordings[recIndex].fname;
         }
 
         function updateUI(){

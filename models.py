@@ -160,6 +160,7 @@ class Collection(BaseModel, db.Model):
     def printable_id(self):
         return "T-{:04d}".format(self.id)
 
+
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     name = db.Column(db.String, default=str(datetime.now().date()))
@@ -679,6 +680,7 @@ class Session(BaseModel, db.Model):
 
     is_secondarily_verified = db.Column(db.Boolean, default=False)
     is_verified = db.Column(db.Boolean, default=False)
+
     verified_by =  db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     secondarily_verified_by = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
 
@@ -695,6 +697,8 @@ class Verification(BaseModel, db.Model):
     recording_has_wrong_wording = db.Column(db.Boolean, default=False)
 
     comment = db.Column(db.String(255))
+
+    is_secondary = db.Column(db.Boolean, default=False)
 
 
 roles_users = db.Table('roles_users',

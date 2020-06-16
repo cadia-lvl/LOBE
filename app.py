@@ -24,7 +24,7 @@ from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm)
-from models import Collection, Recording, Role, Token, User, Session, Configuration, db
+from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
@@ -632,11 +632,14 @@ def verify_queue():
     '''
 
     unverified_sessions = Session.query.filter(Session.is_verified==False)
+    chosen_session = None
     if unverified_sessions.count() > 0:
+        print('have unverified')
         available_sessions = unverified_sessions.filter(
             or_(Session.verified_by==None, Session.verified_by==current_user.id))
 
         if available_sessions.count() > 0:
+            print('they are more th')
             # we have an available session
             chosen_session = available_sessions[0]
             chosen_session.verified_by = current_user.id
@@ -654,10 +657,11 @@ def verify_queue():
                 # we have an available session
                 chosen_session = available_sessions[0]
                 chosen_session.secondarily_verified_by = current_user.id
-        else:
-            # there are no sessions left to verify
-            flash("Engar lotur eftir til að greina", category="warning")
-            return redirect(url_for("verify_index"))
+
+    if chosen_session is None:
+        # there are no sessions left to verify
+        flash("Engar lotur eftir til að greina", category="warning")
+        return redirect(url_for("verify_index"))
 
     # Once queued, a session is assigned to a user id to avoid
     # double queueing
@@ -707,8 +711,34 @@ def verify_index():
     '''
     Home screen of the verifiers
     '''
+    verifiers = get_verifiers()
+    # get the number of verifications per user
+    for verifier in verifiers:
+        verifies = Verification.query.filter(
+            Verification.verified_by==verifier.id)
+        verifier.num_verifies = verifies.filter(
+            Verification.is_secondary==False).count()
+        verifier.num_secondary_verifies = verifies.count() - verifier.num_verifies
+    # order by combined score
+    verifiers = sorted(verifiers, key=lambda v: v.num_verifies+v.num_secondary_verifies)
+
+    collections=Collection.query.all()
+    # get number of verified sessions per collection
+    for collection in collections:
+        verified_sessions = Session.query.filter(
+            Session.collection_id==collection.id, Session.is_verified==True)
+        collection.num_verified = verified_sessions.filter(
+                Session.is_secondarily_verified==False).count()
+        collection.num_secondary_verified =\
+            verified_sessions.count() - collection.num_verified
+        if len(collection.sessions) > 0:
+            collection.verified_ratio =\
+                round(100 * collection.num_verified / len(collection.sessions), 3)
+            collection.secondary_verified_ratio =\
+                round(100 * collection.num_secondary_verified / len(collection.sessions), 3)
+
     return render_template('verify_index.jinja', verifiers=get_verifiers(),
-        collections=Collection.query.all())
+        collections=collections)
 
 
 

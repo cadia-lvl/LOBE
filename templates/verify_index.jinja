@@ -20,6 +20,7 @@
                         <th></th>
                         <th>Nafn</th>
                         <th>Fjöldi greininga</th>
+                        <th>Fjöldi 2. stigs greininga</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -32,7 +33,8 @@
                                     <span class='ml-2'><i class='fa fa-crown text-warning'></i></span>
                                 {% endif %}
                             </td>
-                            <td>1530 greiningar</td>
+                            <td>{{verifier.num_verifies}}</td>
+                            <td>{{verifier.num_secondary_verifies}}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -45,8 +47,9 @@
                 <thead>
                     <tr>
                         <th>Nafn</th>
-                        <th>Fjöldi upptaka</th>
-                        <th>Fjöldi greininga</th>
+                        <th>Fjöldi lota</th>
+                        <th>Fjöldi greindra lota</th>
+                        <th>Fjöldi tvígreindra lota</th>
                         <th>Framvinda</th>
                     </tr>
                 </thead>
@@ -54,12 +57,13 @@
                     {% for collection in collections %}
                         <tr>
                             <td>{{collection.printable_id}}</td>
-                            <td>11523 upptökur</td>
-                            <td>5032 greiningar</td>
+                            <td>{{collection.sessions | length}}</td>
+                            <td>{{collection.num_verified}}</td>
+                            <td>{{collection.num_secondary_verified}}</td>
                             <td>
                                 <div class="progress">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
-                                    <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.get_invalid_ratio(as_percent=True)}}%"></div>
+                                    <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.verified_ratio}}%"></div>
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.secondary_verified_ratio}}%"></div>
                                 </div>
                             </td>
                         </tr>

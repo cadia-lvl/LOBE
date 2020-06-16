@@ -40,8 +40,10 @@
             {{macros.btn_icon('info-circle','')}}
             </a>
             <div class="dropdown-menu">
-                <a class="dropdown-item" href="{{url_for('download_manual')}}">Leiðbeiningar</a>
                 <a class="dropdown-item" href="{{url_for('conf_list')}}">Stillingar</a>
+                <a class="dropdown-item" href="{{url_for('verify_index')}}">Greining</a>
+                <div class='dropdown-divider'></div>
+                <a class="dropdown-item" href="{{url_for('download_manual')}}">Leiðbeiningar</a>
             </div>
         </li>
     </ul>

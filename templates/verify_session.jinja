@@ -2,6 +2,7 @@
 {% block headscripts %}
     <script src="https://unpkg.com/wavesurfer.js"></script>
     <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.regions.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.timeline.min.js"></script>
 {% endblock %}
 {% block body %}
     <div class='row mb-3 mt-md-0 mt-n4'>
@@ -260,19 +261,21 @@
 
         playSelections = () => {
             const playlist = Object.values(wavesurfer.regions.list)
-            playlist.sort((a, b) => (a.start > b.start ? 1 : -1))
-            let curr = playlist.shift()
-            console.log(playlist);
-            wavesurfer.on('audioprocess', time => {
-                if (time > curr.end && playlist.length > 0) {
-                    curr = playlist.shift()
-                    curr.play()
-                } else if (time > curr.end && playlist.length === 0) {
-                    wavesurfer.stop()
-                }
-            })
+            playlist.sort((a, b) => (a.start > b.start) ? 1 : -1)
+            console.log(playlist)
 
-            wavesurfer.play(curr.start)
+            wavesurfer.on('pause', () => {
+              if(playlist.length > 1){
+                playlist.shift()
+                wavesurfer.play(playlist[0].start, playlist[0].end)
+                console.log("region start " + playlist[0].start)
+              } else if (playlist.length === 1) {
+                wavesurfer.stop()
+              }
+               })
+
+               wavesurfer.play(playlist[0].start, playlist[0].end);
+
         }
 
 

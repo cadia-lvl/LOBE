@@ -248,7 +248,7 @@ def resolve_order(object, sort_by, order='desc'):
         return ordering.desc()
 
 def get_verifiers():
-    return [u for u in User.query.all() if u.roles[0].name == 'Greinir']
+    return [u for u in User.query.all() if any(r.name == 'Greinir' for r in u.roles)]
 
 def insert_trims(trims, verification_id):
     '''

@@ -578,14 +578,6 @@ class Recording(BaseModel, db.Model):
     def reset_trim(self):
         self.set_trim(None, None)
 
-    @property
-    def is_verified(self):
-        return len(self.verifications) == 2
-
-    @property
-    def is_half_verified(self):
-        return len(self.verifications) == 1
-
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     original_fname = db.Column(db.String, default='Unknown')
@@ -621,6 +613,9 @@ class Recording(BaseModel, db.Model):
 
     verifications = db.relationship("Verification", lazy='select',
             backref='recording', cascade='all, delete, delete-orphan')
+
+    is_verified = db.Column(db.Boolean, default=False)
+    is_secondarily_verified = db.Column(db.Boolean, default=False)
 
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'

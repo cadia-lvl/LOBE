@@ -104,7 +104,13 @@ ul#quality li input[type=checkbox] {
 ul#quality li input[type=checkbox]:checked + label {
     background: #666;
 }
-textarea.form-control {
-    background-color:#000;
-    color:#999;
+
+textarea#comment, textarea#comment:focus {
+    background-color:#000 !important;
+    color:#999 !important;
+}
+
+textarea#comment:disabled {
+    background-color:#444;
+    color:#ccc;
 }

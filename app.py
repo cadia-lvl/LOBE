@@ -11,7 +11,7 @@ from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
                             current_user, roles_accepted)
 from flask_security.utils import hash_password
 from flask_executor import Executor
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
                 delete_session_db, delete_token_db, save_recording_session, resolve_order,
                 get_verifiers, insert_trims)
@@ -655,20 +655,20 @@ def verify_queue():
 
     unverified_sessions = Session.query.filter(Session.is_verified==False)
     chosen_session = None
+    is_secondary = False
     if unverified_sessions.count() > 0:
-        print('have unverified')
         available_sessions = unverified_sessions.filter(
             or_(Session.verified_by==None, Session.verified_by==current_user.id))
 
         if available_sessions.count() > 0:
-            print('they are more th')
             # we have an available session
             chosen_session = available_sessions[0]
             chosen_session.verified_by = current_user.id
 
     else:
         # check if we can secondarily verify any sesssions
-        secondarily_unverified_sessions = Session.query.filter(Session.is_secondarily_verified==False)
+        secondarily_unverified_sessions = Session.query.filter(and_(
+            Session.is_secondarily_verified==False, Session.verified_by!=current_user.id))
 
         if secondarily_unverified_sessions.count() > 0:
             available_sessions = secondarily_unverified_sessions.filter(
@@ -678,6 +678,7 @@ def verify_queue():
             if available_sessions.count() > 0:
                 # we have an available session
                 chosen_session = available_sessions[0]
+                is_secondary = True
                 chosen_session.secondarily_verified_by = current_user.id
 
     if chosen_session is None:
@@ -688,34 +689,42 @@ def verify_queue():
     # Once queued, a session is assigned to a user id to avoid
     # double queueing
     db.session.commit()
-    return redirect(url_for('verify_session', id=chosen_session.id))
+    url = url_for('verify_session', id=chosen_session.id)
+    if is_secondary:
+        url = url + '?is_secondary={}'.format(is_secondary)
+    return redirect(url)
+
 
 
 @app.route('/sessions/<int:id>/verify/')
 @login_required
 def verify_session(id):
+    is_secondary = bool(request.args.get('is_secondary', False))
     form = SessionVerifyForm()
     session = Session.query.get(id)
     session_dict = {
         'id': session.id,
         'collection_id': session.collection.id,
+        'is_secondary': is_secondary,
         'recordings': [],
     }
     for recording in session.recordings:
-        session_dict['recordings'].append({
-            'rec_id': recording.id,
-            'rec_fname': recording.fname,
-            'rec_url': recording.get_download_url(),
-            'rec_trim': {'start': recording.start, 'end': recording.end},
-            'rec_num_verifies': len(recording.verifications),
-            'text': recording.token.text,
-            'text_file_id': recording.token.fname,
-            'text_url': recording.token.get_url(),
-            'token_id': recording.token.id})
+        if (not recording.is_verified and not is_secondary) \
+            or (not recording.is_secondarily_verified and is_secondary):
+            session_dict['recordings'].append({
+                'rec_id': recording.id,
+                'rec_fname': recording.fname,
+                'rec_url': recording.get_download_url(),
+                'rec_trim': {'start': recording.start, 'end': recording.end},
+                'rec_num_verifies': len(recording.verifications),
+                'text': recording.token.text,
+                'text_file_id': recording.token.fname,
+                'text_url': recording.token.get_url(),
+                'token_id': recording.token.id})
 
     return render_template('verify_session.jinja', session=session, form=form,
-        delete_form=DeleteVerificationForm(),
-        json_session=json.dumps(session_dict))
+        delete_form=DeleteVerificationForm(), json_session=json.dumps(session_dict),
+        is_secondary=is_secondary)
 
 
 @app.route('/sessions/<int:id>/verify/verification/', methods=['POST'])
@@ -724,17 +733,37 @@ def verification(id):
     form = SessionVerifyForm(request.form)
     try:
         if form.validate():
+            is_secondary = int(form.data['num_verifies']) > 0
             verification = Verification()
             verification.set_quality(form.data['quality'])
             verification.comment = form.data['comment']
             verification.recording_id = int(form.data['recording'])
-            verification.is_secondary = int(form.data['num_verifies']) > 0
+            verification.is_secondary = is_secondary
             verification.verified_by = int(form.data['verified_by'])
             db.session.add(verification)
             db.session.flush()
             verification_id = verification.id
             db.session.commit()
+            recording = Recording.query.get(int(form.data['recording']))
+            if is_secondary:
+                recording.is_secondarily_verified = True
+            else:
+                recording.is_verified = True
+            db.session.commit()
+
             insert_trims(form.data['cut'], verification_id)
+
+            # check if this was the final recording to be verified and update
+            session = Session.query.get(id)
+            recordings = Recording.query.filter(Recording.session_id==session.id)
+            num_recordings = recordings.count()
+            if is_secondary and num_recordings ==\
+                recordings.filter(Recording.is_secondarily_verified==True).count():
+                session.is_secondarily_verified = True
+                db.session.commit()
+            elif num_recordings == recordings.filter(Recording.is_verified==True).count():
+                session.is_verified = True
+                db.session.commit()
             return Response(str(verification_id), status=200)
         else:
             errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
@@ -755,10 +784,6 @@ def delete_verification():
         errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
         return Response(errorMessage, status=500)
 
-
-
-
-
 @app.route('/verification', methods=['GET'])
 @login_required
 def verify_index():
@@ -773,9 +798,9 @@ def verify_index():
         verifier.num_verifies = verifies.filter(
             Verification.is_secondary==False).count()
         verifier.num_secondary_verifies = verifies.count() - verifier.num_verifies
-    # order by combined score
-    verifiers = sorted(verifiers, key=lambda v: v.num_verifies+v.num_secondary_verifies)
 
+    # order by combined score
+    verifiers = sorted(list(verifiers), key=lambda v: -v.num_verifies)
     collections=Collection.query.all()
     # get number of verified sessions per collection
     for collection in collections:
@@ -791,7 +816,7 @@ def verify_index():
             collection.secondary_verified_ratio =\
                 round(100 * collection.num_secondary_verified / len(collection.sessions), 3)
 
-    return render_template('verify_index.jinja', verifiers=get_verifiers(),
+    return render_template('verify_index.jinja', verifiers=verifiers,
         collections=collections)
 
 

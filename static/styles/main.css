@@ -81,6 +81,7 @@ video{
 ul#quality {
     display: block;
     padding: 0;
+    margin-bottom: 0;
 }
 ul#quality li {
     display: inline;

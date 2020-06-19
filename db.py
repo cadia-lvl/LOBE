@@ -8,7 +8,7 @@ from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from functools import partialmethod
 from flask import flash
-from models import Collection, Recording, Session, Token, User, db
+from models import Collection, Recording, Session, Token, Trim, User, db
 
 def create_tokens(collection_id, files, is_g2p):
     tokens = []
@@ -247,6 +247,21 @@ def resolve_order(object, sort_by, order='desc'):
     else:
         return ordering.desc()
 
-
 def get_verifiers():
     return [u for u in User.query.all() if u.roles[0].name == 'Greinir']
+
+def insert_trims(trims, verification_id):
+    '''
+    trims is a list of dictionaries sorted in time order, e.g.:
+    [{"start":0.6633760683760684,"end":0.9950641025641026},
+        {"start":1.1801923076923078,"end":1.6121581196581196}]
+    '''
+    trims = json.loads(trims)
+    for idx, trim_data in enumerate(trims):
+        trim = Trim()
+        trim.start = trim_data['start']
+        trim.end = trim_data['end']
+        trim.index = idx
+        trim.verification_id = verification_id
+        db.session.add(trim)
+    db.session.commit()

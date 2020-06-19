@@ -13,11 +13,12 @@ from flask_security.utils import hash_password
 from flask_executor import Executor
 from sqlalchemy import or_
 from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
-                delete_session_db, delete_token_db, save_recording_session, resolve_order, get_verifiers)
+                delete_session_db, delete_token_db, save_recording_session, resolve_order,
+                get_verifiers, insert_trims)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
-                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm)
+                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
@@ -706,12 +707,14 @@ def verify_session(id):
             'rec_fname': recording.fname,
             'rec_url': recording.get_download_url(),
             'rec_trim': {'start': recording.start, 'end': recording.end},
+            'rec_num_verifies': len(recording.verifications),
             'text': recording.token.text,
             'text_file_id': recording.token.fname,
             'text_url': recording.token.get_url(),
             'token_id': recording.token.id})
 
     return render_template('verify_session.jinja', session=session, form=form,
+        delete_form=DeleteVerificationForm(),
         json_session=json.dumps(session_dict))
 
 
@@ -719,12 +722,42 @@ def verify_session(id):
 @login_required
 def verification(id):
     form = SessionVerifyForm(request.form)
+    try:
+        if form.validate():
+            verification = Verification()
+            verification.set_quality(form.data['quality'])
+            verification.comment = form.data['comment']
+            verification.recording_id = int(form.data['recording'])
+            verification.is_secondary = int(form.data['num_verifies']) > 0
+            verification.verified_by = int(form.data['verified_by'])
+            db.session.add(verification)
+            db.session.flush()
+            verification_id = verification.id
+            db.session.commit()
+            insert_trims(form.data['cut'], verification_id)
+            return Response(str(verification_id), status=200)
+        else:
+            errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
+            return Response(errorMessage, status=500)
+    except Exception as error:
+        app.logger.error('Error creating a verification : {}\n{}'.format(error, traceback.format_exc()))
+
+@app.route('/verifications/delete', methods=['POST'])
+@login_required
+def delete_verification():
+    form = DeleteVerificationForm(request.form)
     if form.validate():
-        # Save validation
-        return Response("ok", status=200)
+        verification = Verification.query.get(int(form.data['verification_id']))
+        db.session.delete(verification)
+        db.session.commit()
+        return Response(status=200)
     else:
         errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
         return Response(errorMessage, status=500)
+
+
+
+
 
 @app.route('/verification', methods=['GET'])
 @login_required

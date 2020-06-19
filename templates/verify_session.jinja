@@ -5,10 +5,9 @@
     <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.timeline.min.js"></script>
 {% endblock %}
 {% block body %}
-    <div class='row mb-3 mt-md-0 mt-n4'>
+    <div class='row mb-3 mt-n3'>
         <div class='col-12'>
-            <h3 class='font-weight-bold'>Greining</h3>
-            <h4 class='font-weight-bold'>Lota: {{session.get_printable_id()}}</h4>
+            <h4 class='font-weight-bold'>Greining Lotu: {{session.get_printable_id()}}</h4>
         </div>
         <div class='col-12'>
             <div class="progress">
@@ -22,6 +21,16 @@
                 <i class='fa fa-arrow-left mr-1 ml-1'></i>
                 <span class='font-weight-bold mr-1'>Fyrri</span>
             </button>
+            <div>
+                <span class='float-right rounded-pill bg-secondary text-success px-2 py-1'>
+                    <span id='currentIndexSpan'></span>
+                    /
+                    <span id='totalIndexSpan'></span>
+                </span>
+                <span id='hasSentSpan' class='mr-2 float-right rounded-pill bg-secondary text-success px-2 py-1' >
+                        Búið að greina
+                </span>
+            </div>
             <button id='next' class='btn btn-sm btn-secondary rounded-pill' type='button'>
                 <span class='font-weight-bold ml-1 mr-1'>Næsti</span>
                 <i class='fa fa-arrow-right mr-1'></i>
@@ -35,7 +44,7 @@
                 <div class="card-body d-flex flex-column justify-content-between">
                     <h3 class='card-text' id='tokenText'></h3>
                     <p class='card-text mb-0'>
-                        <span class='float-right rounded-pill bg-secondary text-success px-2 py-1'><span id='currentIndexSpan'></span>/<span id='totalIndexSpan'></span></span>
+
                     </p>
                 </div>
             </div>
@@ -50,6 +59,10 @@
                 </div>
                 <ul class='list-group list-group-flush'>
                     <li class='list-group-item'>
+                        <span id='listenAlertSpan' class='text-warning' style='font-size:12px; line-height:30px;'>
+                            <i class='fa fa-volume-up mr-1'></i>
+                            Hlustið og klippið til að greina
+                        </span>
                         <div class='btn-group float-right' role='group'>
                             <button id='cut' type='button' class='btn btn-secondary btn-sm'>
                                 <span id='cutButtonText'>Klippa</span>
@@ -68,26 +81,39 @@
 
     <form id="verificationForm" action="verification/" method="POST">
         {{ form.recording }}
-        <div class="row mt-3">
-            <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2">
-                {{ form.quality }}
-            </div>
-        </div>
+        {{ form.verified_by }}
+        {{ form.num_verifies }}
+        {{ form.cut }}
         <div class="row mt-1">
-            <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2">
-                <div class="form-group">
-                    <label>Athugasemd</label>
-                    {{ form.comment(class="form-control", rows=2) }}
-                </div>
+            <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12">
+                {{ form.quality }}
             </div>
         </div>
         <div class="row">
             <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2">
-                <button id="verify" class="btn btn-primary float-right">Senda</button>
+                {{ form.comment(class="form-control", rows=2, placeholder='Athugasemd...') }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12">
+                <button id="verify" class="btn btn-success btn-sm float-right mb-2">
+                    Staðfesta
+                    {{macros.btn_icon('check', 'l')}}
+                </button>
             </div>
         </div>
     </form>
-
+    <div class='row'>
+        <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12">
+            <form id='deleteVerificationForm' action="{{url_for('delete_verification')}}">
+                {{ delete_form.verification_id }}
+                <button type='button' id='deleteVerification' class='btn btn-danger btn-sm float-right'>
+                    Eyða greiningu
+                    {{macros.btn_icon('trash', 'l')}}
+                </button>
+            </form>
+        </div>
+    </div>
 {% endblock %}
 {% block modals %}
     <div class="modal fade" id='errorModal' tabindex="-1">
@@ -117,6 +143,33 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id='continueModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Greining lotu er lokið.</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Veljið forsíðu til að hætta greiningu eða halda áfram til að fara í næstu lotu</p>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{url_for('verify_index')}}" class='btn btn-secondary text-success'>
+                        Fara heim
+                        {{macros.btn_icon('home', 'l')}}
+                    </a>
+                    <a href="{{url_for('verify_queue')}}" class='btn btn-success'>
+                        Fara í næstu
+                        {{macros.btn_icon('arrow-right', 'l')}}
+                    </a>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 {% block scripts %}
     {{super()}}
@@ -129,23 +182,27 @@
         var recordings = session.recordings;
         var recIndex = 0;
         var numRecordings = recordings.length
-
+        var regionsUpdated = false;
         const tokenText = document.querySelector("#tokenText");
         const tokenIDSpan = document.querySelector("#tokenID");
         const tokenHref= document.querySelector("#tokenHref");
         const tokenfileIDSpan = document.querySelector("#tokenFileID");
         const progressBar = document.querySelector('#progressBar');
         const currentIndexSpan = document.querySelector('#currentIndexSpan');
+        const hasSentSpan = document.querySelector('#hasSentSpan');
+        const listenAlertSpan = document.querySelector('#listenAlertSpan');
         document.querySelector('#totalIndexSpan').innerHTML = numRecordings;
 
         //buttons
         const nextButton = document.querySelector('button#next');
         const prevButton = document.querySelector('button#prev');
+        const cutButton = document.querySelector('button#cut');
         const playButton = document.querySelector('button#play');
         const playButtonIcon = document.querySelector('#playButtonIcon');
 
         nextButton.addEventListener('click', nextAction);
         prevButton.addEventListener('click', prevAction);
+        cutButton.addEventListener('click', cutAction);
         playButton.addEventListener('click', playAction);
 
         let disableShortcuts = false;
@@ -162,36 +219,49 @@
             e.preventDefault();
             postForm();
         });
+        const deleteVerificationButton = document.querySelector('button#deleteVerification');
+        deleteVerificationButton.addEventListener('click', function(e){
+            e.preventDefault();
+            postDeleteForm();
+        })
 
         $(window).keyup(function (e) {
             if (disableShortcuts) return; // For example while inside text field
 
             if(e.keyCode === 37 || e.keyCode === 65){ // arrow-left or "a"
-                prevAction();
-            } else if(e.keyCode === 39 || e.keyCode === 68){ // arrow-right or "d"
-                nextAction();
-            } else if(e.keyCode === 83){ // "s"
-                playAction();
-            } else if(e.keyCode === 66){ // "b"
-                formAction("low");
-            } else if(e.keyCode === 72){ // "h"
-                formAction("high");
-            } else if(e.keyCode === 74){ // "j"
-                formAction("wrong");
-            } else if(e.keyCode === 75){ // "k"
-                formAction("glitch");
-            } else if(e.keyCode === 76){ // "l"
-                formAction("ok");
-            } else if(e.keyCode === 13 && !disableEnterAction) { // enter
-                postForm();
+                prevAction()
+            }
+            else if(e.keyCode === 83){ // "s"
+                    playAction();
+            }
+            else if(recordings[recIndex].hasPlayed && recordings[recIndex].hasTrim){
+                if(e.keyCode === 39 || e.keyCode === 68){ // arrow-right or "d"
+                    nextAction();
+                } else if(e.keyCode === 66){ // "b"
+                    formAction("low");
+                } else if(e.keyCode === 72){ // "h"
+                    formAction("high");
+                } else if(e.keyCode === 74){ // "j"
+                    formAction("wrong");
+                } else if(e.keyCode === 75){ // "k"
+                    formAction("glitch");
+                } else if(e.keyCode === 76){ // "l"
+                    formAction("ok");
+                } else if(e.keyCode === 13 && !disableEnterAction) { // enter
+                    postForm();
+                }
             }
         });
 
         function nextAction(){
             // Increment the sentence index and update the UI
-            if(recIndex < numRecordings - 1){
+            if(recIndex < numRecordings - 1 && recordings[recIndex].hasSent){
                 if(wavesurfer){wavesurfer.destroy()};
-                recIndex += 1; updateUI();}
+                recIndex += 1; updateUI();
+            } else{
+                // we have reached the end
+                $('#continueModal').modal('show');
+            }
         }
 
         function prevAction(){
@@ -202,10 +272,52 @@
             }
         }
 
+        function cutAction(){
+            if(Object.keys(wavesurfer.regions.list).length > 0){
+                if(regionsUpdated){
+                    const playList = getTrimPlayList();
+                    recordings[recIndex].cut = playList;
+                    recordings[recIndex].hasTrim = true;
+                    updateFormUI();
+                    updateProgressUI();
+                    regionsUpdated = false;
+                }
+                else{
+                    delete recordings[recIndex].cut;
+                    recordings[recIndex].hasTrim = false;
+                    updateFormUI();
+                    updateProgressUI();
+                    wavesurfer.clearRegions();
+                }
+            }
+            setCutUI();
+        }
+
+        function setCutUI(newRegion=false){
+            if(newRegion || (wavesurfer && areRegions())){
+                cutButton.disabled = false;
+                if(newRegion){
+                    cutButtonIcon.classList.remove('text-danger');
+                    cutButtonIcon.classList.add('text-success');
+                    cutButtonText.innerHTML = 'Klippa';
+                } else{
+                    cutButtonIcon.classList.remove('text-success');
+                    cutButtonIcon.classList.add('text-danger');
+                    cutButtonText.innerHTML = 'Afklippa';
+                }
+            } else{
+                cutButtonIcon.classList.remove('text-danger');
+                cutButtonIcon.classList.add('text-success');
+                cutButtonText.innerHTML = 'Klippa';
+                cutButton.disabled = true;
+            }
+        }
+
         function formAction(value) {
             // Check/uncheck form fields
             if (value == "ok") {
                 // If 'ok' deselect others
+
                 document.querySelectorAll("#quality input:not([value=ok])").forEach(
                     function(input){ input.checked = false; }
                 );
@@ -213,6 +325,7 @@
                 // Make sure 'ok' is not selected
                 document.querySelector("#quality input[value=ok]").checked = false;
             }
+
             let field = document.querySelector("#quality input[value=" + value + "]");
             field.checked = !field.checked;
         }
@@ -229,6 +342,15 @@
                 if(this.readyState === XMLHttpRequest.DONE) {
                     if(xhr.status == '200'){
                         // if we finish we go straight to the next recording
+                        recordings[recIndex].verificationId = xhr.responseText;
+                        recordings[recIndex].verdict = {};
+                        document.querySelectorAll("#quality input").forEach(
+                            function(input){
+                                recordings[recIndex].verdict[input.value] = input.checked;
+                            }
+                        )
+                        recordings[recIndex].verdictComment = commentField.value;
+                        recordings[recIndex].hasSent = true;
                         nextAction();
                     } else{
                         promptError("Villa koma upp:", xhr.responseText, "");
@@ -237,7 +359,46 @@
             };
 
             let form = document.querySelector("#verificationForm");
-            form.querySelector("input[name=recording]").value = session.recordings[recIndex].rec_id;
+            form.querySelector("input[name=recording]").value = recordings[recIndex].rec_id;
+            form.querySelector("input[name=verified_by]").value = {{current_user.id}};
+            form.querySelector("input[name=num_verifies]").value = recordings[recIndex].rec_num_verifies;
+            form.querySelector("input[name=cut]").value = generateCutFormInput()
+            let formData = new FormData(form);
+            xhr.open("POST", form.action, true);
+            xhr.send(formData);
+
+            function generateCutFormInput(){
+                let input = [];
+                for(var i=0; i<recordings[recIndex].cut.length; i++){
+                    input.push({
+                        'start': recordings[recIndex].cut[i].start,
+                        'end': recordings[recIndex].cut[i].end})
+                }
+                return JSON.stringify(input)
+            }
+        }
+
+        function postDeleteForm() {
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function(e) {
+                if(this.readyState === XMLHttpRequest.DONE) {
+                    if(xhr.status == '200'){
+                        // if we finish we go straight to the next recording
+                        delete recordings[recIndex].verificationId;
+                        delete recordings[recIndex].verdict;
+                        delete recordings[recIndex].verdictComment;
+                        delete recordings[recIndex].cut;
+                        recordings[recIndex].hasTrim = false;
+                        recordings[recIndex].hasSent = false;
+                        updateUI();
+                    } else{
+                        promptError("Villa koma upp:", xhr.responseText, "");
+                    }
+                }
+            };
+
+            let form = document.querySelector("#deleteVerificationForm");
+            form.querySelector("input[name=verification_id]").value = recordings[recIndex].verificationId;
             let formData = new FormData(form);
             xhr.open("POST", form.action, true);
             xhr.send(formData);
@@ -251,7 +412,6 @@
                 wavesurfer.pause();
             } else{
                 if(Object.keys(wavesurfer.regions.list).length > 0){
-                    console.log('play selectio')
                     playSelections();
                 } else{
                     wavesurfer.play();
@@ -260,24 +420,30 @@
         }
 
         playSelections = () => {
-            const playlist = Object.values(wavesurfer.regions.list)
-            playlist.sort((a, b) => (a.start > b.start) ? 1 : -1)
-            console.log(playlist)
-
+            const playlist = getTrimPlayList();
             wavesurfer.on('pause', () => {
               if(playlist.length > 1){
                 playlist.shift()
                 wavesurfer.play(playlist[0].start, playlist[0].end)
-                console.log("region start " + playlist[0].start)
               } else if (playlist.length === 1) {
                 wavesurfer.stop()
+                recordings[recIndex].hasPlayed = true;
+                updateFormUI();
+                updateProgressUI();
               }
                })
-
                wavesurfer.play(playlist[0].start, playlist[0].end);
-
         }
 
+        function updateFormUI(){
+            if(recordings[recIndex].hasTrim && recordings[recIndex].hasPlayed){
+                $("#verificationForm").css('display', 'block');
+                $("#verificationForm :input").prop("disabled", false);
+            } else{
+                $("#verificationForm").css('display', 'none');
+                $("#verificationForm :input").prop("disabled", true);
+            }
+        }
 
         function updateTokenUI(){
             tokenText.innerHTML = recordings[recIndex]['text'];
@@ -287,25 +453,69 @@
             var ratio = (recIndex + 1) / numRecordings * 100;
             progressBar.style.width = `${ratio.toString()}%`;
             currentIndexSpan.innerHTML = recIndex + 1;
+            if(recordings[recIndex].hasSent){
+                deleteVerificationButton.disabled = false;
+                deleteVerificationForm.style.display = 'block';
+                sendVerificationButton.disabled = true;
+                sendVerificationButton.style.display = 'none';
+                hasSentSpan.style.display = 'inline-block';
+            } else{
+                deleteVerificationButton.disabled = true;
+                deleteVerificationForm.style.display = 'none';
+                sendVerificationButton.disabled = false;
+                sendVerificationButton.style.display = 'block';
+                hasSentSpan.style.display = 'none';
+            }
+            if(recordings[recIndex].hasPlayed && recordings[recIndex].hasTrim){
+                listenAlertSpan.style.display = 'none';
+            } else{
+                listenAlertSpan.style.display = 'inline-block';
+            }
         }
 
         function updateRecordingUI(){
             if(typeof wavesurfer === 'object'){
                 wavesurfer.destroy();
             }
+            regionsUpdated = false;
             wavesurfer = createRecordWaveSurfer('#waveform', false, playButtonIcon);
+            wavesurfer.on('finish', function(){
+                recordings[recIndex].hasPlayed = true;
+                updateFormUI();
+                updateProgressUI();
+            });
+
             wavesurfer.load(recordings[recIndex].rec_url);
 
-            if(typeof recordings[recIndex].rec_trim.start === 'number' && typeof recordings[recIndex].rec_trim.end == 'number'){
-                wavesurfer.addRegion({...recordings[recIndex].rec_trim,...{color: "rgba(243, 156, 18, 0.1)"}});
+            if(recordings[recIndex].cut){
+                for(var i=0; i<recordings[recIndex].cut.length; i++){
+                    wavesurfer.addRegion(recordings[recIndex].cut[i]);
+                }
             }
+
+            wavesurfer.on('region-created', function(){
+                regionsUpdated = true;
+                setCutUI(newRegion=true);
+            })
+            wavesurfer.on('region-update-end', function(){
+                regionsUpdated = true;
+                setCutUI(newRegion=true);
+            })
+            wavesurfer.on('region-removed', function(){
+                regionsUpdated = true;
+                setCutUI(newRegion=true);
+            })
         }
 
         function updateUI(){
             updateTokenUI();
             updateProgressUI();
             updateRecordingUI();
+
             cleanForm();
+            updateFormUI();
+
+            setCutUI();
         }
 
         updateUI();
@@ -315,6 +525,16 @@
                 return wavesurfer.isPlaying();
             }
             return false;
+        }
+
+        function areRegions(){
+            return typeof wavesurfer === 'object' && Object.keys(wavesurfer.regions.list).length > 0;
+        }
+
+        function getTrimPlayList(){
+            const playlist = Object.values(wavesurfer.regions.list)
+            playlist.sort((a, b) => (a.start > b.start) ? 1 : -1)
+            return playlist;
         }
 
     </script>

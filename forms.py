@@ -129,6 +129,9 @@ class SessionEditForm(Form):
             field.data = field.data.id
 
 
+class DeleteVerificationForm(Form):
+    verification_id = HiddenField("verification_id", validators=[InputRequired()])
+
 class SessionVerifyForm(Form):
     """Form to verify a recording inside a session
         TODO: This should be a model form when the model object is complete
@@ -150,14 +153,16 @@ class SessionVerifyForm(Form):
     comment = StringField("Athugasemd", widget=widgets.TextArea())
 
     recording = HiddenField("recording", validators=[InputRequired()])
+    verified_by = HiddenField("verified_by", validators=[InputRequired()])
+    num_verifies = HiddenField("num_verifies", validators=[InputRequired()])
+    cut = HiddenField("cut", validators=[InputRequired()])
 
-    def quality_verdict(self, field):
+    def validate_quality(self, field):
         data = self.quality.data
         if self.LOW in data and self.HIGH in data:
             raise ValidationError("Upptakan getur ekki verið bæði of lág og of há")
         if self.OK in data and len(data) > 1:
             raise ValidationError("Upptakan getur ekki verið bæði góð og slæm")
-
 
 class ConfigurationForm(Form):
     name = TextField('Nafn stillinga')

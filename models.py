@@ -704,6 +704,24 @@ class Verification(BaseModel, db.Model):
     trims = db.relationship("Trim", lazy='select',
            backref='verification', cascade='all, delete, delete-orphan')
 
+    def set_quality(self, quality_field_data):
+        '''
+        quality_field_data is a list of string values with
+        the following correspondance::
+        * 'high'   -> self.volume_is_high
+        * 'low'    -> self.volume_is_low
+        * 'wrong   -> self.has_wrong_wording
+        * 'glitch' -> self.has_glitch
+        '''
+        for data in quality_field_data:
+            if data == 'high':
+                self.volume_is_high = True
+            elif data == 'low':
+                self.volume_is_low = True
+            elif data == 'wrong':
+                self.recording_has_wrong_wording = True
+            elif data == 'glitch':
+                self.recording_has_glitch = True
 
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'

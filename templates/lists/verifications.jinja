@@ -1,0 +1,25 @@
+{% extends "lists/_list.jinja" %}
+{% block title %}Greiningar{% endblock %}
+{% block total %}{{verifications.total}}{% endblock %}
+{% block table %}
+    {% if verifications.total > 0 %}
+        {% with verifications=verifications.items %}
+            {% include 'tables/verifications.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if verifications.total > 0 %}
+        {{macros.pagination(verifications, url_for('verification_list'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if verifications.total == 0 %}
+        {{macros.no_results("Engar greiningar",
+            "Til að sjá greiningar þarf að hefja greiningu",
+            url_for('verify_index'),
+            "Greiningarsíða")}}
+    {% endif %}
+{% endblock %}

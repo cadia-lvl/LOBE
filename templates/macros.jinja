@@ -77,6 +77,25 @@
         {% endif %}
 {% endmacro %}
 
+{% macro recording_verification(recording) %}
+    {% if recording.is_secondarily_verified %}
+        <span class='text-success'>
+            <i class='fa fa-certificate mr-2'></i>
+            Tvígreind
+        </span>
+    {% elif recording.is_verified %}
+        <span class='text-success'>
+            Eingreind
+        </span>
+    {% else %}
+        <span class='text-warning'>
+            <i class='fa fa-question-circle mr-2'></i>
+            Engin greining
+        </span>
+    {% endif %}
+{% endmacro %}
+
+
 {% macro pron_spans(prons) %}
     {% for pron in prons %}
         <span class='mr-1 mt-1 px-2 rounded bg-secondary' style="white-space: nowrap; display:inline-block;">{{pron | safe}}</span>

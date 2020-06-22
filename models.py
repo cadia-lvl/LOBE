@@ -699,6 +699,27 @@ class Verification(BaseModel, db.Model):
     trims = db.relationship("Trim", lazy='select',
            backref='verification', cascade='all, delete, delete-orphan')
 
+    @property
+    def url(self):
+        return url_for('verification', id=self.id)
+
+    @property
+    def printable_id(self):
+        return "G-{:06d}".format(self.id)
+
+    @property
+    def recording(self):
+        if self.recording_id is not None:
+            return Recording.query.get(self.recording_id)
+        return None
+
+    @property
+    def verifier(self):
+        if self.verified_by is not None:
+            return User.query.get(self.verified_by)
+        return None
+
+
     def set_quality(self, quality_field_data):
         '''
         quality_field_data is a list of string values with

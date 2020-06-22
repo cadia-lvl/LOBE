@@ -694,8 +694,6 @@ def verify_queue():
         url = url + '?is_secondary={}'.format(is_secondary)
     return redirect(url)
 
-
-
 @app.route('/sessions/<int:id>/verify/')
 @login_required
 def verify_session(id):
@@ -726,10 +724,31 @@ def verify_session(id):
         delete_form=DeleteVerificationForm(), json_session=json.dumps(session_dict),
         is_secondary=is_secondary)
 
+@app.route('/verifications', methods=['GET'])
+@login_required
+def verification_list():
+    page = int(request.args.get('page', 1))
 
-@app.route('/sessions/<int:id>/verify/verification/', methods=['POST'])
+    verifications = Verification.query.order_by(resolve_order(Verification,
+        request.args.get('sort_by', default='created_at'),
+        order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['VERIFICATION_PAGINATION'])
+
+    return render_template('lists/verifications.jinja', verifications=verifications,
+        section='verification')
+
+@app.route('/verifications/<int:id>/')
 @login_required
 def verification(id):
+    verification = Verification.query.get(id)
+    return render_template('verification.jinja', verification=verification,
+        section='verification')
+
+
+
+@app.route('/verifications/create/', methods=['POST'])
+@login_required
+def create_verification(id):
     form = SessionVerifyForm(request.form)
     try:
         if form.validate():

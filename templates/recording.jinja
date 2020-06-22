@@ -105,7 +105,7 @@
 {% endblock %}
 {% block scripts %}
     {{super()}}
-    <script src="https://unpkg.com/wavesurfer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/3.3.3/wavesurfer.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.regions.min.js"></script>
     <script src='{{url_for("static", filename="js/surf.js")}}'></script>
     <script>

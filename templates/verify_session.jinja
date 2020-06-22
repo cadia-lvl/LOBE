@@ -1,6 +1,6 @@
 {% extends "__base.jinja" %}
 {% block headscripts %}
-    <script src="https://unpkg.com/wavesurfer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/3.3.3/wavesurfer.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.regions.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.timeline.min.js"></script>
 {% endblock %}
@@ -503,13 +503,18 @@
                 }
             }
 
-            wavesurfer.on('region-created', function(){
+            wavesurfer.on('region-created', function(region){
                 regionsUpdated = true;
                 setCutUI(newRegion=true);
             })
-            wavesurfer.on('region-update-end', function(){
-                regionsUpdated = true;
-                setCutUI(newRegion=true);
+            wavesurfer.on('region-update-end', function(region){
+                if(!regionsOverlap()){
+                    regionsUpdated = true;
+                    setCutUI(newRegion=true);
+                } else{
+                    // delete this region
+                    region.remove();
+                }
             })
             wavesurfer.on('region-removed', function(){
                 regionsUpdated = true;
@@ -545,6 +550,17 @@
             const playlist = Object.values(wavesurfer.regions.list)
             playlist.sort((a, b) => (a.start > b.start) ? 1 : -1)
             return playlist;
+        }
+
+        function regionsOverlap(){
+            //check if any current regions overlap
+            const regions = getTrimPlayList();
+            for(var i=0; i<regions.length-1; i++){
+                if(regions[i].end > regions[i+1].start){
+                    return true;
+                }
+            }
+            return false;
         }
 
     </script>

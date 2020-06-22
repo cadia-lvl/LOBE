@@ -201,12 +201,14 @@
         const nextButton = document.querySelector('button#next');
         const prevButton = document.querySelector('button#prev');
         const cutButton = document.querySelector('button#cut');
+        const downloadButton = document.querySelector('button#download');
         const playButton = document.querySelector('button#play');
         const playButtonIcon = document.querySelector('#playButtonIcon');
 
         nextButton.addEventListener('click', nextAction);
         prevButton.addEventListener('click', prevAction);
         cutButton.addEventListener('click', cutAction);
+        downloadButton.addEventListener('click', downloadAction);
         playButton.addEventListener('click', playAction);
 
         let disableShortcuts = false;
@@ -297,6 +299,16 @@
                 }
             }
             setCutUI();
+        }
+
+        function downloadAction(){
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = recordings[recIndex].rec_url;
+            a.download = recordings[recIndex].rec_fname;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         function setCutUI(newRegion=false){

@@ -719,6 +719,10 @@ class Verification(BaseModel, db.Model):
             return User.query.get(self.verified_by)
         return None
 
+    @property
+    def recording_is_good(self):
+        return not any([self.recording_has_glitch, self.recording_has_wrong_wording,
+            self.volume_is_high, self.volume_is_low])
 
     def set_quality(self, quality_field_data):
         '''

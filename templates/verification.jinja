@@ -2,7 +2,131 @@
 {% block body %}
     <div class='row'>
         <div class='col-12'>
-            <h1 class='font-weight-bold'>Greining : {{verification.printable_id}}</h1>
+            <h3 class='font-weight-bold'>Greining : {{verification.printable_id}}</h3>
+            <p class='font-weight-bold mb-0'>Greint af {{verification.verifier.name}}</p>
+            <p>{{verification.created_at | datetime(format='low')}}</p>
+            <a href="{{verification.recording.get_url()}}" class='btn btn-sm btn-secondary text-success float-right'>
+                Upptaka
+                {{macros.btn_icon('arrow-right', 'l')}}
+            </a>
+            <a class='btn btn-sm btn-secondary text-warning float-right mr-2'>
+                Breyta
+                {{macros.btn_icon('edit', 'l')}}
+            </a>
+            <a class='btn btn-sm btn-secondary text-danger float-right mr-2'>
+                Eyða
+                {{macros.btn_icon('trash', 'l')}}
+            </a>
+
         </div>
     </div>
+    <div class='row'>
+        <div class='col-12'>
+            {% if verification.recording_is_good %}
+                <p class='font-weight-bold text-success'>
+                    Upptaka er góð
+                    <i class='fa fa-thumbs-up ml-2'></i>
+                </p>
+            {% else %}
+                <p class='font-weight-bold text-danger'>
+                    Upptaka er slæm
+                    <i class='fa fa-thumbs-down ml-2'></i>
+                </p>
+            {% endif %}
+        </div>
+        <div class='col-md-6 col-12'>
+            <span>Hljóðstyrkur:</span>
+            <span class='font-weight-bold float-right'>
+                {% if verification.volume_is_low %}
+                    <span class='text-danger'>of hár</span>
+                {% elif verification.volume_is_high %}
+                    <span class='text-danger'>of lár</span>
+                {% else %}
+                    <span class='text-success'>réttur</span>
+                {% endif %}
+            </span>
+        </div>
+        <div class='col-md-6 col-12'>
+            <span>Texti lesinn:</span>
+            <span class='font-weight-bold float-right'>
+                {% if verification.recording_has_wrong_wording %}
+                    <span class='text-danger'>rangt lesinn</span>
+                {% else %}
+                    <span class='text-success'>rétt lesinn</span>
+                {% endif %}
+            </span>
+        </div>
+        <div class='col-md-6 col-12'>
+            <span>Gæði upptöku:</span>
+            <span class='font-weight-bold float-right'>
+                {% if verification.recording_has_glitch %}
+                    <span class='text-danger'>villa í upptöku</span>
+                {% else %}
+                    <span class='text-success'>upptaka er góð</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <div id='recordingCard' class='card mt-2'>
+                <div class='card-body'>
+                    <div id="waveform"></div>
+                </div>
+                <ul class='list-group list-group-flush'>
+                    <li class='list-group-item'>
+                        <code>{{verification.recording.fname}}</code>
+                        <div class='btn-group float-right' role='group'>
+                            <button id='play' type='button' class='btn btn-secondary btn-sm'>
+                                <i id='playButtonIcon' class='fa fa-play'></i>
+                            </button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/3.3.3/wavesurfer.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.regions.min.js"></script>
+    <script src='{{url_for("static", filename="js/surf.js")}}'></script>
+    <script>
+        const playButtonIcon = document.querySelector('#playButtonIcon');
+        let wavesurfer = createSimpleWaveSurfer('#waveform', false, playButtonIcon);
+        wavesurfer.load("{{verification.recording.get_download_url()}}");
+        {% for trim in verification.trims %}
+            wavesurfer.addRegion({
+                color: "rgba(243, 156, 18, 0.1)",
+                start: {{trim.start}},
+                end: {{trim.end}}});
+        {% endfor %}
+
+        document.querySelector('button#play').addEventListener('click', function(){
+            playSelections();
+        });
+
+        playSelections = () => {
+            const playlist = getTrimPlayList();
+            wavesurfer.on('pause', () => {
+              if(playlist.length > 1){
+                playlist.shift()
+                wavesurfer.play(playlist[0].start, playlist[0].end)
+              } else if (playlist.length === 1) {
+                wavesurfer.stop()
+              }
+            })
+            wavesurfer.play(playlist[0].start, playlist[0].end);
+        }
+
+        function getTrimPlayList(){
+            const playlist = Object.values(wavesurfer.regions.list)
+            playlist.sort((a, b) => (a.start > b.start) ? 1 : -1)
+            return playlist;
+        }
+
+    </script>
+
 {% endblock %}

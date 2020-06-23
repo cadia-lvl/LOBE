@@ -746,7 +746,7 @@ def verification(id):
 
 
 
-@app.route('/verifications/create/', methods=['POST'])
+@app.route('/verifications/create/<int:id>/', methods=['POST'])
 @login_required
 def create_verification(id):
     form = SessionVerifyForm(request.form)

@@ -748,7 +748,7 @@ def verification(id):
 
 @app.route('/verifications/create/', methods=['POST'])
 @login_required
-def create_verification(id):
+def create_verification():
     form = SessionVerifyForm(request.form)
     try:
         if form.validate():
@@ -773,7 +773,7 @@ def create_verification(id):
             insert_trims(form.data['cut'], verification_id)
 
             # check if this was the final recording to be verified and update
-            session = Session.query.get(id)
+            session = Session.query.get(int(form.data['session']))
             recordings = Recording.query.filter(Recording.session_id==session.id)
             num_recordings = recordings.count()
             if is_secondary and num_recordings ==\
@@ -816,19 +816,20 @@ def verify_index():
             Verification.verified_by==verifier.id)
         verifier.num_verifies = verifies.filter(
             Verification.is_secondary==False).count()
-        verifier.num_secondary_verifies = verifies.count() - verifier.num_verifies
-
+        verifier.num_secondary_verifies = verifies.filter(
+            Verification.is_secondary==True).count()
     # order by combined score
-    verifiers = sorted(list(verifiers), key=lambda v: -v.num_verifies)
+    verifiers = sorted(list(verifiers), key=lambda v: \
+        -(v.num_verifies + v.num_secondary_verifies))
+
     collections=Collection.query.all()
     # get number of verified sessions per collection
     for collection in collections:
         verified_sessions = Session.query.filter(
             Session.collection_id==collection.id, Session.is_verified==True)
-        collection.num_verified = verified_sessions.filter(
-                Session.is_secondarily_verified==False).count()
+        collection.num_verified = verified_sessions.count()
         collection.num_secondary_verified =\
-            verified_sessions.count() - collection.num_verified
+            verified_sessions.filter(Session.is_secondarily_verified==True).count()
         if len(collection.sessions) > 0:
             collection.verified_ratio =\
                 round(100 * collection.num_verified / len(collection.sessions), 3)
@@ -945,6 +946,18 @@ def user_toggle_admin(id):
         user_datastore.add_role_to_user(ds_user, 'admin')
         user_datastore.remove_role_from_user(ds_user, 'Notandi')
         flash("Notandi er nú vefstjóri", category='success')
+    db.session.commit()
+    return redirect(url_for('user', id=id))
+
+
+@app.route('/users/<int:id>/make_verifier/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def user_make_verifier(id):
+    user = User.query.get(id)
+    ds_user = user_datastore.get_user(id)
+    user_datastore.add_role_to_user(ds_user, 'Greinir')
+    flash("Notandi er nú greinandi", category='success')
     db.session.commit()
     return redirect(url_for('user', id=id))
 

@@ -154,6 +154,7 @@ class SessionVerifyForm(Form):
 
     recording = HiddenField("recording", validators=[InputRequired()])
     verified_by = HiddenField("verified_by", validators=[InputRequired()])
+    session = HiddenField('session', validators=[InputRequired()])
     num_verifies = HiddenField("num_verifies", validators=[InputRequired()])
     cut = HiddenField("cut", validators=[InputRequired()])
 

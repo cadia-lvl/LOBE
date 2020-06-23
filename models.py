@@ -779,7 +779,8 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary=roles_users,
         backref=db.backref('users', lazy='dynamic'))
 
-    assigned_collections = db.relationship("Collection", cascade='all, delete, delete-orphan')
+    assigned_collections = db.relationship("Collection",
+        cascade='all, delete, delete-orphan')
     recordings = db.relationship("Recording")
 
     def get_url(self):
@@ -793,6 +794,9 @@ class User(db.Model, UserMixin):
 
     def is_admin(self):
         return len(self.roles) > 0 and self.roles[0].id == ADMIN_ROLE_ID
+
+    def is_verifier(self):
+        return any(r.name == 'Greinir' for r in self.roles)
 
     def __str__(self):
         if type(self.name) != str:

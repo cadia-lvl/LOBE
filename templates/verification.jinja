@@ -34,15 +34,28 @@
                 </p>
             {% endif %}
         </div>
+        <div class='col-12'>
+            <p>
+                <span class='font-weight-bold mr-2'>Athugasemd:</span>
+                {% if verification.comment %}
+                    {{verification.comment}}
+                {% else %}
+                    Engin athugasemd
+                {% endif %}
+            </p>
+        </div>
         <div class='col-md-6 col-12'>
             <span>Hljóðstyrkur:</span>
             <span class='font-weight-bold float-right'>
                 {% if verification.volume_is_low %}
-                    <span class='text-danger'>of hár</span>
+                    of hár
+                    <i class='fa fa-times text-danger ml-2'></i>
                 {% elif verification.volume_is_high %}
-                    <span class='text-danger'>of lár</span>
+                    of lár
+                    <i class='fa fa-times text-danger ml-2'></i>
                 {% else %}
-                    <span class='text-success'>réttur</span>
+                    réttur
+                    <i class='fa fa-check text-success ml-2'></i>
                 {% endif %}
             </span>
         </div>
@@ -50,9 +63,11 @@
             <span>Texti lesinn:</span>
             <span class='font-weight-bold float-right'>
                 {% if verification.recording_has_wrong_wording %}
-                    <span class='text-danger'>rangt lesinn</span>
+                    rangt lesinn
+                    <i class='fa fa-times text-danger ml-2'></i>
                 {% else %}
-                    <span class='text-success'>rétt lesinn</span>
+                    rétt lesinn
+                    <i class='fa fa-check text-success ml-2'></i>
                 {% endif %}
             </span>
         </div>
@@ -60,9 +75,11 @@
             <span>Gæði upptöku:</span>
             <span class='font-weight-bold float-right'>
                 {% if verification.recording_has_glitch %}
-                    <span class='text-danger'>villa í upptöku</span>
+                    villa í upptöku
+                    <i class='fa fa-times text-danger ml-2'></i>
                 {% else %}
-                    <span class='text-success'>upptaka er góð</span>
+                    upptaka er góð
+                    <i class='fa fa-check text-success ml-2'></i>
                 {% endif %}
             </span>
         </div>

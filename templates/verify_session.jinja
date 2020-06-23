@@ -88,6 +88,7 @@
         {{ form.verified_by }}
         {{ form.num_verifies }}
         {{ form.cut }}
+        {{ form.session}}
         <div class="row mt-1">
             <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12">
                 {{ form.quality }}
@@ -380,7 +381,8 @@
             form.querySelector("input[name=recording]").value = recordings[recIndex].rec_id;
             form.querySelector("input[name=verified_by]").value = {{current_user.id}};
             form.querySelector("input[name=num_verifies]").value = recordings[recIndex].rec_num_verifies;
-            form.querySelector("input[name=cut]").value = generateCutFormInput()
+            form.querySelector("input[name=cut]").value = generateCutFormInput();
+            form.querySelector("input[name=session]").value = session.id;
             let formData = new FormData(form);
             xhr.open("POST", form.action, true);
             xhr.send(formData);

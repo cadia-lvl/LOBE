@@ -216,6 +216,15 @@
         let disableEnterAction = false;
 
         const qualitySelectors = document.querySelectorAll("#quality input");
+        const qualityLabels = document.querySelectorAll("#quality label");
+        qualityLabels.forEach(function(checkbox) {
+            checkbox.addEventListener('click', function(e) {
+                e.preventDefault();
+                let value = document.getElementById(e.target.htmlFor).value
+                formAction(value);
+            });
+        });
+
         const commentField = document.querySelector("textarea#comment");
         commentField.addEventListener('focus', function() { disableShortcuts = true; });
         commentField.addEventListener('blur', function() { disableShortcuts = false; });
@@ -235,26 +244,29 @@
         $(window).keyup(function (e) {
             if (disableShortcuts) return; // For example while inside text field
 
-            if(e.keyCode === 37 || e.keyCode === 65){ // arrow-left or "a"
+            if(e.key === "q" || e.keyCode === 37){ // arrow-left or "a"
                 prevAction()
             }
-            else if(e.keyCode === 83){ // "s"
-                    playAction();
+            else if(e.key === "w"){
+                playAction();
+            }
+            else if(e.key === " "){
+                cutAction();
             }
             else if(recordings[recIndex].hasPlayed && recordings[recIndex].hasTrim){
-                if(e.keyCode === 39 || e.keyCode === 68){ // arrow-right or "d"
+                if(e.keyCode === 39 || e.key === "e"){ // arrow-right or "e"
                     nextAction();
-                } else if(e.keyCode === 66){ // "b"
+                } else if(e.key === "a"){
                     formAction("low");
-                } else if(e.keyCode === 72){ // "h"
+                } else if(e.key === "s"){
                     formAction("high");
-                } else if(e.keyCode === 74){ // "j"
+                } else if(e.key === "d"){
                     formAction("wrong");
-                } else if(e.keyCode === 75){ // "k"
+                } else if(e.key === "f"){
                     formAction("glitch");
-                } else if(e.keyCode === 76){ // "l"
+                } else if(e.key === "g"){
                     formAction("ok");
-                } else if(e.keyCode === 13 && !disableEnterAction) { // enter
+                } else if(e.key === "Enter" && !disableEnterAction) {
                     postForm();
                 }
             }
@@ -336,7 +348,6 @@
             // Check/uncheck form fields
             if (value == "ok") {
                 // If 'ok' deselect others
-
                 document.querySelectorAll("#quality input:not([value=ok])").forEach(
                     function(input){ input.checked = false; }
                 );

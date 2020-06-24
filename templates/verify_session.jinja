@@ -471,6 +471,9 @@
                 $("#verificationForm").css('display', 'block');
                 $("#verificationForm :input").prop("disabled", true);
                 commentField.value = recordings[recIndex].verdictComment;
+                qualitySelectors.forEach(function(checkbox) {
+                    checkbox.checked = recordings[recIndex].verdict[checkbox.value] || false;
+                });
             } else if(recordings[recIndex].hasTrim && recordings[recIndex].hasPlayed){
                 $("#verificationForm").css('display', 'block');
                 $("#verificationForm :input").prop("disabled", false);

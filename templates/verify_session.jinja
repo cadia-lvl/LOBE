@@ -83,7 +83,7 @@
         </div>
     </div>
 
-    <form id="verificationForm" action="{{url_for('create_verification', id=session.id)}}" method="POST">
+    <form id="verificationForm" action="{{url_for('create_verification')}}" method="POST">
         {{ form.recording }}
         {{ form.verified_by }}
         {{ form.num_verifies }}

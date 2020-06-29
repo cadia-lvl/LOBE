@@ -10,6 +10,7 @@ from flask import url_for
 from flask_security import RoleMixin, UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, select, MetaData
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug import secure_filename
 
@@ -155,6 +156,11 @@ class Collection(BaseModel, db.Model):
             return Configuration.query.get(self.configuration_id)
         return None
 
+    @property
+    def printable_id(self):
+        return "T-{:04d}".format(self.id)
+
+
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     name = db.Column(db.String, default=str(datetime.now().date()))
@@ -171,6 +177,7 @@ class Collection(BaseModel, db.Model):
     num_tokens = db.Column(db.Integer, default=0)
     num_recorded_tokens = db.Column(db.Integer, default=0)
     num_invalid_tokens = db.Column(db.Integer, default=0)
+
     has_zip = db.Column(db.Boolean, default=False)
     zip_token_count = db.Column(db.Integer, default=0)
     zip_created_at = db.Column(db.DateTime)
@@ -278,6 +285,7 @@ class Configuration(BaseModel, db.Model):
     too_low_threshold = db.Column(db.Float, default=-15)
     too_high_threshold = db.Column(db.Float, default=-4.5)
     too_high_frames = db.Column(db.Integer, default=10)
+
 
 class Token(BaseModel, db.Model):
     __tablename__ = 'Token'
@@ -395,6 +403,7 @@ class Token(BaseModel, db.Model):
 
     recordings = db.relationship("Recording", lazy='joined', backref='token')
 
+
 class Rating(BaseModel, db.Model):
     __tablename__ = 'Rating'
 
@@ -408,6 +417,7 @@ class Rating(BaseModel, db.Model):
     recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     value = db.Column(db.Boolean, default=False)
+
 
 class Recording(BaseModel, db.Model):
     __tablename__ = 'Recording'
@@ -601,6 +611,12 @@ class Recording(BaseModel, db.Model):
     marked_as_bad = db.Column(db.Boolean, default=False)
     has_video = db.Column(db.Boolean, default=False)
 
+    verifications = db.relationship("Verification", lazy='select',
+            backref='recording', cascade='all, delete, delete-orphan')
+
+    is_verified = db.Column(db.Boolean, default=False)
+    is_secondarily_verified = db.Column(db.Boolean, default=False)
+
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
 
@@ -656,7 +672,88 @@ class Session(BaseModel, db.Model):
     has_video = db.Column(db.Boolean, default=False)
     recordings = db.relationship("Recording", lazy='joined', backref='session', cascade='all, delete, delete-orphan')
 
-# Define models
+    is_secondarily_verified = db.Column(db.Boolean, default=False)
+    is_verified = db.Column(db.Boolean, default=False)
+
+    verified_by =  db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    secondarily_verified_by = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+
+
+class Verification(BaseModel, db.Model):
+    __tablename__ = 'Verification'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    verified_by = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
+
+    volume_is_low = db.Column(db.Boolean, default=False)
+    volume_is_high = db.Column(db.Boolean, default=False)
+    recording_has_glitch = db.Column(db.Boolean, default=False)
+    recording_has_wrong_wording = db.Column(db.Boolean, default=False)
+
+    comment = db.Column(db.String(255))
+
+    is_secondary = db.Column(db.Boolean, default=False)
+
+    trims = db.relationship("Trim", lazy='select',
+           backref='verification', cascade='all, delete, delete-orphan')
+
+    @property
+    def url(self):
+        return url_for('verification', id=self.id)
+
+    @property
+    def printable_id(self):
+        return "G-{:06d}".format(self.id)
+
+    @property
+    def recording(self):
+        if self.recording_id is not None:
+            return Recording.query.get(self.recording_id)
+        return None
+
+    @property
+    def verifier(self):
+        if self.verified_by is not None:
+            return User.query.get(self.verified_by)
+        return None
+
+    @property
+    def recording_is_good(self):
+        return not any([self.recording_has_glitch, self.recording_has_wrong_wording,
+            self.volume_is_high, self.volume_is_low])
+
+    def set_quality(self, quality_field_data):
+        '''
+        quality_field_data is a list of string values with
+        the following correspondance::
+        * 'high'   -> self.volume_is_high
+        * 'low'    -> self.volume_is_low
+        * 'wrong   -> self.has_wrong_wording
+        * 'glitch' -> self.has_glitch
+        '''
+        for data in quality_field_data:
+            if data == 'high':
+                self.volume_is_high = True
+            elif data == 'low':
+                self.volume_is_low = True
+            elif data == 'wrong':
+                self.recording_has_wrong_wording = True
+            elif data == 'glitch':
+                self.recording_has_glitch = True
+
+class Trim(BaseModel, db.Model):
+    __tablename__ = 'Trim'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    start = db.Column(db.Float)
+    end = db.Column(db.Float)
+    index = db.Column(db.Integer)
+    verification_id = db.Column(db.Integer, db.ForeignKey('Verification.id'))
+
+
 roles_users = db.Table('roles_users',
         db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
         db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
@@ -666,9 +763,8 @@ class Role(db.Model, RoleMixin):
     name = db.Column(db.String(80), unique=True)
     description = db.Column(db.String(255))
 
+
 class User(db.Model, UserMixin):
-    def get_url(self):
-        return url_for('user', id=self.id)
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255))
     email = db.Column(db.String(255), unique=True)
@@ -683,8 +779,12 @@ class User(db.Model, UserMixin):
     roles = db.relationship('Role', secondary=roles_users,
         backref=db.backref('users', lazy='dynamic'))
 
-    assigned_collections = db.relationship("Collection", cascade='all, delete, delete-orphan')
+    assigned_collections = db.relationship("Collection",
+        cascade='all, delete, delete-orphan')
     recordings = db.relationship("Recording")
+
+    def get_url(self):
+        return url_for('user', id=self.id)
 
     def get_printable_name(self):
         if self.name is not None:
@@ -694,6 +794,9 @@ class User(db.Model, UserMixin):
 
     def is_admin(self):
         return len(self.roles) > 0 and self.roles[0].id == ADMIN_ROLE_ID
+
+    def is_verifier(self):
+        return any(r.name == 'Greinir' for r in self.roles)
 
     def __str__(self):
         if type(self.name) != str:
@@ -712,3 +815,6 @@ class User(db.Model, UserMixin):
             'sex': self.sex,
             'age': self.age,
             'dialect': self.dialect}
+
+
+

@@ -7,14 +7,17 @@ LOBE is a recording client made specifically for TTS data collections. It suppor
     * python-psycopg2
     * libpq-dev
     * libffi-dev
+
 * Install Python requirements using `pip3 install -r requirements.txt`
+    * ffmpeg (or avconv)
+
 * Create a Postgres database. Relevant parameters need to be supplied to the flask via the setting files at `settings/development.py` or `settings/production.py`.
 * Spin up a simple development server using `./dev.sh`.
-
+    * Use `SEMI_PROD=True` to use `avconc` instead of `ffmpeg`
 # Creating a development database
 Start by creating a databese and a user:
 
-```bash
+```
 # Log in as postgres user
 sudo -u postgres -i
 # Create role for lobe and select password
@@ -22,11 +25,19 @@ createuser lobe --pwprompt
 # Create lobe database with the new user as owner
 createdb lobe --owner=lobe
 ```
-
 Remember to change settings/development.py accordingly. Replace all the values in \<BRACKETS\> with the postgres information you created just now.
 `SQLALCHEMY_DATABASE_URI = 'postgresql://<POSTGRES-USERNAME>:<POSTGRES-PWD>@localhost:5432/<DATABASENAME>'`
 
 Finally run `python manage.py db upgrade`
+
+To add defaults to the database run:
+
+```
+python manage.py add_default_roles
+python manage.py add_default_configuration
+```
+
+Create a super user with `python manage.py add_user`
 
 # Backing up & restoring
 1. Create a new database.

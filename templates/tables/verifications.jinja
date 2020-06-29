@@ -1,0 +1,32 @@
+<div class='table-responsive'>
+    <table class='table'>
+        <thead>
+            <th>
+                Dagsetning
+                {{macros.sort_th_a('created_at')}}
+            </th>
+            <th>
+                Auðkenni
+                {{macros.sort_th_a('id')}}
+            </th>
+            <th>
+                Upptaka
+                {{macros.sort_th_a('recording_id')}}
+            </th>
+            <th>
+                Greinandi
+                {{macros.sort_th_a('verified_by')}}
+            </th>
+        </thead>
+        <tbody>
+            {% for verification in verifications %}
+                <tr>
+                    <td>{{verification.created_at | datetime(format='low')}}</td>
+                    <td><a href={{verification.url}}>{{verification.printable_id}}</a></td>
+                    <td></a href={{verification.recording.get_url()}}>{{verification.recording.get_printable_id()}}</a></td>
+                    <td></a href={{verification.verifier.get_url()}}>{{verification.verifier.name}}</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

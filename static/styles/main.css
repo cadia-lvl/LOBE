@@ -76,3 +76,41 @@ video{
 .rounded-pill-left{
     border-radius: 50rem 0 0 50rem !important;
 }
+
+/* Verify form */
+ul#quality {
+    display: block;
+    padding: 0;
+    margin-bottom: 0;
+}
+ul#quality li {
+    display: inline;
+    margin-right: 10px;
+}
+ul#quality li:last-child {
+    float: right;
+    margin-right: 0;
+}
+ul#quality li label {
+    display: inline-block;
+    padding: 8px 12px;
+    background: #333;
+    border-radius: 5px;
+    font-size: .8em;
+}
+ul#quality li input[type=checkbox] {
+    display: none;
+}
+ul#quality li input[type=checkbox]:checked + label {
+    background: #666;
+}
+
+textarea#comment, textarea#comment:focus {
+    background-color:#000 !important;
+    color:#999 !important;
+}
+
+textarea#comment:disabled {
+    background-color:#444;
+    color:#ccc;
+}

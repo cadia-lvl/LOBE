@@ -83,11 +83,12 @@
         </div>
     </div>
 
-    <form id="verificationForm" action="verification/" method="POST">
+    <form id="verificationForm" action="{{url_for('create_verification', id=session.id)}}" method="POST">
         {{ form.recording }}
         {{ form.verified_by }}
         {{ form.num_verifies }}
         {{ form.cut }}
+        {{ form.session}}
         <div class="row mt-1">
             <div class="col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12">
                 {{ form.quality }}
@@ -201,18 +202,29 @@
         const nextButton = document.querySelector('button#next');
         const prevButton = document.querySelector('button#prev');
         const cutButton = document.querySelector('button#cut');
+        const downloadButton = document.querySelector('button#download');
         const playButton = document.querySelector('button#play');
         const playButtonIcon = document.querySelector('#playButtonIcon');
 
         nextButton.addEventListener('click', nextAction);
         prevButton.addEventListener('click', prevAction);
         cutButton.addEventListener('click', cutAction);
+        downloadButton.addEventListener('click', downloadAction);
         playButton.addEventListener('click', playAction);
 
         let disableShortcuts = false;
         let disableEnterAction = false;
 
         const qualitySelectors = document.querySelectorAll("#quality input");
+        const qualityLabels = document.querySelectorAll("#quality label");
+        qualityLabels.forEach(function(checkbox) {
+            checkbox.addEventListener('click', function(e) {
+                e.preventDefault();
+                let value = document.getElementById(e.target.htmlFor).value
+                formAction(value);
+            });
+        });
+
         const commentField = document.querySelector("textarea#comment");
         commentField.addEventListener('focus', function() { disableShortcuts = true; });
         commentField.addEventListener('blur', function() { disableShortcuts = false; });
@@ -232,26 +244,29 @@
         $(window).keyup(function (e) {
             if (disableShortcuts) return; // For example while inside text field
 
-            if(e.keyCode === 37 || e.keyCode === 65){ // arrow-left or "a"
+            if(e.key === "q" || e.keyCode === 37){ // arrow-left or "a"
                 prevAction()
             }
-            else if(e.keyCode === 83){ // "s"
-                    playAction();
+            else if(e.key === "w"){
+                playAction();
+            }
+            else if(e.key === " "){
+                cutAction();
             }
             else if(recordings[recIndex].hasPlayed && recordings[recIndex].hasTrim){
-                if(e.keyCode === 39 || e.keyCode === 68){ // arrow-right or "d"
+                if(e.keyCode === 39 || e.key === "e"){ // arrow-right or "e"
                     nextAction();
-                } else if(e.keyCode === 66){ // "b"
+                } else if(e.key === "a"){
                     formAction("low");
-                } else if(e.keyCode === 72){ // "h"
+                } else if(e.key === "s"){
                     formAction("high");
-                } else if(e.keyCode === 74){ // "j"
+                } else if(e.key === "d"){
                     formAction("wrong");
-                } else if(e.keyCode === 75){ // "k"
+                } else if(e.key === "f"){
                     formAction("glitch");
-                } else if(e.keyCode === 76){ // "l"
+                } else if(e.key === "g"){
                     formAction("ok");
-                } else if(e.keyCode === 13 && !disableEnterAction) { // enter
+                } else if(e.key === "Enter" && !disableEnterAction) {
                     postForm();
                 }
             }
@@ -299,6 +314,16 @@
             setCutUI();
         }
 
+        function downloadAction(){
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = recordings[recIndex].rec_url;
+            a.download = recordings[recIndex].rec_fname;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
         function setCutUI(newRegion=false){
             if(newRegion || (wavesurfer && areRegions())){
                 cutButton.disabled = false;
@@ -323,7 +348,6 @@
             // Check/uncheck form fields
             if (value == "ok") {
                 // If 'ok' deselect others
-
                 document.querySelectorAll("#quality input:not([value=ok])").forEach(
                     function(input){ input.checked = false; }
                 );
@@ -368,7 +392,9 @@
             form.querySelector("input[name=recording]").value = recordings[recIndex].rec_id;
             form.querySelector("input[name=verified_by]").value = {{current_user.id}};
             form.querySelector("input[name=num_verifies]").value = recordings[recIndex].rec_num_verifies;
-            form.querySelector("input[name=cut]").value = generateCutFormInput()
+            form.querySelector("input[name=cut]").value = generateCutFormInput();
+            form.querySelector("input[name=session]").value = session.id;
+
             let formData = new FormData(form);
             xhr.open("POST", form.action, true);
             xhr.send(formData);
@@ -446,6 +472,9 @@
                 $("#verificationForm").css('display', 'block');
                 $("#verificationForm :input").prop("disabled", true);
                 commentField.value = recordings[recIndex].verdictComment;
+                qualitySelectors.forEach(function(checkbox) {
+                    checkbox.checked = recordings[recIndex].verdict[checkbox.value] || false;
+                });
             } else if(recordings[recIndex].hasTrim && recordings[recIndex].hasPlayed){
                 $("#verificationForm").css('display', 'block');
                 $("#verificationForm :input").prop("disabled", false);
@@ -503,13 +532,18 @@
                 }
             }
 
-            wavesurfer.on('region-created', function(){
+            wavesurfer.on('region-created', function(region){
                 regionsUpdated = true;
                 setCutUI(newRegion=true);
             })
-            wavesurfer.on('region-update-end', function(){
-                regionsUpdated = true;
-                setCutUI(newRegion=true);
+            wavesurfer.on('region-update-end', function(region){
+                if(!regionsOverlap()){
+                    regionsUpdated = true;
+                    setCutUI(newRegion=true);
+                } else{
+                    // delete this region
+                    region.remove();
+                }
             })
             wavesurfer.on('region-removed', function(){
                 regionsUpdated = true;
@@ -545,6 +579,17 @@
             const playlist = Object.values(wavesurfer.regions.list)
             playlist.sort((a, b) => (a.start > b.start) ? 1 : -1)
             return playlist;
+        }
+
+        function regionsOverlap(){
+            //check if any current regions overlap
+            const regions = getTrimPlayList();
+            for(var i=0; i<regions.length-1; i++){
+                if(regions[i].end > regions[i+1].start){
+                    return true;
+                }
+            }
+            return false;
         }
 
     </script>

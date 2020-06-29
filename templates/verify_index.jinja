@@ -1,0 +1,77 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Gagnagreining</h1>
+        </div>
+
+        <div class='col-12'>
+            <a href="{{url_for('verify_queue')}}" class='btn btn-success float-right'>
+                Greina
+                {{macros.btn_icon('arrow-right', 'l')}}
+            </a>
+        </div>
+
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Greinendur</h3>
+            <table class='table table-striped'>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Nafn</th>
+                        <th>Fjöldi greininga</th>
+                        <th>Fjöldi 2. stigs greininga</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for verifier in verifiers %}
+                        <tr>
+                            <th scope='row'>{{loop.index}}</th>
+                            <td>
+                                {{verifier.name}}
+                                {% if loop.index == 1 %}
+                                    <span class='ml-2'><i class='fa fa-crown text-warning'></i></span>
+                                {% endif %}
+                            </td>
+                            <td>{{verifier.num_verifies}}</td>
+                            <td>{{verifier.num_secondary_verifies}}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Staða á söfnunum</h3>
+            <table class='table table-striped'>
+                <thead>
+                    <tr>
+                        <th>Nafn</th>
+                        <th>Fjöldi lota</th>
+                        <th>Fjöldi greindra lota</th>
+                        <th>Fjöldi tvígreindra lota</th>
+                        <th>Framvinda</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for collection in collections %}
+                        <tr>
+                            <td>{{collection.printable_id}}</td>
+                            <td>{{collection.sessions | length}}</td>
+                            <td>{{collection.num_verified}}</td>
+                            <td>{{collection.num_secondary_verified}}</td>
+                            <td>
+                                <div class="progress mb-1">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.verified_ratio}}%"></div>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.secondary_verified_ratio}}%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+    </div>
+
+{% endblock %}

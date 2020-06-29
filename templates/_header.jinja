@@ -17,6 +17,9 @@
         <li class="nav-item {% if section == 'session' %}active{% endif %}">
             <a class="nav-link {% if section == 'session' %}text-success{% endif %}" href="{{url_for('rec_session_list')}}">Lotur</a>
         </li>
+        <li class="nav-item {% if section == 'verification' %}active{% endif %}">
+            <a class="nav-link {% if section == 'verification' %}text-success{% endif %}" href="{{url_for('verification_list')}}">Greiningar</a>
+        </li>
         {% if not current_user.is_anonymous and current_user.is_admin() %}
             <li class="nav-item {% if section == 'user' %}active{% endif %}">
                 <a class="nav-link {% if section == 'user' %}text-success{% endif %}" href="{{url_for('user_list')}}">Notendur</a>
@@ -40,8 +43,10 @@
             {{macros.btn_icon('info-circle','')}}
             </a>
             <div class="dropdown-menu">
-                <a class="dropdown-item" href="{{url_for('download_manual')}}">Leiðbeiningar</a>
                 <a class="dropdown-item" href="{{url_for('conf_list')}}">Stillingar</a>
+                <a class="dropdown-item" href="{{url_for('verify_index')}}">Greining</a>
+                <div class='dropdown-divider'></div>
+                <a class="dropdown-item" href="{{url_for('download_manual')}}">Leiðbeiningar</a>
             </div>
         </li>
     </ul>

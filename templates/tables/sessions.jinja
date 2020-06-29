@@ -25,6 +25,7 @@
                 Stjórn
                 {{macros.sort_th_a('manager_id')}}
             </th>
+            <th>Greining</th>
         </thead>
         <tbody>
             {% for session in sessions %}
@@ -35,6 +36,20 @@
                     <td>{{session.get_printable_duration() | default("N/A")}}</td>
                     <td>{{session.get_user}}</td>
                     <td>{{session.get_manager}}</td>
+                    <td>
+                        {% if session.is_secondarily_verified %}
+                            Tvígreind
+                            <i class='fa fa-star text-success'>
+                            </i>
+                        {% elif session.is_verified %}
+                            Eingreind
+                            <i class='fa fa-star-half-alt text-success'>
+                            </i>
+                        {% else %}
+                            Ógreind
+                            <i class='fa far-star text-success'></i>
+                        {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

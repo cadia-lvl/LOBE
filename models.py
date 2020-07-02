@@ -690,6 +690,7 @@ class Verification(BaseModel, db.Model):
     volume_is_low = db.Column(db.Boolean, default=False)
     volume_is_high = db.Column(db.Boolean, default=False)
     recording_has_glitch = db.Column(db.Boolean, default=False)
+    #recording_has_glitch_outside_trimming = db.Column(db.Boolean, default=False)
     recording_has_wrong_wording = db.Column(db.Boolean, default=False)
 
     comment = db.Column(db.String(255))
@@ -742,6 +743,8 @@ class Verification(BaseModel, db.Model):
                 self.recording_has_wrong_wording = True
             elif data == 'glitch':
                 self.recording_has_glitch = True
+            elif data == 'glitch-outside':
+                self.recording_has_glitch_outside_trimming = True
 
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'

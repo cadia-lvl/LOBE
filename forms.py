@@ -9,8 +9,9 @@ from wtforms import (fields, FileField, Form, HiddenField, MultipleFileField, Se
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms.ext.sqlalchemy.orm import model_form
 from wtforms.validators import InputRequired
+from wtforms_alchemy import ModelForm
 
-from models import Role, User, Collection, Configuration, db
+from models import Role, User, Collection, Configuration, db, Application, PostAd
 
 # TODO: move to app configuration
 sex_choices = [('Kona','Kona'), ('Karl','Karl'), ('Annað','Annað')]
@@ -132,9 +133,9 @@ class SessionEditForm(Form):
 class DeleteVerificationForm(Form):
     verification_id = HiddenField("verification_id", validators=[InputRequired()])
 
+
 class SessionVerifyForm(Form):
     """Form to verify a recording inside a session
-        TODO: This should be a model form when the model object is complete
     """
     LOW = "low"
     HIGH = "high"
@@ -164,6 +165,7 @@ class SessionVerifyForm(Form):
             raise ValidationError("Upptakan getur ekki verið bæði of lág og of há")
         if self.OK in data and len(data) > 1:
             raise ValidationError("Upptakan getur ekki verið bæði góð og slæm")
+
 
 class ConfigurationForm(Form):
     name = TextField('Nafn stillinga')
@@ -227,5 +229,12 @@ class ConfigurationForm(Form):
     video_codec = SelectField("Myndmerkjamál",
         choices=[("vp8", "VP8")])
 
+
 RoleForm = model_form(model=Role, base_class=Form,
                       db_session=db.session)
+
+PostAdForm = model_form(PostAd, db_session=db.session,
+                        exclude=["id", "created_at", "token"])
+
+ApplicationForm = model_form(Application, db_session=db.session,
+                             exclude=["id", "created_at", "recordings", "ad"])

@@ -1,5 +1,6 @@
 import contextlib
 import os
+import uuid
 import wave
 import json
 import subprocess
@@ -838,4 +839,30 @@ class User(db.Model, UserMixin):
             'dialect': self.dialect}
 
 
+class PostAd(BaseModel, db.Model):
+    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
 
+    name = db.Column(db.String)
+    ad = db.Column(db.String)
+
+    utterances = db.Column(db.String)
+
+    token = db.Column(db.String, default=str(uuid.uuid4()))
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+
+class Application(BaseModel, db.Model):
+    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
+
+    name = db.Column(db.String)
+    sex = db.Column(db.String)
+    age = db.Column(db.Integer)
+
+    email = db.Column(db.String)
+    phone = db.Column(db.String)
+
+    recordings = db.relationship("Recordings", lazy='joined', backref='application')
+
+    ad = db.relationship("PostAd", lazy="select", backref='application',
+        cascade='all, delete, delete-orphan')
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())

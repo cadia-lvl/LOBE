@@ -18,7 +18,8 @@ from db import (create_tokens, insert_collection, sessions_day_info, delete_reco
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
-                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm)
+                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
+                   ApplicationForm, PostAdForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
@@ -95,7 +96,7 @@ def post_recording():
         session_id = save_recording_session(request.form, request.files)
     except Exception as error:
         flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
-        app.logger.error("Error posting recordings: {}\n{}".format(error,traceback.format_exc()))
+        app.logger.error("Error posting recordings: {}\n{}".format(error,   traceback.format_exc()))
         return Response(str(error), status=500)
 
     if session_id is None:
@@ -103,6 +104,29 @@ def post_recording():
         return Response(url_for('index'), status=200)
     else:
         return Response(url_for('rec_session', id=session_id), status=200)
+
+
+@app.route('/application/<uuid:application_token>/info/', methods=['GET', 'POST'])
+def application_form(application_token):
+    #application = db.session.query(Application).get(application_token=application_token)
+    form = ApplicationForm(request.form)
+    if request.method == "POST":
+        if form.validate():
+            print(form.data)
+    return render_template('application.jinja', form=form, type='create',
+            action=url_for('application_form', application_token=application_token))
+
+
+@app.route('/application/create/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def create_ad_post_form():
+    form = PostAdForm(request.form)
+    if request.method == "POST":
+        if form.validate():
+            print(form.data)
+    return render_template('forms/model.jinja', form=form, type='create',
+                           action=url_for('create_application_form'))
 
 
 # RECORD ROUTES
@@ -635,6 +659,7 @@ def rec_session(id):
     session = Session.query.get(id)
     return render_template('session.jinja', session=session,
         section='session')
+
 
 @app.route('/verification/verify_queue')
 @login_required

@@ -312,7 +312,16 @@ def update_numbers():
     db.session.commit()
 
 
-
+@manager.command
+def set_dev_sessions():
+    '''
+    sets session.is_dev for all sessions on development collections
+    '''
+    dev_collections = Collection.query.filter(Collection.is_dev==True)
+    for collection in dev_collections:
+        for session in collection.sessions:
+            session.is_dev = True
+    db.session.commit()
 
 
 @manager.command

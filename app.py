@@ -333,7 +333,7 @@ def edit_collection(id):
     form = collection_edit_form(collection)
     if request.method == 'POST':
         try:
-            form = CollectionForm(request.form, obj=conf)
+            form = CollectionForm(request.form)
             if form.validate():
                 form.populate_obj(collection)
                 db.session.commit()
@@ -653,7 +653,8 @@ def verify_queue():
     4. Check if any of those are not assigned to other users
     '''
 
-    unverified_sessions = Session.query.filter(Session.is_verified==False)
+    unverified_sessions = Session.query.filter(and_(
+        Session.is_verified==False, Session.is_dev==False))
     chosen_session = None
     is_secondary = False
     if unverified_sessions.count() > 0:
@@ -668,7 +669,8 @@ def verify_queue():
     else:
         # check if we can secondarily verify any sesssions
         secondarily_unverified_sessions = Session.query.filter(and_(
-            Session.is_secondarily_verified==False, Session.verified_by!=current_user.id))
+            Session.is_secondarily_verified==False, Session.verified_by!=current_user.id,
+            Session.is_dev==False))
 
         if secondarily_unverified_sessions.count() > 0:
             available_sessions = secondarily_unverified_sessions.filter(
@@ -822,7 +824,7 @@ def verify_index():
     verifiers = sorted(list(verifiers), key=lambda v: \
         -(v.num_verifies + v.num_secondary_verifies))
 
-    collections=Collection.query.all()
+    collections=Collection.query.filter(Collection.is_dev!=True)
     # get number of verified sessions per collection
     for collection in collections:
         verified_sessions = Session.query.filter(

@@ -46,6 +46,9 @@ class CollectionForm(Form):
         ('score', 'Röðunarstuðull'),
         ('same', 'Sömu röð og í skjali'),
         ('random', 'Slembiröðun')])
+    is_dev = BooleanField('Tilraunarsöfnun')
+
+
 
     def validate_assigned_user_id(self, field):
         # HACK to user the QuerySelectField on User objects

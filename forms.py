@@ -145,11 +145,11 @@ class SessionVerifyForm(Form):
     GLITCH = "glitch"
     OK = "ok"
     CHOICES = [
-        (LOW, "<i class='fa fa-volume-mute text-danger mr-1'></i> Of lágt (b)"),
-        (HIGH, "<i class='fa fa-volume-up text-danger mr-1'></i> of hátt (h)"),
-        (WRONG, "<i class='fa fa-comment-slash text-danger mr-1'></i> Rangt lesið (j)"),
-        (GLITCH, "<i class='fa fa-times text-danger mr-1'></i> Gölluð (k)"),
-        (OK, "<i class='fa fa-check mr-1 text-success'></i> Góð (l)"),
+        (LOW, "<i class='fa fa-volume-mute text-danger mr-1'></i> Of lágt (a)"),
+        (HIGH, "<i class='fa fa-volume-up text-danger mr-1'></i> of hátt (s)"),
+        (WRONG, "<i class='fa fa-comment-slash text-danger mr-1'></i> Rangt lesið (d)"),
+        (GLITCH, "<i class='fa fa-times text-danger mr-1'></i> Gölluð (f)"),
+        (OK, "<i class='fa fa-check mr-1 text-success'></i> Góð (g)"),
     ]
 
     quality = MultiCheckboxField("Gæði", choices=CHOICES, validators=[InputRequired()])

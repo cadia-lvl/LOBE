@@ -28,6 +28,7 @@ db = SQLAlchemy(metadata=meta)
 db = SQLAlchemy()
 
 ADMIN_ROLE_ID = 1
+ADMIN_ROLE_NAME = "admin"
 ESTIMATED_AVERAGE_RECORD_LENGTH = 5
 
 
@@ -746,6 +747,7 @@ class Verification(BaseModel, db.Model):
             elif data == 'glitch-outside':
                 self.recording_has_glitch_outside_trimming = True
 
+
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'
 
@@ -760,6 +762,7 @@ class Trim(BaseModel, db.Model):
 roles_users = db.Table('roles_users',
         db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
         db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+
 
 class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
@@ -796,7 +799,7 @@ class User(db.Model, UserMixin):
             return "Nafnlaus notandi"
 
     def is_admin(self):
-        return len(self.roles) > 0 and self.roles[0].id == ADMIN_ROLE_ID
+        return self.has_role(ADMIN_ROLE_NAME)
 
     def is_verifier(self):
         return any(r.name == 'Greinir' for r in self.roles)

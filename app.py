@@ -659,7 +659,8 @@ def verify_queue():
     is_secondary = False
     if unverified_sessions.count() > 0:
         available_sessions = unverified_sessions.filter(
-            or_(Session.verified_by==None, Session.verified_by==current_user.id))
+            or_(Session.verified_by==None, Session.verified_by==current_user.id)).order_by(
+                Session.verified_by)
 
         if available_sessions.count() > 0:
             # we have an available session
@@ -675,7 +676,8 @@ def verify_queue():
         if secondarily_unverified_sessions.count() > 0:
             available_sessions = secondarily_unverified_sessions.filter(
                 or_(Session.secondarily_verified_by==None,
-                    Session.secondarily_verified_by==current_user.id))
+                    Session.secondarily_verified_by==current_user.id)).order_by(
+                        Session.verified_by)
 
             if available_sessions.count() > 0:
                 # we have an available session
@@ -838,24 +840,7 @@ def verify_index():
     # order by combined score
     verifiers = sorted(list(verifiers), key=lambda v: \
         -(v.num_verifies + v.num_secondary_verifies))
-
-    collections=Collection.query.filter(Collection.is_dev!=True)
-    # get number of verified sessions per collection
-    for collection in collections:
-        verified_sessions = Session.query.filter(
-            Session.collection_id==collection.id, Session.is_verified==True)
-        collection.num_verified = verified_sessions.count()
-        collection.num_secondary_verified =\
-            verified_sessions.filter(Session.is_secondarily_verified==True).count()
-        if len(collection.sessions) > 0:
-            collection.verified_ratio =\
-                round(100 * collection.num_verified / len(collection.sessions), 3)
-            collection.secondary_verified_ratio =\
-                round(100 * collection.num_secondary_verified / len(collection.sessions), 3)
-
-    return render_template('verify_index.jinja', verifiers=verifiers,
-        collections=collections)
-
+    return render_template('verify_index.jinja', verifiers=verifiers)
 
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])

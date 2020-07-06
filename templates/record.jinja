@@ -559,7 +559,7 @@
         function setFinishButtonUI(){
             //only allow if at least one marked token or one recording
             for(var i=0; i<numTokens; i++){
-                if('recording' in tokens[i] || tokens[i].skipped){
+                if('recording' in tokens[i]){
                     finishButton.disabled = false;
                     return true;
                 }

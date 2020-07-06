@@ -40,38 +40,4 @@
                 </tbody>
             </table>
         </div>
-
-        <div class='col-12'>
-            <h3 class='font-weight-bold'>Staða á söfnunum</h3>
-            <table class='table table-striped'>
-                <thead>
-                    <tr>
-                        <th>Nafn</th>
-                        <th>Fjöldi lota</th>
-                        <th>Fjöldi greindra lota</th>
-                        <th>Fjöldi tvígreindra lota</th>
-                        <th>Framvinda</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for collection in collections %}
-                        <tr>
-                            <td>{{collection.printable_id}}</td>
-                            <td>{{collection.sessions | length}}</td>
-                            <td>{{collection.num_verified}}</td>
-                            <td>{{collection.num_secondary_verified}}</td>
-                            <td>
-                                <div class="progress mb-1">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.verified_ratio}}%"></div>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.secondary_verified_ratio}}%"></div>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-    </div>
-
 {% endblock %}

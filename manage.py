@@ -266,13 +266,13 @@ def update_session_verifications():
     on all prior tuples in Session table
     '''
     sessions = Session.query.all()
+    counter = 0
     for session in tqdm(sessions):
         if session.is_verified is None:
             session.is_verified = False
         if session.is_secondarily_verified is None:
             session.is_secondarily_verified = False
     db.session.commit()
-
 
 @manager.command
 def release_unverified_sessions():
@@ -339,6 +339,29 @@ def set_dev_sessions():
         for session in collection.sessions:
             session.is_dev = True
     db.session.commit()
+
+@manager.command
+def set_not_dev_sessions():
+    '''
+    sets session.is_dev for all sessions on non developmental collections
+    '''
+    non_dev_collections = Collection.query.filter(Collection.is_dev!=True)
+    for collection in non_dev_collections:
+        for session in collection.sessions:
+            session.is_dev = False
+    db.session.commit()
+
+
+@manager.command
+def set_not_dev_collections():
+    '''
+    Sets all collections as NOT developmental
+    '''
+    not_dev_collections = Collection.query.all()
+    for collection in not_dev_collections:
+        collection.is_dev = False
+    db.session.commit()
+
 
 
 @manager.command

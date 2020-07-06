@@ -2,7 +2,11 @@
 {% block body %}
     <div class='row'>
         <div class='col-12'>
-            <h1 class='font-weight-bold'>Lota : {{session.get_printable_id()}}</h1>
+            <h1 class='font-weight-bold'>Lota : {{session.get_printable_id()}}
+                {% if session.is_dev %}
+                    <code>DEV</code>
+                {% endif %}
+            </h1>
             <h2>Rödd: {{session.get_user}}</h2>
             <p>Upptökustjóri: {{session.get_manager}}</p>
             <p>Tekin upp þann: {{session.created_at | datetime(format='low')}}</p>

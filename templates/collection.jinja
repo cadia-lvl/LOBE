@@ -2,7 +2,11 @@
 {% block body %}
     <div class='row'>
         <div class='col-12'>
-            <h1 class='font-weight-bold'>{{collection.name}}</h1>
+            <h1 class='font-weight-bold'>{{collection.name}}
+                {% if collection.is_dev %}
+                    <code>DEV</code>
+                {% endif %}
+            </h1>
             {% if collection.has_assigned_user() %}
                 <h3 class='font-weight-bold'>Rödd: {{collection.get_assigned_user()}}</h3>
             {% endif %}

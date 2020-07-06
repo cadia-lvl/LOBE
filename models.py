@@ -28,6 +28,7 @@ db = SQLAlchemy(metadata=meta)
 db = SQLAlchemy()
 
 ADMIN_ROLE_ID = 1
+ADMIN_ROLE_NAME = "admin"
 ESTIMATED_AVERAGE_RECORD_LENGTH = 5
 
 
@@ -181,6 +182,8 @@ class Collection(BaseModel, db.Model):
     has_zip = db.Column(db.Boolean, default=False)
     zip_token_count = db.Column(db.Integer, default=0)
     zip_created_at = db.Column(db.DateTime)
+
+    is_dev = db.Column(db.Boolean, default=False)
 
 
 class Configuration(BaseModel, db.Model):
@@ -621,11 +624,12 @@ class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
 
     def __init__(self, user_id, collection_id, manager_id,
-        duration=None, has_video=False):
+        duration=None, has_video=False, is_dev=False):
         self.user_id = user_id
         self.manager_id = manager_id
         self.collection_id = collection_id
         self.has_video = has_video
+        self.is_dev = is_dev
         if duration is not None:
             self.duration = duration
 
@@ -678,6 +682,7 @@ class Session(BaseModel, db.Model):
     verified_by =  db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     secondarily_verified_by = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
 
+    is_dev = db.Column(db.Boolean, default=False)
 
 class Verification(BaseModel, db.Model):
     __tablename__ = 'Verification'
@@ -690,6 +695,7 @@ class Verification(BaseModel, db.Model):
     volume_is_low = db.Column(db.Boolean, default=False)
     volume_is_high = db.Column(db.Boolean, default=False)
     recording_has_glitch = db.Column(db.Boolean, default=False)
+    #recording_has_glitch_outside_trimming = db.Column(db.Boolean, default=False)
     recording_has_wrong_wording = db.Column(db.Boolean, default=False)
 
     comment = db.Column(db.String(255))
@@ -742,6 +748,20 @@ class Verification(BaseModel, db.Model):
                 self.recording_has_wrong_wording = True
             elif data == 'glitch':
                 self.recording_has_glitch = True
+            elif data == 'glitch-outside':
+                self.recording_has_glitch_outside_trimming = True
+
+
+    @hybrid_property
+    def dict(self):
+        return {
+            'volume_is_low': self.volume_is_low,
+            'volume_is_high': self.volume_is_high,
+            'recording_has_glitch': self.recording_has_glitch,
+            'recording_has_wrong_wording': self.recording_has_wrong_wording,
+            'comment': self.comment,
+            'trims': [{'start': t.start, 'end': t.end} for t in self.trims]
+        }
 
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'
@@ -757,6 +777,7 @@ class Trim(BaseModel, db.Model):
 roles_users = db.Table('roles_users',
         db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
         db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+
 
 class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
@@ -793,7 +814,7 @@ class User(db.Model, UserMixin):
             return "Nafnlaus notandi"
 
     def is_admin(self):
-        return len(self.roles) > 0 and self.roles[0].id == ADMIN_ROLE_ID
+        return self.has_role(ADMIN_ROLE_NAME)
 
     def is_verifier(self):
         return any(r.name == 'Greinir' for r in self.roles)

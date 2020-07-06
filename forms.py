@@ -46,6 +46,9 @@ class CollectionForm(Form):
         ('score', 'Röðunarstuðull'),
         ('same', 'Sömu röð og í skjali'),
         ('random', 'Slembiröðun')])
+    is_dev = BooleanField('Tilraunarsöfnun')
+
+
 
     def validate_assigned_user_id(self, field):
         # HACK to user the QuerySelectField on User objects
@@ -140,12 +143,14 @@ class SessionVerifyForm(Form):
     HIGH = "high"
     WRONG = "wrong"
     GLITCH = "glitch"
+    GLITCH_OUTSIDE = "glitch-outside"
     OK = "ok"
     CHOICES = [
         (LOW, "<i class='fa fa-volume-mute text-danger mr-1'></i> Of lágt (a)"),
         (HIGH, "<i class='fa fa-volume-up text-danger mr-1'></i> of hátt (s)"),
         (WRONG, "<i class='fa fa-comment-slash text-danger mr-1'></i> Rangt lesið (d)"),
         (GLITCH, "<i class='fa fa-times text-danger mr-1'></i> Gölluð (f)"),
+        (GLITCH_OUTSIDE, "<i class='fa fa-times text-danger mr-1'></i> Galli klipptur (v)"),
         (OK, "<i class='fa fa-check mr-1 text-success'></i> Góð (g)"),
     ]
 

@@ -9,6 +9,10 @@
                 Upptaka
                 {{macros.btn_icon('arrow-right', 'l')}}
             </a>
+            <a href="{{verification.recording.token.get_url()}}" class='btn btn-sm btn-secondary text-success float-right mr-2'>
+                Texti
+                {{macros.btn_icon('arrow-right', 'l')}}
+            </a>
             <a class='btn btn-sm btn-secondary text-warning float-right mr-2'>
                 Breyta
                 {{macros.btn_icon('edit', 'l')}}
@@ -60,7 +64,7 @@
             </span>
         </div>
         <div class='col-md-6 col-12'>
-            <span>Texti lesinn:</span>
+            <span>Gæði lesturs:</span>
             <span class='font-weight-bold float-right'>
                 {% if verification.recording_has_wrong_wording %}
                     rangt lesinn
@@ -82,6 +86,11 @@
                     <i class='fa fa-check text-success ml-2'></i>
                 {% endif %}
             </span>
+        </div>
+    </div>
+    <div class='row mt-3'>
+        <div class='col-12'>
+            <p><span class='font-weight-bold'>Texti lesinn:</span> <span class='font-italic'>{{verification.recording.token.text}}</span></p>
         </div>
     </div>
     <div class='row'>

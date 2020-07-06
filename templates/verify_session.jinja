@@ -6,12 +6,23 @@
 {% endblock %}
 {% block body %}
     <div class='row mb-3 mt-n3'>
-        <div class='col-12'>
-            <h4 class='font-weight-bold'>
-                {% if is_secondary %}
-                    2. stigs
-                {% endif %}
-                Greining Lotu: {{session.get_printable_id()}}</h4>
+        <div class='col-12 mb-2'>
+            <span>
+                <span class='font-weight-bold'>
+                    {% if is_secondary %}
+                        2. stigs
+                    {% endif %}
+                    Greining Lotu: {{session.get_printable_id()}}
+                </span>
+                <span class='font-weight-bold btn-sm float-right rounded-pill bg-secondary text-success px-2 py-1'>
+                    <span id='currentIndexSpan'></span>
+                    /
+                    <span id='totalIndexSpan'></span>
+                </span>
+                <span id='hasSentSpan' class='mr-2 float-right font-weight-bold btn-sm rounded-pill bg-secondary text-success px-3 py-1' >
+                        Búið að greina
+                </span>
+            </span>
         </div>
         <div class='col-12'>
             <div class="progress">
@@ -26,14 +37,10 @@
                 <span class='font-weight-bold mr-1'>Fyrri</span>
             </button>
             <div>
-                <span class='float-right rounded-pill bg-secondary text-success px-2 py-1'>
-                    <span id='currentIndexSpan'></span>
-                    /
-                    <span id='totalIndexSpan'></span>
-                </span>
-                <span id='hasSentSpan' class='mr-2 float-right rounded-pill bg-secondary text-success px-3 py-1' >
-                        Búið að greina
-                </span>
+                <button id='restart' class='btn btn-secondary text-warning btn-sm rounded-pill'>
+                    <span class='font-weight-bold mr-1 ml-1'>Endurræsa</span>
+                    <i class='fa fa-redo mr-1'></i>
+                </button>
             </div>
             <button id='next' class='btn btn-sm btn-secondary rounded-pill' type='button'>
                 <span class='font-weight-bold ml-1 mr-1'>Næsti</span>
@@ -65,7 +72,11 @@
                     <li class='list-group-item'>
                         <span id='listenAlertSpan' class='text-warning' style='font-size:12px; line-height:30px;'>
                             <i class='fa fa-volume-up mr-1'></i>
-                            Hlustið og klippið til að greina
+                            {% if is_secondary %}
+                                Hlustið til að greina. Afklippið fyrir nýja klippingu.
+                            {% else %}
+                                Hlustið og klippið til að greina
+                            {% endif %}
                         </span>
                         <div class='btn-group float-right' role='group'>
                             <button id='cut' type='button' class='btn btn-secondary btn-sm'>
@@ -112,9 +123,9 @@
         <div class="col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12">
             <form id='deleteVerificationForm' action="{{url_for('delete_verification')}}">
                 {{ delete_form.verification_id }}
-                <button type='button' id='deleteVerification' class='btn btn-danger btn-sm float-right'>
-                    Eyða greiningu
-                    {{macros.btn_icon('trash', 'l')}}
+                <button type='button' id='deleteVerification' class='btn btn-danger btn-sm float-right rounded-pill'>
+                    <span class='ml-1 font-weight-bold'>Eyða greiningu</span>
+                    <i class='fa fa-trash ml-1 mr-1'></i>
                 </button>
             </form>
         </div>
@@ -264,10 +275,13 @@
         let wavesurfer;
 
         var session = {{json_session}};
+        var isSecondary = "{{is_secondary}}" === "True";
         var recordings = session.recordings;
+        var originalRecordings = JSON.parse(JSON.stringify(recordings));
         var recIndex = 0;
         var numRecordings = recordings.length
         var regionsUpdated = false;
+
         const tokenText = document.querySelector("#tokenText");
         const tokenIDSpan = document.querySelector("#tokenID");
         const tokenHref= document.querySelector("#tokenHref");
@@ -285,12 +299,14 @@
         const downloadButton = document.querySelector('button#download');
         const playButton = document.querySelector('button#play');
         const playButtonIcon = document.querySelector('#playButtonIcon');
+        const restartButton = document.querySelector("button#restart");
 
         nextButton.addEventListener('click', nextAction);
         prevButton.addEventListener('click', prevAction);
         cutButton.addEventListener('click', cutAction);
         downloadButton.addEventListener('click', downloadAction);
         playButton.addEventListener('click', playAction);
+        restartButton.addEventListener('click', restartAction);
 
         let disableShortcuts = false;
         let disableEnterAction = false;
@@ -354,6 +370,11 @@
             }
         });
 
+        function restartAction(){
+            recordings[recIndex] = JSON.parse(JSON.stringify(originalRecordings[recIndex]));
+            updateUI();
+        }
+
         function nextAction(){
             // Increment the sentence index and update the UI
             if(recordings[recIndex].hasSent){
@@ -363,6 +384,7 @@
                 } else {
                     // we have reached the end
                     $('#continueModal').modal('show');
+                    updateUI();
                 }
             }
         }
@@ -498,12 +520,7 @@
                 if(this.readyState === XMLHttpRequest.DONE) {
                     if(xhr.status == '200'){
                         // if we finish we go straight to the next recording
-                        delete recordings[recIndex].verificationId;
-                        delete recordings[recIndex].verdict;
-                        delete recordings[recIndex].verdictComment;
-                        delete recordings[recIndex].cut;
-                        recordings[recIndex].hasTrim = false;
-                        recordings[recIndex].hasSent = false;
+                        recordings[recIndex] = JSON.parse(JSON.stringify(originalRecordings[recIndex]));
                         updateUI();
                     } else{
                         promptError("Villa koma upp:", xhr.responseText, "");
@@ -580,12 +597,14 @@
                 sendVerificationButton.disabled = true;
                 sendVerificationButton.style.display = 'none';
                 hasSentSpan.style.display = 'inline-block';
+                restartButton.disabled = true;
             } else{
                 deleteVerificationButton.disabled = true;
                 deleteVerificationForm.style.display = 'none';
                 sendVerificationButton.disabled = false;
                 sendVerificationButton.style.display = 'block';
                 hasSentSpan.style.display = 'none';
+                restartButton.disabled = false;
             }
             if(recordings[recIndex].hasPlayed && recordings[recIndex].hasTrim){
                 listenAlertSpan.style.display = 'none';
@@ -611,6 +630,13 @@
             if(recordings[recIndex].cut){
                 for(var i=0; i<recordings[recIndex].cut.length; i++){
                     wavesurfer.addRegion(recordings[recIndex].cut[i]);
+                }
+            } else if(isSecondary && recordings[recIndex].verification){
+                // load the trim from the previous verifier
+                for(var i=0; i<recordings[recIndex].verification.trims.length; i++){
+                    wavesurfer.addRegion({...recordings[recIndex].verification.trims[i],
+                        dragSelection: {slop: 5},
+                        color: "rgba(243, 156, 18, 0.1)"});
                 }
             }
 

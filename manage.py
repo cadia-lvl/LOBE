@@ -330,6 +330,18 @@ def update_numbers():
 
 
 @manager.command
+def set_dev_sessions():
+    '''
+    sets session.is_dev for all sessions on development collections
+    '''
+    dev_collections = Collection.query.filter(Collection.is_dev==True)
+    for collection in dev_collections:
+        for session in collection.sessions:
+            session.is_dev = True
+    db.session.commit()
+
+
+@manager.command
 def update_analysis():
     '''
     Performs analysis on all recordings that don't have analysis
@@ -393,6 +405,26 @@ def add_missing_dirs():
         if not os.path.exists(coll.get_wav_audio_dir()):
             os.makedirs(coll.get_wav_audio_dir())
 
+@manager.command
+def fix_verified_status():
+    '''
+    Use this if recordings are marked verified without verifications
+    '''
+    verified_recordings = Recording.query.filter(Recording.is_verified==True)
+    for rec in verified_recordings:
+        if len(rec.verifications) == 0:
+            rec.is_verified = False
+            session = Session.query.get(rec.session_id)
+            session.is_verified = False
+    db.session.commit()
+
+    secondarily_verified_recordings = Recording.query.filter(Recording.is_secondarily_verified==True)
+    for rec in secondarily_verified_recordings:
+        if len(rec.verifications) < 2:
+            rec.is_secondarily_verified = False
+            session = Session.query.get(rec.session_id)
+            session.is_secondarily_verified = False
+    db.session.commit()
 
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)

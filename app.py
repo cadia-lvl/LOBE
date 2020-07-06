@@ -333,7 +333,7 @@ def edit_collection(id):
     form = collection_edit_form(collection)
     if request.method == 'POST':
         try:
-            form = CollectionForm(request.form, obj=conf)
+            form = CollectionForm(request.form)
             if form.validate():
                 form.populate_obj(collection)
                 db.session.commit()
@@ -653,7 +653,8 @@ def verify_queue():
     4. Check if any of those are not assigned to other users
     '''
 
-    unverified_sessions = Session.query.filter(Session.is_verified==False)
+    unverified_sessions = Session.query.filter(and_(
+        Session.is_verified==False, Session.is_dev==False))
     chosen_session = None
     is_secondary = False
     if unverified_sessions.count() > 0:
@@ -668,7 +669,8 @@ def verify_queue():
     else:
         # check if we can secondarily verify any sesssions
         secondarily_unverified_sessions = Session.query.filter(and_(
-            Session.is_secondarily_verified==False, Session.verified_by!=current_user.id))
+            Session.is_secondarily_verified==False, Session.verified_by!=current_user.id,
+            Session.is_dev==False))
 
         if secondarily_unverified_sessions.count() > 0:
             available_sessions = secondarily_unverified_sessions.filter(
@@ -707,18 +709,23 @@ def verify_session(id):
         'recordings': [],
     }
     for recording in session.recordings:
+        # make sure we only verify recordings that haven't been verified
+        # two times
         if (not recording.is_verified and not is_secondary) \
             or (not recording.is_secondarily_verified and is_secondary):
             session_dict['recordings'].append({
                 'rec_id': recording.id,
                 'rec_fname': recording.fname,
                 'rec_url': recording.get_download_url(),
-                'rec_trim': {'start': recording.start, 'end': recording.end},
                 'rec_num_verifies': len(recording.verifications),
                 'text': recording.token.text,
                 'text_file_id': recording.token.fname,
                 'text_url': recording.token.get_url(),
                 'token_id': recording.token.id})
+
+            if recording.is_verified:
+                # add the verification object
+                session_dict['recordings'][-1]['verification'] = recording.verifications[0].dict
 
     return render_template('verify_session.jinja', session=session, form=form,
         delete_form=DeleteVerificationForm(), json_session=json.dumps(session_dict),
@@ -796,6 +803,16 @@ def delete_verification():
     form = DeleteVerificationForm(request.form)
     if form.validate():
         verification = Verification.query.get(int(form.data['verification_id']))
+        is_secondary = verification.is_secondary
+        recording = Recording.query.get(verification.recording_id)
+        session = Session.query.get(recording.session_id)
+        if is_secondary:
+            recording.is_secondarily_verified = False
+            session.is_secondarily_verified = False
+        else:
+            recording.is_verified = False
+            session.is_verified = False
+
         db.session.delete(verification)
         db.session.commit()
         return Response(status=200)
@@ -822,7 +839,7 @@ def verify_index():
     verifiers = sorted(list(verifiers), key=lambda v: \
         -(v.num_verifies + v.num_secondary_verifies))
 
-    collections=Collection.query.all()
+    collections=Collection.query.filter(Collection.is_dev!=True)
     # get number of verified sessions per collection
     for collection in collections:
         verified_sessions = Session.query.filter(

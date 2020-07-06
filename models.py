@@ -183,6 +183,8 @@ class Collection(BaseModel, db.Model):
     zip_token_count = db.Column(db.Integer, default=0)
     zip_created_at = db.Column(db.DateTime)
 
+    is_dev = db.Column(db.Boolean, default=False)
+
 
 class Configuration(BaseModel, db.Model):
     __tablename__ = 'Configuration'
@@ -622,11 +624,12 @@ class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
 
     def __init__(self, user_id, collection_id, manager_id,
-        duration=None, has_video=False):
+        duration=None, has_video=False, is_dev=False):
         self.user_id = user_id
         self.manager_id = manager_id
         self.collection_id = collection_id
         self.has_video = has_video
+        self.is_dev = is_dev
         if duration is not None:
             self.duration = duration
 
@@ -679,6 +682,7 @@ class Session(BaseModel, db.Model):
     verified_by =  db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     secondarily_verified_by = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
 
+    is_dev = db.Column(db.Boolean, default=False)
 
 class Verification(BaseModel, db.Model):
     __tablename__ = 'Verification'
@@ -747,6 +751,17 @@ class Verification(BaseModel, db.Model):
             elif data == 'glitch-outside':
                 self.recording_has_glitch_outside_trimming = True
 
+
+    @hybrid_property
+    def dict(self):
+        return {
+            'volume_is_low': self.volume_is_low,
+            'volume_is_high': self.volume_is_high,
+            'recording_has_glitch': self.recording_has_glitch,
+            'recording_has_wrong_wording': self.recording_has_wrong_wording,
+            'comment': self.comment,
+            'trims': [{'start': t.start, 'end': t.end} for t in self.trims]
+        }
 
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'

@@ -37,6 +37,10 @@
                 <span class='font-weight-bold mr-1'>Fyrri</span>
             </button>
             <div>
+                <button class='btn btn-secondary btn-sm rounded-pill' data-toggle='collapse', data-target='#infoCollapse'>
+                    <span class='font-weight-bold mr-1 ml-1'>Hjálp</span>
+                    <i class='fa fa-question-circle mr-1'></i>
+                </button>
                 <button id='restart' class='btn btn-secondary text-warning btn-sm rounded-pill'>
                     <span class='font-weight-bold mr-1 ml-1'>Endurræsa</span>
                     <i class='fa fa-redo mr-1'></i>
@@ -112,9 +116,9 @@
         </div>
         <div class="row">
             <div class="col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12">
-                <button id="verify" class="btn btn-success btn-sm float-right mb-2">
-                    Staðfesta
-                    {{macros.btn_icon('check', 'l')}}
+                <button id="verify" class="btn btn-success btn-sm rounded-pill float-right mb-2">
+                    <span class='font-weight-bold mr-1 ml-1'>Staðfesta</span>
+                    <i class='fa fa-check mr-1'></i>
                 </button>
             </div>
         </div>
@@ -130,84 +134,86 @@
             </form>
         </div>
     </div>
-    <div class='row'>
-        <div class="col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12">
-            <h4>Leiðbeiningar:</h4>
-            <p>
-                Byrjaðu á því að hlusta á upptökuna og klippa út þagnir í byrjun og enda,
-                ásamt öllum óeðlilega löngum þögnum í miðri setningu.
-                Óeðlilega langar þagnir eru matsatriði og stuttar þagnir á eftir kommum eru eðlilegar.
-                En til dæmis þögn eins og eftir kommu þar sem er ekki komma teldist sem óeðlileg.
-            </p>
-            <p>
-                Næst skal merkt við ef upptakan er gölluð eða vitlaust lesin upp.
-                Galli gæti til dæmis verið bakgrunnshljóð eða smellir (glitch) sem heyrirst vel í upptökunni.
-                Ef galli er klipptur út skal merkja við hvoru tveggja 'gölluð' og 'galli klipptur'.
-            </p>
-        </div>
-    </div>
-    <div class='row'>
-        <div class="col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12">
-            <h4>Flýtihnappar:</h4>
-        </div>
-    </div>
-    <div class='row'>
-        <div class="col-xl-4 col-md-4 offset-xl-2 offset-md-2 col-6">
-                <table class="table table-sm">
-                    <tbody>
-                        <tr>
-                            <td>q</td>
-                            <td>Síðasta upptaka</td>
-                        </tr>
-                        <tr>
-                            <td>w</td>
-                            <td>Spila upptöku</td>
-                        </tr>
-                        <tr>
-                            <td>e</td>
-                            <td>Næsta upptaka</td>
-                        </tr>
-                        <tr>
-                            <td>Bilstöng (space bar)</td>
-                            <td>kippa</td>
-                        </tr>
-                        <tr>
-                            <td>Færsluhnappur (enter)</td>
-                            <td>staðfesta</td>
-                        </tr>
-                    </tbody>
-                </table>
+    <div class='collapse mt-3' id='infoCollapse'>
+        <div class='row'>
+            <div class="col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12">
+                <h4>Leiðbeiningar:</h4>
+                <p>
+                    Byrjaðu á því að hlusta á upptökuna og klippa út þagnir í byrjun og enda,
+                    ásamt öllum óeðlilega löngum þögnum í miðri setningu.
+                    Óeðlilega langar þagnir eru matsatriði og stuttar þagnir á eftir kommum eru eðlilegar.
+                    En til dæmis þögn eins og eftir kommu þar sem er ekki komma teldist sem óeðlileg.
+                </p>
+                <p>
+                    Næst skal merkt við ef upptakan er gölluð eða vitlaust lesin upp.
+                    Galli gæti til dæmis verið bakgrunnshljóð eða smellir (glitch) sem heyrirst vel í upptökunni.
+                    Ef galli er klipptur út skal merkja við hvoru tveggja 'gölluð' og 'galli klipptur'.
+                </p>
             </div>
-            <div class="col-xl-4 col-md-4 col-3">
-                <table class="table table-sm">
-                    <tbody>
-                        <tr>
-                            <td>a</td>
-                            <td>Of lágt</td>
-                        </tr>
-                        <tr>
-                            <td>s</td>
-                            <td>Of hátt</td>
-                        </tr>
-                        <tr>
-                            <td>d</td>
-                            <td>Rangt lesið</td>
-                        </tr>
-                        <tr>
-                            <td>f</td>
-                            <td>Gölluð</td>
-                        </tr>
-                        <tr>
-                            <td>v</td>
-                            <td>Galli klipptur út</td>
-                        </tr>
-                        <tr>
-                            <td>g</td>
-                            <td>Góð</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </p>
+        </div>
+        <div class='row'>
+            <div class="col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12">
+                <h4>Flýtihnappar:</h4>
+            </div>
+        </div>
+        <div class='row'>
+            <div class="col-xl-4 col-md-4 offset-xl-2 offset-md-2 col-6">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td>q</td>
+                                <td>Síðasta upptaka</td>
+                            </tr>
+                            <tr>
+                                <td>w</td>
+                                <td>Spila upptöku</td>
+                            </tr>
+                            <tr>
+                                <td>e</td>
+                                <td>Næsta upptaka</td>
+                            </tr>
+                            <tr>
+                                <td>Bilstöng (space bar)</td>
+                                <td>kippa</td>
+                            </tr>
+                            <tr>
+                                <td>Færsluhnappur (enter)</td>
+                                <td>staðfesta</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-xl-4 col-md-4 col-3">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td>a</td>
+                                <td>Of lágt</td>
+                            </tr>
+                            <tr>
+                                <td>s</td>
+                                <td>Of hátt</td>
+                            </tr>
+                            <tr>
+                                <td>d</td>
+                                <td>Rangt lesið</td>
+                            </tr>
+                            <tr>
+                                <td>f</td>
+                                <td>Gölluð</td>
+                            </tr>
+                            <tr>
+                                <td>v</td>
+                                <td>Galli klipptur út</td>
+                            </tr>
+                            <tr>
+                                <td>g</td>
+                                <td>Góð</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </p>
+            </div>
         </div>
     </div>
 {% endblock %}

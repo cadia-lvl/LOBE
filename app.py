@@ -709,18 +709,23 @@ def verify_session(id):
         'recordings': [],
     }
     for recording in session.recordings:
+        # make sure we only verify recordings that haven't been verified
+        # two times
         if (not recording.is_verified and not is_secondary) \
             or (not recording.is_secondarily_verified and is_secondary):
             session_dict['recordings'].append({
                 'rec_id': recording.id,
                 'rec_fname': recording.fname,
                 'rec_url': recording.get_download_url(),
-                'rec_trim': {'start': recording.start, 'end': recording.end},
                 'rec_num_verifies': len(recording.verifications),
                 'text': recording.token.text,
                 'text_file_id': recording.token.fname,
                 'text_url': recording.token.get_url(),
                 'token_id': recording.token.id})
+
+            if recording.is_verified:
+                # add the verification object
+                session_dict['recordings'][-1]['verification'] = recording.verifications[0].dict
 
     return render_template('verify_session.jinja', session=session, form=form,
         delete_form=DeleteVerificationForm(), json_session=json.dumps(session_dict),
@@ -748,7 +753,7 @@ def verification(id):
 
 
 
-@app.route('/verifications/create/<int:id>/', methods=['POST'])
+@app.route('/verifications/create/', methods=['POST'])
 @login_required
 def create_verification():
     form = SessionVerifyForm(request.form)
@@ -798,6 +803,16 @@ def delete_verification():
     form = DeleteVerificationForm(request.form)
     if form.validate():
         verification = Verification.query.get(int(form.data['verification_id']))
+        is_secondary = verification.is_secondary
+        recording = Recording.query.get(verification.recording_id)
+        session = Session.query.get(recording.session_id)
+        if is_secondary:
+            recording.is_secondarily_verified = False
+            session.is_secondarily_verified = False
+        else:
+            recording.is_verified = False
+            session.is_verified = False
+
         db.session.delete(verification)
         db.session.commit()
         return Response(status=200)

@@ -747,6 +747,17 @@ class Verification(BaseModel, db.Model):
             elif data == 'glitch':
                 self.recording_has_glitch = True
 
+    @hybrid_property
+    def dict(self):
+        return {
+            'volume_is_low': self.volume_is_low,
+            'volume_is_high': self.volume_is_high,
+            'recording_has_glitch': self.recording_has_glitch,
+            'recording_has_wrong_wording': self.recording_has_wrong_wording,
+            'comment': self.comment,
+            'trims': [{'start': t.start, 'end': t.end} for t in self.trims]
+        }
+
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'
 

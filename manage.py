@@ -266,7 +266,6 @@ def update_session_verifications():
     on all prior tuples in Session table
     '''
     sessions = Session.query.all()
-    counter = 0
     for session in tqdm(sessions):
         if session.is_verified is None:
             session.is_verified = False

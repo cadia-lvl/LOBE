@@ -8,8 +8,9 @@ from wtforms import (fields, FileField, Form, HiddenField, MultipleFileField, Se
                      validators, ValidationError, FloatField, widgets, StringField)
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms.ext.sqlalchemy.orm import model_form
+from wtforms_alchemy import ModelForm
 from wtforms.validators import InputRequired
-
+from wtforms_components import ColorField
 from models import Role, User, Collection, Configuration, VerifierIcon, db
 
 # TODO: move to app configuration
@@ -35,10 +36,9 @@ class MultiCheckboxField(SelectMultipleField):
     widget = widgets.ListWidget(prefix_label=False)
     option_widget = widgets.CheckboxInput()
 
-VerifierIconForm = model_form(model=VerifierIcon, base_class=Form,
-    db_session=db.session)
-
-
+class VerifierIconForm(ModelForm):
+    class Meta:
+        model = VerifierIcon
 
 class CollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])

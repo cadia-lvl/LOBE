@@ -20,7 +20,7 @@ from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
                    VerifierIconForm)
-from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, db
+from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierIcon, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
@@ -844,27 +844,53 @@ def verify_index():
         -(v.num_verifies + v.num_secondary_verifies))
     return render_template('verify_index.jinja', verifiers=verifiers)
 
-@app.route('/verification/shop', methods=['GET'])
+@app.route('/shop/', methods=['GET'])
 @login_required
 @roles_accepted('Greinir', 'admin')
 def lobe_shop():
-    if current_user.is_admin():
-        icon_form = VerifierIconForm()
-        with open('data/shop/shopItems.json') as f:
-            data = json.load(f)
-        icons = data['icons']
-        titles = data['titles']
-        slogans = data['slogans']
-        return render_template('lobe_shop.jinja', icon_form=icon_form, 
-        icons=icons,titles=titles, slogans=slogans, isAdmin=True)
-    else:
-        with open('data/shop/shopItems.json') as f:
-            data = json.load(f)
-        icons = data['icons']
-        titles = data['titles']
-        slogans = data['slogans']
-        return render_template('lobe_shop.jinja', icons=icons,
-            titles=titles, slogans=slogans, isAdmin=False)
+    icons = VerifierIcon.query.all()
+    return render_template('lobe_shop.jinja', icons=icons)
+
+@app.route('/shop/icons/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def icon_create():
+    form = VerifierIconForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            form['color'].data = str(form['color'].data)
+            icon = VerifierIcon()
+            form.populate_obj(icon)
+            db.session.add(icon)
+            db.session.commit()
+            flash("Nýju merki bætt við", category="success")
+            return redirect(url_for('lobe_shop'))
+        except Exception as error:
+            flash("Error creating configuration.", category="danger")
+            app.logger.error("Error creating configuration {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('icon_create'), section='verification', type='create')
+
+@app.route('/shop/icons/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def icon_edit(id):
+    icon = VerifierIcon.query.get(id)
+    form = VerifierIconForm(obj=icon)
+    try:
+        if request.method == 'POST' and form.validate():
+            form = VerifierIconForm(request.form, obj=icon)
+            form['color'].data = str(form['color'].data)
+            form.populate_obj(icon)
+            db.session.commit()
+            flash("Merki var breytt", category="success")
+            return redirect(url_for('lobe_shop'))
+    except Exception as error:
+        flash("Error updating icon.", category="danger")
+        app.logger.error("Error updating icon {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('icon_edit', id=id), section='verification', type='edit')
+
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required

@@ -1,0 +1,24 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Búð</h1>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-xl-6 offset-xl-3 col-md-8 offset-md-2 col-12'>
+            <div class='card card-body'>
+                <form method="POST" action="/">
+                    {% with form = icon_form %}
+                        {% include 'forms/_form.jinja' %}
+                        <button type='submit' class='btn btn-success float-right'>
+                            Búa til
+                            <span class='ml-2'><i class='fa fa-check'></i></span>
+                        </button>
+                    {% endwith %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

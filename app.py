@@ -18,7 +18,8 @@ from db import (create_tokens, insert_collection, sessions_day_info, delete_reco
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
-                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm)
+                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
+                   VerifierIconForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
@@ -601,7 +602,7 @@ def create_conf():
 @roles_accepted('admin')
 def delete_conf(id):
     conf = Configuration.query.get(id)
-    name = conf.printable_name
+    name = conf.printlable_name
     if conf.is_default:
         flash("Ekki er hægt að eyða aðalstillingum", category='warning')
         return redirect(conf.url)
@@ -842,6 +843,15 @@ def verify_index():
         -(v.num_verifies + v.num_secondary_verifies))
     return render_template('verify_index.jinja', verifiers=verifiers)
 
+@app.route('/verification/shop', methods=['GET'])
+@login_required
+@roles_accepted('Greinir', 'admin')
+def lobe_shop():
+    if current_user.is_admin():
+        icon_form = VerifierIconForm()
+        return render_template('lobe_shop.jinja', icon_form=icon_form)
+    else:
+        return render_template('lobe_shop.jinja')
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required

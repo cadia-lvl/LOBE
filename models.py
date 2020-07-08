@@ -778,7 +778,6 @@ roles_users = db.Table('roles_users',
         db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
         db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
-
 class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
@@ -837,5 +836,39 @@ class User(db.Model, UserMixin):
             'age': self.age,
             'dialect': self.dialect}
 
+progression_icon = db.Table('progression_icon',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('icon_id', db.Integer(), db.ForeignKey('verifier_icon.id')))
 
 
+class VerifierProgression(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+
+    num_verifies = db.Column(db.Integer(), default=0)
+    num_invalid = db.Column(db.Integer(), default=0)
+
+    lobe_coins = db.Column(db.Integer(), default=0)
+
+    owned_icons = db.relationship("VerifierIcon",
+        secondary=progression_icon)
+
+
+class VerifierIcon(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    fa_id = db.Column(db.String())
+    title = db.Column(db.String(64))
+    description = db.Column(db.String(255))
+    price = db.Column(db.Integer(), default=0)
+
+
+#class VerifierTitle:
+#    id = db.Column(db.Integer(), default=0)
+#    title = db.Column(db.String(64))
+#    description = db.Column(db.String(255))
+#    price = db.Column(db.Integer(), default=0)
+#
+#class VerifierQuote:
+#    id = db.Column(db.Integer(), default=0)
+#    quote = db.Column(db.String(255))
+#    price = db.Column(db.Integer(), default=0)
+#

@@ -10,7 +10,7 @@ from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms.ext.sqlalchemy.orm import model_form
 from wtforms.validators import InputRequired
 
-from models import Role, User, Collection, Configuration, db
+from models import Role, User, Collection, Configuration, VerifierIcon, db
 
 # TODO: move to app configuration
 sex_choices = [('Kona','Kona'), ('Karl','Karl'), ('Annað','Annað')]
@@ -35,6 +35,10 @@ class MultiCheckboxField(SelectMultipleField):
     widget = widgets.ListWidget(prefix_label=False)
     option_widget = widgets.CheckboxInput()
 
+VerifierIconForm = model_form(model=VerifierIcon, base_class=Form,
+    db_session=db.session)
+
+
 
 class CollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])
@@ -47,7 +51,6 @@ class CollectionForm(Form):
         ('same', 'Sömu röð og í skjali'),
         ('random', 'Slembiröðun')])
     is_dev = BooleanField('Tilraunarsöfnun')
-
 
 
     def validate_assigned_user_id(self, field):

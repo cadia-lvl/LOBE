@@ -10,10 +10,17 @@
                 Greina
                 {{macros.btn_icon('arrow-right', 'l')}}
             </a>
+            <a href="{{url_for('lobe_shop')}}" class='btn btn-secondary text-warning float-right mr-2'>
+                Búð
+                {{macros.btn_icon('dollar-sign', 'l')}}
+            </a>
         </div>
-
         <div class='col-12'>
             <h3 class='font-weight-bold'>Greinendur</h3>
+            <p>
+                <i class='fa fa-crown text-warning mr-2'></i>
+                <span>Atli Thor Sigurgeirsson hefur haldið efsta sætinu í 3 daga.</span>
+            </p>
             <table class='table table-striped'>
                 <thead>
                     <tr>
@@ -39,5 +46,47 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Vikulegt markmið hópsins</h3>
+            <p>Í þessari viku ætlum við að reyna að greina 10.000 upptökur.</p>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: 25%;"></div>
+            </div>
+        </div>
+
+        <div class='col-12 mt-3 mb-3'>
+            <h3 class='font-weight-bold'>Verðlaun</h3>
+            <p>Hérna eru öll verðlaunin sem þú hefur unnið þér inn.</p>
+            <div class='row'>
+                <div class='col-3'>
+                    <div class='card'>
+                        <div class='card-body'>
+                            <p class='text-center'><i class='fa fa-play-circle fa-5x text-success'></i></p>
+                            <h5 class='card-title text-center'>Leiðangur hefst</h5>
+                            <p class='card-text text-center'>Þú hefur klárað 50 greiningar, vel gert!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class='col-3'>
+                    <div class='card'>
+                        <div class='card-body'>
+                            <p class='text-center'><i class='fa fa-search fa-5x text-danger'></i></p>
+                            <h5 class='card-title text-center'>Spæjari</h5>
+                            <p class='card-text text-center'>Þú hefur fundið 10 rangar upptökur, geggjað!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class='col-3'>
+                    <div class='card'>
+                        <div class='card-body'>
+                            <p class='text-center'><i class='fa fa-crown fa-5x text-warning'></i></p>
+                            <h5 class='card-title text-center'>Toppur</h5>
+                            <p class='card-text text-center'>Þú hefur náð efsta sætinu, enginn er betri en þú!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 {% endblock %}

@@ -77,84 +77,22 @@
 
 <!--/.Carousel Wrapper-->
 
-    {#
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Búð</h1>
+        </div>
+    </div>
     <div class='row'>
-        <div class="container-fluid py-2">
-        <h2 class="font-weight-light">Icons</h2>
-            <div class="d-flex flex-row flex-nowrap">
-                <div class="card card-body">
-                    <i class="fas fa-baby fa-5x"></i>
-                    <h3>Barni Ben<h3>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-brain fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-cat fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-chess-knight fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-chess-bishop fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-coffee fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-crow fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-democrat fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-republican fa-5x"></i>
-                </div>
-                
-                <div class="card card-body">
-                    <i class="fas fa-skull fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-toilet fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-dragon fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-fighter-jet fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-dumpster-fire fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-frog fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-glass-martini-alt fa-5x"></i>
-                </div>
-
-                <div class="card card-body">
-                    <i class="far fa-grin-tongue-squint fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-kiwi-bird fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-jedi fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-money-bill fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-pastafarianism fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-poop fa-5x"></i>
-                </div>
-                <div class="card card-body">
-                    <i class="fas fa-yin-yang fa-5x"></i>
-                </div>
-                #}
+        <div class='col-xl-6 offset-xl-3 col-md-8 offset-md-2 col-12'>
+            <div class='card card-body'>
+                <form method="POST" action="/">
+                    {% with form = icon_form %}
+                        {% include 'forms/_form.jinja' %}
+                        <button type='submit' class='btn btn-success float-right'>
+                            Búa til
+                            <span class='ml-2'><i class='fa fa-check'></i></span>
+                        </button>
+                    {% endwith %}
+                </form>
             </div>
         </div>
     </div>

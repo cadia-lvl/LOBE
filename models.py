@@ -28,6 +28,7 @@ db = SQLAlchemy(metadata=meta)
 db = SQLAlchemy()
 
 ADMIN_ROLE_ID = 1
+ADMIN_ROLE_NAME = "admin"
 ESTIMATED_AVERAGE_RECORD_LENGTH = 5
 
 
@@ -181,6 +182,8 @@ class Collection(BaseModel, db.Model):
     has_zip = db.Column(db.Boolean, default=False)
     zip_token_count = db.Column(db.Integer, default=0)
     zip_created_at = db.Column(db.DateTime)
+
+    is_dev = db.Column(db.Boolean, default=False)
 
 
 class Configuration(BaseModel, db.Model):
@@ -621,11 +624,12 @@ class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
 
     def __init__(self, user_id, collection_id, manager_id,
-        duration=None, has_video=False):
+        duration=None, has_video=False, is_dev=False):
         self.user_id = user_id
         self.manager_id = manager_id
         self.collection_id = collection_id
         self.has_video = has_video
+        self.is_dev = is_dev
         if duration is not None:
             self.duration = duration
 
@@ -678,6 +682,7 @@ class Session(BaseModel, db.Model):
     verified_by =  db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     secondarily_verified_by = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
 
+    is_dev = db.Column(db.Boolean, default=False)
 
 class Verification(BaseModel, db.Model):
     __tablename__ = 'Verification'
@@ -746,6 +751,18 @@ class Verification(BaseModel, db.Model):
             elif data == 'glitch-outside':
                 self.recording_has_glitch_outside_trimming = True
 
+
+    @hybrid_property
+    def dict(self):
+        return {
+            'volume_is_low': self.volume_is_low,
+            'volume_is_high': self.volume_is_high,
+            'recording_has_glitch': self.recording_has_glitch,
+            'recording_has_wrong_wording': self.recording_has_wrong_wording,
+            'comment': self.comment,
+            'trims': [{'start': t.start, 'end': t.end} for t in self.trims]
+        }
+
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'
 
@@ -796,7 +813,7 @@ class User(db.Model, UserMixin):
             return "Nafnlaus notandi"
 
     def is_admin(self):
-        return len(self.roles) > 0 and self.roles[0].id == ADMIN_ROLE_ID
+        return self.has_role(ADMIN_ROLE_NAME)
 
     def is_verifier(self):
         return any(r.name == 'Greinir' for r in self.roles)
@@ -819,5 +836,39 @@ class User(db.Model, UserMixin):
             'age': self.age,
             'dialect': self.dialect}
 
+progression_icon = db.Table('progression_icon',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('icon_id', db.Integer(), db.ForeignKey('verifier_icon.id')))
 
 
+class VerifierProgression(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+
+    num_verifies = db.Column(db.Integer(), default=0)
+    num_invalid = db.Column(db.Integer(), default=0)
+
+    lobe_coins = db.Column(db.Integer(), default=0)
+
+    owned_icons = db.relationship("VerifierIcon",
+        secondary=progression_icon)
+
+
+class VerifierIcon(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    fa_id = db.Column(db.String())
+    title = db.Column(db.String(64))
+    description = db.Column(db.String(255))
+    price = db.Column(db.Integer(), default=0)
+
+
+#class VerifierTitle:
+#    id = db.Column(db.Integer(), default=0)
+#    title = db.Column(db.String(64))
+#    description = db.Column(db.String(255))
+#    price = db.Column(db.Integer(), default=0)
+#
+#class VerifierQuote:
+#    id = db.Column(db.Integer(), default=0)
+#    quote = db.Column(db.String(255))
+#    price = db.Column(db.Integer(), default=0)
+#

@@ -20,7 +20,12 @@
         {% for collection in collections %}
             <tr>
                 <td>
-                    <a href={{collection.get_url()}}>{{collection.name}}</a>
+                    <a href={{collection.get_url()}}>
+                        {{collection.name}}
+                    </a>
+                    {% if collection.is_dev %}
+                        <code>DEV</code>
+                    {% endif %}
                 </td>
                 <td>{{collection.created_at | datetime('low')}}</td>
                 <td>{{collection.num_tokens}}</td>

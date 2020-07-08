@@ -92,9 +92,11 @@ ul#quality li:last-child {
 }
 ul#quality li label {
     display: inline-block;
-    padding: 8px 12px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8203125rem;
+    line-height: 1.5;
     background: #333;
-    border-radius: 5px;
+    border-radius: 50rem !important;
     font-size: .8em;
 }
 ul#quality li input[type=checkbox] {

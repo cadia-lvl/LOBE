@@ -100,7 +100,7 @@ def save_recording_session(form, files):
     record_session = None
     if len(recording_objs) > 0 or len(skipped):
         record_session = Session(user_id, collection_id, manager_id,
-            duration=duration, has_video=has_video)
+            duration=duration, has_video=has_video, is_dev=collection.is_dev)
         db.session.add(record_session)
         db.session.flush()
     for token_id, recording_obj in recording_objs.items():

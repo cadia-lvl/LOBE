@@ -22,32 +22,42 @@ from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
 migrate = Migrate(app, db)
 manager = Manager(app)
 
+
 class AddDefaultRoles(Command):
     def run(self):
-        select = int(input('Select 1-3 for admin, Notandi, Greinir or 4 for all: '))
+        roles = [
+            {
+                "name": "admin",
+                "description": 'Umsjónarhlutverk með aðgang að notendastillingum',
+            },
+            {
+                "name": "Notandi",
+                "description": 'Venjulegur notandi með grunn aðgang',
+            },
+            {
+                "name": "Greinir",
+                "description": 'Greinir með takmarkað aðgengi',
+            },
 
-        if select == 1 or select == 4:
-            admin_role = Role()
-            admin_role.name = 'admin'
-            admin_role.description = 'Umsjónarhlutverk með aðgang að notendastillingum'
-            db.session.add(admin_role)
-
-        if select == 2 or select == 4:
-            user_role = Role()
-            user_role.name = 'Notandi'
-            user_role.description = 'Venjulegur notandi með grunn aðgang'
-            db.session.add(user_role)
-
-        if select == 3 or select == 4:
-            verifier_role = Role()
-            verifier_role.name = 'Greinir'
-            verifier_role.description = 'Greinir með takmarkað aðgengi'
-            db.session.add(verifier_role)
+        ]
+        existing_roles = [role.name for role in Role.query.all()]
+        for i, r in enumerate(roles):
+            if r["name"] not in existing_roles:
+                role = Role()
+                role.name = r["name"]
+                role.description = r["description"]
+                db.session.add(role)
+                print("Creating role:", r["name"])
 
         db.session.commit()
 
+
 class AddDefaultConfiguration(Command):
     def run(self):
+        main_conf = Configuration.query.filter_by(name='Aðalstilling')
+        if main_conf:
+            print("Configuration already exists.")
+            return
         conf = Configuration()
         conf.name = 'Aðalstilling'
         db.session.add(conf)
@@ -79,6 +89,7 @@ class AddUser(Command):
             except IntegrityError as e:
                 print(e)
 
+
 class changePass(Command):
     def run(self):
         email = input("Email: ")
@@ -90,6 +101,7 @@ class changePass(Command):
         db.session.commit()
         print("Password has been updated")
 
+
 def get_pw(confirm=True):
     password = getpass.getpass("Password: ")
     if confirm:
@@ -99,6 +111,7 @@ def get_pw(confirm=True):
             password = getpass.getpass("Password: ")
             password_confirm = getpass.getpass("Repeat password: ")
     return password
+
 
 class changeDataRoot(Command):
     '''
@@ -174,6 +187,7 @@ class changeDataRoot(Command):
                 print(colored("Path correct", 'green'))
         db.session.commit()
 
+
 @manager.command
 def download_collection(coll_id, out_dir):
     '''
@@ -244,6 +258,7 @@ def download_collection(coll_id, out_dir):
     except Exception as error:
         print("{}\n{}".format(error, traceback.format_exc()))
 
+
 @manager.command
 def update_session_verifications():
     '''
@@ -279,6 +294,7 @@ def release_unverified_sessions():
         session.secondarily_verified_by = None
     db.session.commit()
 
+
 @manager.command
 def update_numbers():
     '''
@@ -312,6 +328,38 @@ def update_numbers():
     db.session.commit()
 
 
+@manager.command
+def set_dev_sessions():
+    '''
+    sets session.is_dev for all sessions on development collections
+    '''
+    dev_collections = Collection.query.filter(Collection.is_dev==True)
+    for collection in dev_collections:
+        for session in collection.sessions:
+            session.is_dev = True
+    db.session.commit()
+
+@manager.command
+def set_not_dev_sessions():
+    '''
+    sets session.is_dev for all sessions on non developmental collections
+    '''
+    non_dev_collections = Collection.query.filter(Collection.is_dev!=True)
+    for collection in non_dev_collections:
+        for session in collection.sessions:
+            session.is_dev = False
+    db.session.commit()
+
+
+@manager.command
+def set_not_dev_collections():
+    '''
+    Sets all collections as NOT developmental
+    '''
+    not_dev_collections = Collection.query.all()
+    for collection in not_dev_collections:
+        collection.is_dev = False
+    db.session.commit()
 
 
 
@@ -332,6 +380,7 @@ def update_analysis():
         else:
             r.analysis = 'ok'
     db.session.commit()
+
 
 @manager.command
 def update_collection_configuration():
@@ -368,6 +417,7 @@ def debug_numbers(collection_id):
                 print(f'Token {token.id} has {len(recordings)}')
                 print(' '.join(str(r.session_id) for r in recordings))
 
+
 @manager.command
 def add_missing_dirs():
     colls = Collection.query.all()
@@ -376,6 +426,27 @@ def add_missing_dirs():
             os.makedirs(coll.get_video_dir())
         if not os.path.exists(coll.get_wav_audio_dir()):
             os.makedirs(coll.get_wav_audio_dir())
+
+@manager.command
+def fix_verified_status():
+    '''
+    Use this if recordings are marked verified without verifications
+    '''
+    verified_recordings = Recording.query.filter(Recording.is_verified==True)
+    for rec in verified_recordings:
+        if len(rec.verifications) == 0:
+            rec.is_verified = False
+            session = Session.query.get(rec.session_id)
+            session.is_verified = False
+    db.session.commit()
+
+    secondarily_verified_recordings = Recording.query.filter(Recording.is_secondarily_verified==True)
+    for rec in secondarily_verified_recordings:
+        if len(rec.verifications) < 2:
+            rec.is_secondarily_verified = False
+            session = Session.query.get(rec.session_id)
+            session.is_secondarily_verified = False
+    db.session.commit()
 
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)

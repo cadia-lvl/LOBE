@@ -19,7 +19,7 @@ from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
-                   UploadCollectionForm)
+                   VerifierIconForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
@@ -334,7 +334,7 @@ def edit_collection(id):
     form = collection_edit_form(collection)
     if request.method == 'POST':
         try:
-            form = CollectionForm(request.form, obj=conf)
+            form = CollectionForm(request.form)
             if form.validate():
                 form.populate_obj(collection)
                 db.session.commit()
@@ -602,7 +602,7 @@ def create_conf():
 @roles_accepted('admin')
 def delete_conf(id):
     conf = Configuration.query.get(id)
-    name = conf.printable_name
+    name = conf.printlable_name
     if conf.is_default:
         flash("Ekki er hægt að eyða aðalstillingum", category='warning')
         return redirect(conf.url)
@@ -654,12 +654,14 @@ def verify_queue():
     4. Check if any of those are not assigned to other users
     '''
 
-    unverified_sessions = Session.query.filter(Session.is_verified==False)
+    unverified_sessions = Session.query.filter(and_(
+        Session.is_verified==False, Session.is_dev==False))
     chosen_session = None
     is_secondary = False
     if unverified_sessions.count() > 0:
         available_sessions = unverified_sessions.filter(
-            or_(Session.verified_by==None, Session.verified_by==current_user.id))
+            or_(Session.verified_by==None, Session.verified_by==current_user.id)).order_by(
+                Session.verified_by)
 
         if available_sessions.count() > 0:
             # we have an available session
@@ -669,12 +671,14 @@ def verify_queue():
     else:
         # check if we can secondarily verify any sesssions
         secondarily_unverified_sessions = Session.query.filter(and_(
-            Session.is_secondarily_verified==False, Session.verified_by!=current_user.id))
+            Session.is_secondarily_verified==False, Session.verified_by!=current_user.id,
+            Session.is_dev==False))
 
         if secondarily_unverified_sessions.count() > 0:
             available_sessions = secondarily_unverified_sessions.filter(
                 or_(Session.secondarily_verified_by==None,
-                    Session.secondarily_verified_by==current_user.id))
+                    Session.secondarily_verified_by==current_user.id)).order_by(
+                        Session.verified_by)
 
             if available_sessions.count() > 0:
                 # we have an available session
@@ -708,18 +712,23 @@ def verify_session(id):
         'recordings': [],
     }
     for recording in session.recordings:
+        # make sure we only verify recordings that haven't been verified
+        # two times
         if (not recording.is_verified and not is_secondary) \
             or (not recording.is_secondarily_verified and is_secondary):
             session_dict['recordings'].append({
                 'rec_id': recording.id,
                 'rec_fname': recording.fname,
                 'rec_url': recording.get_download_url(),
-                'rec_trim': {'start': recording.start, 'end': recording.end},
                 'rec_num_verifies': len(recording.verifications),
                 'text': recording.token.text,
                 'text_file_id': recording.token.fname,
                 'text_url': recording.token.get_url(),
                 'token_id': recording.token.id})
+
+            if recording.is_verified:
+                # add the verification object
+                session_dict['recordings'][-1]['verification'] = recording.verifications[0].dict
 
     return render_template('verify_session.jinja', session=session, form=form,
         delete_form=DeleteVerificationForm(), json_session=json.dumps(session_dict),
@@ -797,27 +806,22 @@ def delete_verification():
     form = DeleteVerificationForm(request.form)
     if form.validate():
         verification = Verification.query.get(int(form.data['verification_id']))
+        is_secondary = verification.is_secondary
+        recording = Recording.query.get(verification.recording_id)
+        session = Session.query.get(recording.session_id)
+        if is_secondary:
+            recording.is_secondarily_verified = False
+            session.is_secondarily_verified = False
+        else:
+            recording.is_verified = False
+            session.is_verified = False
+
         db.session.delete(verification)
         db.session.commit()
         return Response(status=200)
     else:
         errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
         return Response(errorMessage, status=500)
-
-@app.route('/verification/lobe_shop/', methods=['GET'])
-@login_required
-def lobe_shop():
-    '''
-    Shop of the verifiers
-    '''
-    with open('data/shop/shopItems.json') as f:
-        data = json.load(f)
-    icons = data['icons']
-    titles = data['titles']
-    slogans = data['slogans']
-    desscriptions = data['']
-    return render_template('lobe_shop.jinja', icons=icons,
-        titles=titles, slogans=slogans)
 
 
 @app.route('/verification', methods=['GET'])
@@ -838,25 +842,24 @@ def verify_index():
     # order by combined score
     verifiers = sorted(list(verifiers), key=lambda v: \
         -(v.num_verifies + v.num_secondary_verifies))
+    return render_template('verify_index.jinja', verifiers=verifiers)
 
-    collections=Collection.query.all()
-    # get number of verified sessions per collection
-    for collection in collections:
-        verified_sessions = Session.query.filter(
-            Session.collection_id==collection.id, Session.is_verified==True)
-        collection.num_verified = verified_sessions.count()
-        collection.num_secondary_verified =\
-            verified_sessions.filter(Session.is_secondarily_verified==True).count()
-        if len(collection.sessions) > 0:
-            collection.verified_ratio =\
-                round(100 * collection.num_verified / len(collection.sessions), 3)
-            collection.secondary_verified_ratio =\
-                round(100 * collection.num_secondary_verified / len(collection.sessions), 3)
-
-    return render_template('verify_index.jinja', verifiers=verifiers,
-        collections=collections)
-
-
+@app.route('/verification/shop', methods=['GET'])
+@login_required
+@roles_accepted('Greinir', 'admin')
+def lobe_shop():
+    if current_user.is_admin():
+        icon_form = VerifierIconForm()
+        return render_template('lobe_shop.jinja', icon_form=icon_form)
+    else:
+        with open('data/shop/shopItems.json') as f:
+            data = json.load(f)
+        icons = data['icons']
+        titles = data['titles']
+        slogans = data['slogans']
+        desscriptions = data['']
+        return render_template('lobe_shop.jinja', icons=icons,
+            titles=titles, slogans=slogans)
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required

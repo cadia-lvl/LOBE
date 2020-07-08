@@ -1,0 +1,88 @@
+<div class='row'>
+        <div class="col-12">
+            <p class="h4 text-center">{{type}}</p>
+            {% if current_user.is_admin() %}
+                {% if type == "Icons"%}
+                    <a href="{{url_for('icon_create')}}" class='btn btn-secondary text-success float-right'>
+                        Búa til
+                        {{macros.btn_icon('plus', 'l')}}
+                    </a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!--Large screen Carousel Wrapper-->
+    <div id="{{type}}-carousel-large" class="carousel slide carousel-multi-item d-lg-block d-none" style="margin-bottom:40px" data-interval="false">
+
+
+    <!--Controls-->
+    <div class="controls-top mt-2">
+        <a href="#{{type}}-carousel-large" data-slide="prev"><i class="fas fa-chevron-left fa-3x"></i></a>
+        <a class="float-right" href="#{{type}}-carousel-large" data-slide="next"><i class="fas fa-chevron-right fa-3x"></i></a>
+    </div>
+
+    <div class="carousel-inner" role="listbox" >
+        {% for item_set in items | batch(4, '&nbsp;') %}
+            <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
+                <div class='row'>
+                    {% for item in item_set %}
+                        <div class="col-md-3 col-sm-6 d-flex align-items-stretch">
+                            {%if type == "Icons"%}
+                                {{macros.icon_card(item, false, false, current_user)}}
+                            {% elif type == "Titles" %}
+                                {{macros.title_card(item, false, false)}}
+                            {% elif type == "Slogans" %}
+                                {{macros.slogan_card(item, false, false)}}
+                            {%endif%}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <!--Indicators-->
+    <ol class="carousel-indicators">
+        {% for item in items | batch(4, '&nbsp;') %}
+            <li data-target="#{{type}}-carousel-large" data-slide-to="{{loop.index0}}" class="{% if loop.index0 == 0 %}active{% endif%}"></li>
+        {% endfor %}    
+    </ol>
+    </div>
+
+
+    <!--Small screen Carousel wrapper-->
+
+    <div id="{{type}}-carousel-small" class="carousel slide carousel-multi-item d-sm-block d-lg-none" style="margin-bottom:30px" data-interval="false">
+
+    <!--Controls-->
+        <div class="controls-top">
+            <a href="#{{type}}-carousel-small" data-slide="prev"><i class="fas fa-chevron-left fa-3x"></i></a>
+            <a class="float-right" href="#{{type}}-carousel-small" data-slide="next"><i class="fas fa-chevron-right fa-3x"></i></a>
+        </div>
+
+        <div class="carousel-inner" role="listbox" >
+            {% for item_set in items | batch(1, '&nbsp;') %}
+                <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
+                    {% for item in item_set %}
+                        <div class="col-12 col-md-8 offset-md-2" style="float:left">
+                            {%if type == "Icons"%}
+                                {{macros.icon_card(item, false, false, current_user)}}
+                            {% elif type == "Titles" %}
+                                {{macros.title_card(item, false, false)}}
+                            {% elif type == "Slogans" %}
+                                {{macros.slogan_card(item, false, false)}}
+                            {%endif%}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <!--Indicators-->
+        <ol class="carousel-indicators">
+            {% for item in items %}
+                <li data-target="#{{type}}-carousel-small" data-slide-to="{{loop.index0}}" class="{%if loop.index0 == 0%}active{% endif%}"></li>
+            {% endfor %}    
+        </ol>
+    </div>
+

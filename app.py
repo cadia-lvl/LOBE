@@ -851,11 +851,9 @@ def lobe_shop():
     icons = VerifierIcon.query.all()
     with open('data/shop/shopItems.json') as f:
         data = json.load(f)
-    icons = data['icons']
     titles = data['titles']
     slogans = data['slogans']
-    return render_template('lobe_shop.jinja', icons=icons,
-        titles=titles, slogans=slogans, isAdmin=False)
+    return render_template('lobe_shop.jinja', icons=icons)
 
 @app.route('/shop/icons/create', methods=['GET', 'POST'])
 @login_required

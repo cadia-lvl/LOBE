@@ -15,3 +15,5 @@ gunicorn.log
 gunicorn.log.old
 semi_prod.sh
 tmux_session.sh
+.DS_Store
+.idea/

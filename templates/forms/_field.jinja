@@ -2,7 +2,7 @@
     {% elif field.type == 'MultipleFileField' %}custom-file mb-2
     {% else%}form-group{% endif%}">
     {% if field.type != 'HiddenField' and field.type != 'CSRFTokenField' and field.type != 'RecaptchaField'
-        and field.type != 'BooleanField' and field.type != 'MultipleFileField' %}
+        and field.type != 'BooleanField' and field.type != 'MultipleFileField' and field.type != 'FileField' %}
         {{ field.label }} {% if field.flags.required %}*{% endif %}
     {% endif %}
 
@@ -11,6 +11,9 @@
         {{field.label(class_="custom-control-label")}}
         {% if field.flags.required %}*{% endif %}
     {% elif field.type == 'MultipleFileField' %}
+        {{field(class_='custom-file-input')}}
+        {{field.label(class_="custom-file-label")}}
+    {% elif field.type == 'FileField' %}
         {{field(class_='custom-file-input')}}
         {{field.label(class_="custom-file-label")}}
     {% else %}

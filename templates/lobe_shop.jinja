@@ -1,16 +1,33 @@
 {% extends "__base.jinja" %}
 {% block body %}
     <div class='row'>
-        <div class='col-12'>
-            <h1 class='font-weight-bold'>Búð</h1>
-            <a href="{{url_for('icon_create')}}">Nýr icon</a>
+        <div class="col-12">
+            <h3>LOBE-kaup</h3>
+            <p>{{current_user.name}} - Lobe-coins to lobe: 110 </p>
         </div>
     </div>
-    {% for icon in icons %}
-        {{macros.verifier_icon(icon.fa_id, icon.color, '3x')}}
-        <p>{{icon.title}}</p>
-        <p>{{icon.description}}</p>
-        <a href={{icon.edit_url}}>{{icon.edit_url}}</a>
-    {% endfor %}
+
+    {{macros.carousel_item(icons, "Icons")}}
+    {{macros.carousel_item(titles, "Titles")}}
+    {{macros.carousel_item(slogans, "Slogans")}}
+
+    {%if isAdmin%}
+    </div>
+    <div class='row'>
+        <div class='col-xl-6 offset-xl-3 col-md-8 offset-md-2 col-12'>
+            <div class='card card-body'>
+                <form method="POST" action="/">
+                    {% with form = icon_form %}
+                        {% include 'forms/_form.jinja' %}
+                        <button type='submit' class='btn btn-success float-right'>
+                            Búa til
+                            <span class='ml-2'><i class='fa fa-check'></i></span>
+                        </button>
+                    {% endwith %}
+                </form>
+            </div>
+        </div>
+    </div>
+    {%endif%}
 
 {% endblock %}

@@ -134,7 +134,7 @@
     <i class='{{classes}} fa-{{size}}' style='color: {{color}}'></i>
 {% endmacro %}
 
-{% macro icon_card(icon, is_owned, is_equipped)%}
+{% macro icon_card(icon, is_owned, is_equipped, current_user)%}
     <div class="card">
         <div class="card-body">
             <p class="card-title text-center font-weight-bold">{{icon.title}}</p>
@@ -153,10 +153,17 @@
                     </a>
                 {% endif %}
             {% else %}
-                <a class="btn btn-warning btn-sm btn-disabled rounded-pill text-center float-right">
-                    <span class="mr-2 ml-2 font-weight-bold">{{icon.price}}</span>
-                    <i class="fas fa-dollar-sign mr-2"></i>
-                </a>
+                {% if current_user.is_admin() %}
+                    <a href="{{icon.edit_url}}" class="btn btn-warning btn-sm btn-disabled rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">Breyta</span>
+                        <i class="fas fa-edit mr-2"></i>
+                    </a>
+                {% else %}
+                    <a class="btn btn-warning btn-sm btn-disabled rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">{{icon.price}}</span>
+                        <i class="fas fa-dollar-sign mr-2"></i>
+                    </a>
+                {% endif %}
             {% endif %}
         </div>
     </div>
@@ -217,10 +224,18 @@
     </div>
 {% endmacro %}
 
-{%macro carousel_item(items, type)%}
+{%macro carousel_item(items, type, current_user)%}
     <div class='row'>
         <div class="col-12">
-            <p class="text-center h4">{{type}}</p>
+            <p class="h4">{{type}}</p>
+            {% if current_user.is_admin() %}
+                {% if type == "Icons"%}
+                    <a href="{{url_for('icon_create')}}" class='btn btn-secondary text-success float-right'>
+                        Búa til
+                        {{btn_icon('plus', 'l')}}
+                    </a>
+                {% endif %}
+            {% endif %}
         </div>
     </div>
 
@@ -247,7 +262,7 @@
                     {% for item in item_set %}
                         <div class="col-md-3 d-flex align-items-stretch">
                             {%if type == "Icons"%}
-                                {{icon_card(item, false, false)}}
+                                {{icon_card(item, false, false, current_user)}}
                             {% elif type == "Titles" %}
                                 {{title_card(item.title, item.description, item.price, false, false)}}
                             {% elif type == "Slogans" %}
@@ -285,7 +300,7 @@
                     {% for item in item_set %}
                         <div class="col-12" style="float:left">
                             {%if type == "Icons"%}
-                                {{icon_card(item, false, false)}}
+                                {{icon_card(item, false, false, current_user)}}
                             {% elif type == "Titles" %}
                                 {{title_card(item.title, item.description, item.price, false, false)}}
                             {% elif type == "Slogans" %}

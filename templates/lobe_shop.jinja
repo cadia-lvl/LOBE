@@ -6,9 +6,8 @@
             <p>{{current_user.name}} - Lobe-coins to lobe: 110 </p>
         </div>
     </div>
-
-    {{macros.carousel_item(icons, "Icons")}}
-    {{macros.carousel_item(titles, "Titles")}}
-    {{macros.carousel_item(slogans, "Slogans")}}
+    {{macros.carousel_item(icons, "Icons", current_user)}}
+    {{macros.carousel_item(titles, "Titles", current_user)}}
+    {{macros.carousel_item(slogans, "Slogans", current_user)}}
 
 {% endblock %}

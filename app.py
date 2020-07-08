@@ -849,10 +849,6 @@ def verify_index():
 @roles_accepted('Greinir', 'admin')
 def lobe_shop():
     icons = VerifierIcon.query.all()
-    with open('data/shop/shopItems.json') as f:
-        data = json.load(f)
-    titles = data['titles']
-    slogans = data['slogans']
     return render_template('lobe_shop.jinja', icons=icons)
 
 @app.route('/shop/icons/create', methods=['GET', 'POST'])

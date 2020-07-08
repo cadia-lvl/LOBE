@@ -129,3 +129,31 @@
         {% endif %}
     </div>
 {% endmacro %}
+
+{% macro icon_card(fa_id, title, description, price, is_owned, is_equipped)%}
+    <div class="card">
+        <div class="card-body">
+            <p class="card-title text-center font-weight-bold">{{title}}</p>
+            <p class='text-center'><i class="fas {{fa_id}} fa-3x text-success"></i></p>
+            <p class='text-center'>{{description}}</p>
+            
+            {% if is_owned %}
+                {% if not is_equipped %}
+                    <a class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">Velja</span>
+                        <i class="fas fa-check mr-2"></i>
+                    </a>
+                {% else %}
+                    <a class="btn btn-secondary btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">Valinn</span>
+                    </a>
+                {% endif %}
+            {% else %}
+                <a class="btn btn-warning btn-sm btn-disabled rounded-pill text-center float-right">
+                    <span class="mr-2 ml-2 font-weight-bold">{{price}}</span>
+                    <i class="fas fa-dollar-sign mr-2"></i>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}

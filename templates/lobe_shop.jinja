@@ -1,0 +1,163 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class="col-12">
+            <h3>LOBE-kaup</h3>
+            <p>{{current_user.name}} - Lobe-coins to lobe: 110 </p>
+        </div>
+    </div>
+    <!--Carousel Wrapper-->
+<div id="multi-item-example" class="carousel slide carousel-multi-item d-lg-block d-none" data-interval="false">
+
+  <!--Controls-->
+  <div class="controls-top mb-2">
+    <a href="#multi-item-example" data-slide="prev"><i class="fas fa-chevron-left fa-2x"></i></a>
+    <a class="float-right" href="#multi-item-example" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
+  </div>
+  <!--/.Controls-->
+
+  <!--Indicators-->
+  <ol class="carousel-indicators">
+    {% for icon_set in icons | batch(4, '&nbsp;') %}
+        <li data-target="#multi-item-example" data-slide-to="{{loop.index0}}" class="{% if loop.index0 == 0 %}active{% endif%}"></li>
+    {% endfor %}    
+  </ol>
+  <div class="carousel-inner" role="listbox" >
+    {% for icon_set in icons | batch(4, '&nbsp;') %}
+        <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
+            <div class='row'>
+                {% for icon in icon_set %}
+                    <div class="col-md-3 d-flex align-items-stretch">
+                        {{macros.icon_card(icon.icon, icon.name, icon.description, icon.price, true, false)}}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+<div id="multi-item-example-small" class="carousel slide carousel-multi-item d-sm-block d-lg-none" data-interval="false">
+
+  <!--Controls-->
+  <div class="controls-top">
+    <a class="btn-floating" href="#multi-item-example-small" data-slide="prev"><i class="fas fa-chevron-left fa-3x"></i></a>
+    <a class="btn-floating" href="#multi-item-example-small" data-slide="next"><i class="fas fa-chevron-right fa-3x"></i></a>
+  </div>
+  <!--/.Controls-->
+
+  <!--Indicators-->
+  <ol class="carousel-indicators">
+    {% for icon in icons %}
+        <li data-target="#multi-item-example-small" data-slide-to="{{loop.counter0}}" class="{%if loop.counter0 == 1%}active{% endif%}"></li>
+
+    {% endfor %}    
+  </ol>
+  <!--/.Indicators-->
+
+  <!--Slides-->
+  <div class="carousel-inner" role="listbox" >
+
+    <!--First slide-->
+    {% for icon_set in icons | batch(1, '&nbsp;') %}
+        <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
+            {% for icon in icon_set %}
+                <div class="col-12" style="float:left">
+                    {{macros.icon_card(icon.icon, icon.name, "Blabla", icon.price)}}
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+
+  </div>
+  <!--/.Slides-->
+
+</div>
+
+<!--/.Carousel Wrapper-->
+
+    {#
+    <div class='row'>
+        <div class="container-fluid py-2">
+        <h2 class="font-weight-light">Icons</h2>
+            <div class="d-flex flex-row flex-nowrap">
+                <div class="card card-body">
+                    <i class="fas fa-baby fa-5x"></i>
+                    <h3>Barni Ben<h3>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-brain fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-cat fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-chess-knight fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-chess-bishop fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-coffee fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-crow fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-democrat fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-republican fa-5x"></i>
+                </div>
+                
+                <div class="card card-body">
+                    <i class="fas fa-skull fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-toilet fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-dragon fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-fighter-jet fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-dumpster-fire fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-frog fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-glass-martini-alt fa-5x"></i>
+                </div>
+
+                <div class="card card-body">
+                    <i class="far fa-grin-tongue-squint fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-kiwi-bird fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-jedi fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-money-bill fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-pastafarianism fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-poop fa-5x"></i>
+                </div>
+                <div class="card card-body">
+                    <i class="fas fa-yin-yang fa-5x"></i>
+                </div>
+                #}
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}

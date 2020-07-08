@@ -60,7 +60,6 @@ video{
     width: 100%;
 }
 
-
 .custom-file-input:lang(en) ~ .custom-file-label::after {
     content: "Velja" !important;
 }

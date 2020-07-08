@@ -18,7 +18,8 @@ from db import (create_tokens, insert_collection, sessions_day_info, delete_reco
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
-                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm)
+                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
+                   UploadCollectionForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
@@ -802,6 +803,22 @@ def delete_verification():
     else:
         errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
         return Response(errorMessage, status=500)
+
+@app.route('/verification/lobe_shop/', methods=['GET'])
+@login_required
+def lobe_shop():
+    '''
+    Shop of the verifiers
+    '''
+    with open('data/shop/shopItems.json') as f:
+        data = json.load(f)
+    icons = data['icons']
+    titles = data['titles']
+    slogans = data['slogans']
+    desscriptions = data['']
+    return render_template('lobe_shop.jinja', icons=icons,
+        titles=titles, slogans=slogans)
+
 
 @app.route('/verification', methods=['GET'])
 @login_required

@@ -14,3 +14,5 @@ settings/semi_production.py
 gunicorn.log
 semi_prod.sh
 tmux_session.sh
+.DS_Store
+.idea/

@@ -20,7 +20,7 @@ from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
                    VerifierIconForm, VerifierTitleForm, VerifierQuoteForm)
-from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierIcon, VerifierTitle, VerifierQuote, db
+from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, VerifierIcon, VerifierTitle, VerifierQuote, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
@@ -853,6 +853,38 @@ def lobe_shop():
     quotes = VerifierQuote.query.all()
     return render_template('lobe_shop.jinja', icons=icons,
         titles=titles, quotes=quotes)
+
+
+@app.route('/shop/icons/<int:icon_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def icon_buy(icon_id, user_id):
+    user = User.query.get(user_id)
+    icon = VerifierIcon.query.get(icon_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if progression.lobe_coins >= icon.price and icon not in progression.owned_icons:
+        progression.owned_icons.append(icon)
+        progression.lobe_coins -= icon.price
+        db.session.commit()
+        flash("Kaup samþykkt.", category="success")
+    else:
+        flash("Kaup ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/icons/<int:icon_id>/equip/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def icon_equip(icon_id, user_id):
+    user = User.query.get(user_id)
+    icon = VerifierIcon.query.get(icon_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if icon in progression.owned_icons:
+        progression.equipped_icon_id = icon.id
+        db.session.commit()
+        flash("Merki valið", category="success")
+    else:
+        flash("Val ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
 
 @app.route('/shop/icons/create', methods=['GET', 'POST'])
 @login_required

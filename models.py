@@ -866,12 +866,20 @@ class VerifierProgression(BaseModel, db.Model):
 
     lobe_coins = db.Column(db.Integer(), default=0)
 
+    equipped_icon_id = db.Column(db.Integer, db.ForeignKey('verifier_icon.id'))
+
     owned_icons = db.relationship("VerifierIcon",
         secondary=progression_icon)
     owned_titles = db.relationship("VerifierTitle",
         secondary=progression_title)
     owned_quotes = db.relationship("VerifierQuote",
         secondary=progression_quote)
+
+    def owns_icon(self, icon):
+        return any([i.id == icon.id for i in self.owned_icons])
+
+    def is_icon_equipped(self, icon):
+        return self.equipped_icon_id == icon.id
 
 class VerifierIcon(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)

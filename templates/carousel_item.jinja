@@ -31,7 +31,7 @@
         <a href="#{{type}}-carousel-large" data-slide="prev"><i class="fas fa-chevron-left fa-2x"></i></a>
         <a class="float-right" href="#{{type}}-carousel-large" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
     </div>
-
+    
     <div class="carousel-inner" role="listbox" >
         {% for item_set in items | batch(4, none) %}
             <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">

@@ -461,6 +461,19 @@ def add_progression_to_verifiers():
             verifier.progression_id = progression.id
         db.session.commit()
 
+@manager.command
+def give_coins():
+    verifiers = get_verifiers()
+    print("Select a verifier id from the ones below:")
+    for verifier in verifiers:
+        print(f'{verifier.name} - [{verifier.id}]')
+    user_id = int(input('user id: '))
+    coins = int(input('amount: '))
+    user = User.query.get(user_id)
+    progression = user.progression
+    progression.lobe_coins += coins
+    db.session.commit()
+
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)
 manager.add_command('change_pass', changePass)

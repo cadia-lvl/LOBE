@@ -265,14 +265,15 @@
                         </div>
                     {% endfor %}
                 </div>
-            {% endfor %}
-        </div>
-        <!--Indicators-->
-        <ol class="carousel-indicators">
-            {% for item in items | batch(4, '&nbsp;') %}
-                <li data-target="#{{type}}-carousel-large" data-slide-to="{{loop.index0}}" class="{% if loop.index0 == 0 %}active{% endif%}"></li>
-            {% endfor %}    
-        </ol>
+            </div>
+        {% endfor %}
+    </div>
+    <!--Indicators-->
+    <ol class="carousel-indicators">
+        {% for item in items | batch(4, '&nbsp;') %}
+            <li data-target="#{{type}}-carousel-large" data-slide-to="{{loop.index0}}" class="{% if loop.index0 == 0 %}active{% endif%}"></li>
+        {% endfor %}    
+    </ol>
     </div>
 
 

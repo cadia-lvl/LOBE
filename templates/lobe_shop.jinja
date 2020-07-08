@@ -6,80 +6,12 @@
             <p>{{current_user.name}} - Lobe-coins to lobe: 110 </p>
         </div>
     </div>
-    <!--Carousel Wrapper-->
-<div id="multi-item-example" class="carousel slide carousel-multi-item d-lg-block d-none" data-interval="false">
 
-  <!--Controls-->
-  <div class="controls-top mb-2">
-    <a href="#multi-item-example" data-slide="prev"><i class="fas fa-chevron-left fa-2x"></i></a>
-    <a class="float-right" href="#multi-item-example" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
-  </div>
-  <!--/.Controls-->
+    {{macros.carousel_item(icons, "Icons")}}
+    {{macros.carousel_item(titles, "Titles")}}
+    {{macros.carousel_item(slogans, "Slogans")}}
 
-  <!--Indicators-->
-  <ol class="carousel-indicators">
-    {% for icon_set in icons | batch(4, '&nbsp;') %}
-        <li data-target="#multi-item-example" data-slide-to="{{loop.index0}}" class="{% if loop.index0 == 0 %}active{% endif%}"></li>
-    {% endfor %}    
-  </ol>
-  <div class="carousel-inner" role="listbox" >
-    {% for icon_set in icons | batch(4, '&nbsp;') %}
-        <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
-            <div class='row'>
-                {% for icon in icon_set %}
-                    <div class="col-md-3 d-flex align-items-stretch">
-                        {{macros.icon_card(icon.icon, icon.name, icon.description, icon.price, true, false)}}
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-    {% endfor %}
-  </div>
-</div>
-
-
-<div id="multi-item-example-small" class="carousel slide carousel-multi-item d-sm-block d-lg-none" data-interval="false">
-
-  <!--Controls-->
-  <div class="controls-top">
-    <a class="btn-floating" href="#multi-item-example-small" data-slide="prev"><i class="fas fa-chevron-left fa-3x"></i></a>
-    <a class="btn-floating" href="#multi-item-example-small" data-slide="next"><i class="fas fa-chevron-right fa-3x"></i></a>
-  </div>
-  <!--/.Controls-->
-
-  <!--Indicators-->
-  <ol class="carousel-indicators">
-    {% for icon in icons %}
-        <li data-target="#multi-item-example-small" data-slide-to="{{loop.counter0}}" class="{%if loop.counter0 == 1%}active{% endif%}"></li>
-
-    {% endfor %}    
-  </ol>
-  <!--/.Indicators-->
-
-  <!--Slides-->
-  <div class="carousel-inner" role="listbox" >
-
-    <!--First slide-->
-    {% for icon_set in icons | batch(1, '&nbsp;') %}
-        <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
-            {% for icon in icon_set %}
-                <div class="col-12" style="float:left">
-                    {{macros.icon_card(icon.icon, icon.name, "Blabla", icon.price)}}
-                </div>
-            {% endfor %}
-        </div>
-    {% endfor %}
-
-  </div>
-  <!--/.Slides-->
-
-</div>
-
-<!--/.Carousel Wrapper-->
-
-        <div class='col-12'>
-            <h1 class='font-weight-bold'>Búð</h1>
-        </div>
+    {%if isAdmin%}
     </div>
     <div class='row'>
         <div class='col-xl-6 offset-xl-3 col-md-8 offset-md-2 col-12'>
@@ -96,6 +28,6 @@
             </div>
         </div>
     </div>
-
+    {%endif%}
 
 {% endblock %}

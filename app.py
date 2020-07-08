@@ -850,16 +850,21 @@ def verify_index():
 def lobe_shop():
     if current_user.is_admin():
         icon_form = VerifierIconForm()
-        return render_template('lobe_shop.jinja', icon_form=icon_form)
+        with open('data/shop/shopItems.json') as f:
+            data = json.load(f)
+        icons = data['icons']
+        titles = data['titles']
+        slogans = data['slogans']
+        return render_template('lobe_shop.jinja', icons=icons,
+            titles=titles, slogans=slogans, isAdmin=True)
     else:
         with open('data/shop/shopItems.json') as f:
             data = json.load(f)
         icons = data['icons']
         titles = data['titles']
         slogans = data['slogans']
-        desscriptions = data['']
         return render_template('lobe_shop.jinja', icons=icons,
-            titles=titles, slogans=slogans)
+            titles=titles, slogans=slogans, isAdmin=False)
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required

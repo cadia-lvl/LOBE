@@ -60,6 +60,10 @@ video{
     width: 100%;
 }
 
+
+.carousel-indicators {
+    position: unset !important;
+}
 .custom-file-input:lang(en) ~ .custom-file-label::after {
     content: "Velja" !important;
 }

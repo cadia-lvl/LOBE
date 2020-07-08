@@ -7,6 +7,16 @@
                         Búa til
                         {{macros.btn_icon('plus', 'l')}}
                     </a>
+                {% elif type == "Titles" %}
+                    <a href="{{url_for('title_create')}}" class='btn btn-secondary text-success float-right'>
+                        Búa til
+                        {{macros.btn_icon('plus', 'l')}}
+                    </a>
+                {% elif type == "Slogans" %}
+                    <a href="{{url_for('quote_create')}}" class='btn btn-secondary text-success float-right'>
+                        Búa til
+                        {{macros.btn_icon('plus', 'l')}}
+                    </a>
                 {% endif %}
             {% endif %}
         </div>
@@ -18,24 +28,26 @@
 
     <!--Controls-->
     <div class="controls-top mt-2">
-        <a href="#{{type}}-carousel-large" data-slide="prev"><i class="fas fa-chevron-left fa-3x"></i></a>
-        <a class="float-right" href="#{{type}}-carousel-large" data-slide="next"><i class="fas fa-chevron-right fa-3x"></i></a>
+        <a href="#{{type}}-carousel-large" data-slide="prev"><i class="fas fa-chevron-left fa-2x"></i></a>
+        <a class="float-right" href="#{{type}}-carousel-large" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
     </div>
 
     <div class="carousel-inner" role="listbox" >
-        {% for item_set in items | batch(4, '&nbsp;') %}
+        {% for item_set in items | batch(4, none) %}
             <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
                 <div class='row'>
                     {% for item in item_set %}
-                        <div class="col-md-3 col-sm-6 d-flex align-items-stretch">
-                            {%if type == "Icons"%}
-                                {{macros.icon_card(item, false, false, current_user)}}
-                            {% elif type == "Titles" %}
-                                {{macros.title_card(item, false, false)}}
-                            {% elif type == "Slogans" %}
-                                {{macros.slogan_card(item, false, false)}}
-                            {%endif%}
-                        </div>
+                        {% if item is not none%}
+                            <div class="col-md-3 col-sm-6 d-flex align-items-stretch">
+                                {%if type == "Icons"%}
+                                    {{macros.icon_card(item, false, false, current_user)}}
+                                {% elif type == "Titles" %}
+                                    {{macros.title_card(item, false, false, current_user)}}
+                                {% elif type == "Slogans" %}
+                                    {{macros.slogan_card(item, false, false, current_user)}}
+                                {%endif%}
+                            </div>
+                        {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -43,9 +55,9 @@
     </div>
     <!--Indicators-->
     <ol class="carousel-indicators">
-        {% for item in items | batch(4, '&nbsp;') %}
+        {% for item in items | batch(4, none) %}
             <li data-target="#{{type}}-carousel-large" data-slide-to="{{loop.index0}}" class="{% if loop.index0 == 0 %}active{% endif%}"></li>
-        {% endfor %}    
+        {% endfor %}
     </ol>
     </div>
 
@@ -56,8 +68,8 @@
 
     <!--Controls-->
         <div class="controls-top">
-            <a href="#{{type}}-carousel-small" data-slide="prev"><i class="fas fa-chevron-left fa-3x"></i></a>
-            <a class="float-right" href="#{{type}}-carousel-small" data-slide="next"><i class="fas fa-chevron-right fa-3x"></i></a>
+            <a href="#{{type}}-carousel-small" data-slide="prev"><i class="fas fa-chevron-left fa-2x"></i></a>
+            <a class="float-right" href="#{{type}}-carousel-small" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
         </div>
 
         <div class="carousel-inner" role="listbox" >
@@ -68,9 +80,9 @@
                             {%if type == "Icons"%}
                                 {{macros.icon_card(item, false, false, current_user)}}
                             {% elif type == "Titles" %}
-                                {{macros.title_card(item, false, false)}}
+                                {{macros.title_card(item, false, false, current_user)}}
                             {% elif type == "Slogans" %}
-                                {{macros.slogan_card(item, false, false)}}
+                                {{macros.slogan_card(item, false, false, current_user)}}
                             {%endif%}
                         </div>
                     {% endfor %}
@@ -82,7 +94,7 @@
         <ol class="carousel-indicators">
             {% for item in items %}
                 <li data-target="#{{type}}-carousel-small" data-slide-to="{{loop.index0}}" class="{%if loop.index0 == 0%}active{% endif%}"></li>
-            {% endfor %}    
+            {% endfor %}
         </ol>
     </div>
 

@@ -130,6 +130,7 @@
     </div>
 {% endmacro %}
 
+
 {% macro verifier_icon(classes, color, size) %}
     <i class='{{classes}} fa-{{size}}' style='color: {{color}}'></i>
 {% endmacro %}
@@ -140,7 +141,6 @@
             <p class="card-title text-center font-weight-bold">{{icon.title}}</p>
             <p class='text-center'>{{verifier_icon(icon.fa_id, icon.color, '3x')}}</p>
             <p class='text-center'>{{icon.description}}</p>
-
             {% if is_owned %}
                 {% if not is_equipped %}
                     <a class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
@@ -234,7 +234,7 @@
 {%macro carousel_item(items, type, current_user)%}
     <div class='row'>
         <div class="col-12">
-            <p class="h4">{{type}}</p>
+            <p class="h4 text-center">{{type}}</p>
             {% if current_user.is_admin() %}
                 {% if type == "Icons"%}
                     <a href="{{url_for('icon_create')}}" class='btn btn-secondary text-success float-right'>
@@ -258,21 +258,13 @@
 
     <!--Large screen Carousel Wrapper-->
     <div id="{{type}}-carousel-large" class="carousel slide carousel-multi-item d-lg-block d-none" style="margin-bottom:40px" data-interval="false">
+
+
     <!--Controls-->
     <div class="controls-top mt-2">
-        <a href="#{{type}}-carousel-large" data-slide="prev" class='btn btn-sm btn-secondary text-success rounded-pill'>
-            <i class="fas fa-chevron-left mr-1 ml-2"></i>
-            <span class='mr-2'>Fyrri</span>
-        </a>
-        <a class="float-right" href="#{{type}}-carousel-large" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
+        <a href="#{{type}}-carousel-large" data-slide="prev"><i class="fas fa-chevron-left fa-3x"></i></a>
+        <a class="float-right" href="#{{type}}-carousel-large" data-slide="next"><i class="fas fa-chevron-right fa-3x"></i></a>
     </div>
-
-    <!--Indicators-->
-    <ol class="carousel-indicators">
-        {% for item in items | batch(4, '&nbsp;') %}
-            <li data-target="#{{type}}-carousel-large" data-slide-to="{{loop.index0}}" class="{% if loop.index0 == 0 %}active{% endif%}"></li>
-        {% endfor %}
-    </ol>
 
     <div class="carousel-inner" role="listbox" >
         {% for item_set in items | batch(4, none) %}
@@ -296,6 +288,12 @@
             </div>
         {% endfor %}
     </div>
+    <!--Indicators-->
+    <ol class="carousel-indicators">
+        {% for item in items | batch(4, '&nbsp;') %}
+            <li data-target="#{{type}}-carousel-large" data-slide-to="{{loop.index0}}" class="{% if loop.index0 == 0 %}active{% endif%}"></li>
+        {% endfor %}
+    </ol>
     </div>
 
 
@@ -309,18 +307,11 @@
             <a class="float-right" href="#{{type}}-carousel-small" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
         </div>
 
-        <!--Indicators-->
-        <ol class="carousel-indicators">
-            {% for item in items %}
-                <li data-target="#{{type}}-carousel-small" data-slide-to="{{loop.index0}}" class="{%if loop.index0 == 0%}active{% endif%}"></li>
-            {% endfor %}
-        </ol>
-
         <div class="carousel-inner" role="listbox" >
             {% for item_set in items | batch(1, none) %}
                 <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
                     {% for item in item_set %}
-                        <div class="col-12" style="float:left">
+                        <div class="col-12 col-md-8 offset-md-2" style="float:left">
                             {%if type == "Icons"%}
                                 {{icon_card(item, false, false, current_user)}}
                             {% elif type == "Titles" %}
@@ -333,5 +324,12 @@
                 </div>
             {% endfor %}
         </div>
+
+        <!--Indicators-->
+        <ol class="carousel-indicators">
+            {% for item in items %}
+                <li data-target="#{{type}}-carousel-small" data-slide-to="{{loop.index0}}" class="{%if loop.index0 == 0%}active{% endif%}"></li>
+            {% endfor %}
+        </ol>
     </div>
 {% endmacro %}

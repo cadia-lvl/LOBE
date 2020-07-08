@@ -64,6 +64,7 @@ video{
 .carousel-indicators {
     position: unset !important;
 }
+
 .custom-file-input:lang(en) ~ .custom-file-label::after {
     content: "Velja" !important;
 }

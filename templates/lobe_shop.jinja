@@ -2,12 +2,17 @@
 {% block body %}
     <div class='row'>
         <div class="col-12">
-            <h3>LOBE-kaup</h3>
-            <p>{{current_user.name}} - Lobe-coins to lobe: 110 </p>
+            <h3>Kolaportið</h3>
+            <p>{{current_user.name}} - My LOBE-coins: 110 </p>
         </div>
     </div>
-    {{macros.carousel_item(icons, "Icons", current_user)}}
-    {{macros.carousel_item(titles, "Titles", current_user)}}
-    {{macros.carousel_item(quotes, "Slogans", current_user)}}
-
+    {% with items=icons, type="Icons"%}
+        {% include 'carousel_item.jinja'%}
+    {% endwith %}
+    {% with items=titles, type="Titles"%}
+        {% include 'carousel_item.jinja'%}
+    {% endwith %}
+    {% with items=quotes, type="Slogans"%}
+        {% include 'carousel_item.jinja'%}
+    {% endwith %}
 {% endblock %}

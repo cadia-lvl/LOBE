@@ -17,3 +17,4 @@ semi_prod.sh
 tmux_session.sh
 .DS_Store
 .idea/
+settings/development.py

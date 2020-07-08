@@ -926,6 +926,38 @@ def icon_edit(id):
     return render_template('forms/model.jinja', form=form,
         action=url_for('icon_edit', id=id), section='verification', type='edit')
 
+
+@app.route('/shop/titles/<int:title_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def title_buy(title_id, user_id):
+    user = User.query.get(user_id)
+    title = VerifierTitle.query.get(title_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if progression.lobe_coins >= title.price and title not in progression.owned_titles:
+        progression.owned_titles.append(title)
+        progression.lobe_coins -= title.price
+        db.session.commit()
+        flash("Kaup samþykkt.", category="success")
+    else:
+        flash("Kaup ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/titles/<int:title_id>/equip/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def title_equip(title_id, user_id):
+    user = User.query.get(user_id)
+    title = VerifierTitle.query.get(title_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if title in progression.owned_titles:
+        progression.equipped_title_id = title.id
+        db.session.commit()
+        flash("Merki valið", category="success")
+    else:
+        flash("Val ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
 @app.route('/shop/titles/create', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')

@@ -181,9 +181,14 @@
                 <p class='text-center'>{{title.description}}</p>
             </div>
             <div>
-            {% if is_owned %}
-                    {% if not is_equipped %}
-                        <a class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
+                {% if not current_user.progression.owns_title(title) %}
+                    <a href="{{url_for('title_buy', title_id=title.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">{{title.price}}</span>
+                        <i class="fas fa-dollar-sign mr-2"></i>
+                    </a>
+                {% else %}
+                    {% if not current_user.progression.is_title_equipped(title) %}
+                        <a href="{{url_for('title_equip', title_id=title.id, user_id=current_user.id)}}" class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
                             <span class="mr-2 ml-2 font-weight-bold">Velja</span>
                             <i class="fas fa-check mr-2"></i>
                         </a>
@@ -192,16 +197,13 @@
                             <span class="mr-2 ml-2 font-weight-bold">Valinn</span>
                         </a>
                     {% endif %}
-                {% else %}
-                    <a class="btn btn-warning btn-sm btn-disabled rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">{{title.price}}</span>
-                        <i class="fas fa-dollar-sign mr-2"></i>
+                {% endif %}
+
+
+                {% if current_user.is_admin() %}
+                    <a href="{{title.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">Breyta</span>
                     </a>
-                    {% if current_user.is_admin() %}
-                        <a href="{{title.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
-                            <span class="mr-2 ml-2 font-weight-bold">Breyta</span>
-                        </a>
-                    {% endif %}
                 {% endif %}
             </div>
         </div>

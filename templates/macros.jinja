@@ -135,7 +135,7 @@
 {% endmacro %}
 
 {% macro icon_card(icon, is_owned, is_equipped, current_user)%}
-    <div class="card">
+    <div class="card" style='width: 100%'>
         <div class="card-body">
             <p class="card-title text-center font-weight-bold">{{icon.title}}</p>
             <p class='text-center'>{{verifier_icon(icon.fa_id, icon.color, '3x')}}</p>
@@ -153,15 +153,13 @@
                     </a>
                 {% endif %}
             {% else %}
+                <a class="btn btn-warning btn-sm rounded-pill text-center float-right">
+                    <span class="mr-2 ml-2 font-weight-bold">{{icon.price}}</span>
+                    <i class="fas fa-dollar-sign mr-2"></i>
+                </a>
                 {% if current_user.is_admin() %}
-                    <a href="{{icon.edit_url}}" class="btn btn-warning btn-sm btn-disabled rounded-pill text-center float-right">
+                    <a href="{{icon.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
                         <span class="mr-2 ml-2 font-weight-bold">Breyta</span>
-                        <i class="fas fa-edit mr-2"></i>
-                    </a>
-                {% else %}
-                    <a class="btn btn-warning btn-sm btn-disabled rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">{{icon.price}}</span>
-                        <i class="fas fa-dollar-sign mr-2"></i>
                     </a>
                 {% endif %}
             {% endif %}
@@ -169,12 +167,12 @@
     </div>
 {% endmacro %}
 
-{% macro title_card(title, description, price, is_owned, is_equipped)%}
-    <div class="card">
+{% macro title_card(title, is_owned, is_equipped, current_user)%}
+    <div class="card" style='width: 100%'>
         <div class="card-body">
-            <p class="card-title text-center font-weight-bold h4">{{title}}</p>
+            <p class="card-title text-center font-weight-bold h4">{{title.title}}</p>
             <p class='text-center'><i class="fas {{fa_id}} fa-3x text-success"></i></p>
-            <p class='text-center'>{{description}}</p>
+            <p class='text-center'>{{title.description}}</p>
 
             {% if is_owned %}
                 {% if not is_equipped %}
@@ -189,20 +187,23 @@
                 {% endif %}
             {% else %}
                 <a class="btn btn-warning btn-sm btn-disabled rounded-pill text-center float-right">
-                    <span class="mr-2 ml-2 font-weight-bold">{{price}}</span>
+                    <span class="mr-2 ml-2 font-weight-bold">{{title.price}}</span>
                     <i class="fas fa-dollar-sign mr-2"></i>
                 </a>
+                {% if current_user.is_admin() %}
+                    <a href="{{title.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">Breyta</span>
+                    </a>
+                {% endif %}
             {% endif %}
         </div>
     </div>
 {% endmacro %}
 
-{% macro slogan_card(slogan, price, is_owned, is_equipped)%}
+{% macro slogan_card(quote, is_owned, is_equipped, current_user)%}
     <div class="card" style="width:100%">
         <div class="card-body">
-            <p class="card-title text-center">{{slogan}}</p>
-            <p class='text-center'><i class="fas {{fa_id}} fa-3x text-success"></i></p>
-
+            <p class="card-title text-center">{{quote.quote}}</p>
             {% if is_owned %}
                 {% if not is_equipped %}
                     <a class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
@@ -216,9 +217,15 @@
                 {% endif %}
             {% else %}
                 <a class="btn btn-warning btn-sm btn-disabled rounded-pill text-center float-right">
-                    <span class="mr-2 ml-2 font-weight-bold">{{price}}</span>
+                    <span class="mr-2 ml-2 font-weight-bold">{{quote.price}}</span>
                     <i class="fas fa-dollar-sign mr-2"></i>
                 </a>
+                {% if current_user.is_admin() %}
+                    <a href="{{quote.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">Breyta</span>
+                    </a>
+                {% endif %}
+
             {% endif %}
         </div>
     </div>
@@ -234,6 +241,16 @@
                         Búa til
                         {{btn_icon('plus', 'l')}}
                     </a>
+                {% elif type == "Titles" %}
+                    <a href="{{url_for('title_create')}}" class='btn btn-secondary text-success float-right'>
+                        Búa til
+                        {{btn_icon('plus', 'l')}}
+                    </a>
+                {% elif type == "Slogans" %}
+                    <a href="{{url_for('quote_create')}}" class='btn btn-secondary text-success float-right'>
+                        Búa til
+                        {{btn_icon('plus', 'l')}}
+                    </a>
                 {% endif %}
             {% endif %}
         </div>
@@ -241,10 +258,12 @@
 
     <!--Large screen Carousel Wrapper-->
     <div id="{{type}}-carousel-large" class="carousel slide carousel-multi-item d-lg-block d-none" style="margin-bottom:40px" data-interval="false">
-
     <!--Controls-->
     <div class="controls-top mt-2">
-        <a href="#{{type}}-carousel-large" data-slide="prev"><i class="fas fa-chevron-left fa-3x"></i></a>
+        <a href="#{{type}}-carousel-large" data-slide="prev" class='btn btn-sm btn-secondary text-success rounded-pill'>
+            <i class="fas fa-chevron-left mr-1 ml-2"></i>
+            <span class='mr-2'>Fyrri</span>
+        </a>
         <a class="float-right" href="#{{type}}-carousel-large" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
     </div>
 
@@ -256,19 +275,22 @@
     </ol>
 
     <div class="carousel-inner" role="listbox" >
-        {% for item_set in items | batch(4, '&nbsp;') %}
+        {% for item_set in items | batch(4, none) %}
             <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
                 <div class='row'>
                     {% for item in item_set %}
-                        <div class="col-md-3 d-flex align-items-stretch">
-                            {%if type == "Icons"%}
-                                {{icon_card(item, false, false, current_user)}}
-                            {% elif type == "Titles" %}
-                                {{title_card(item.title, item.description, item.price, false, false)}}
-                            {% elif type == "Slogans" %}
-                                {{slogan_card(item.slogan, item.price, false, false)}}
-                            {%endif%}
-                        </div>
+                        {% if item is not none %}
+                            <div class="col-md-3 d-flex align-items-stretch">
+                                {%if type == "Icons"%}
+                                    {{icon_card(item, false, false, current_user)}}
+                                {% elif type == "Titles" %}
+                                    {{title_card(item, false, false, current_user)}}
+                                {% elif type == "Slogans" %}
+                                    {{slogan_card(item, false, false, current_user)}}
+                                {%endif%}
+                            </div>
+                        {% endif %}
+
                     {% endfor %}
                 </div>
             </div>
@@ -283,8 +305,8 @@
 
     <!--Controls-->
         <div class="controls-top">
-            <a href="#{{type}}-carousel-small" data-slide="prev"><i class="fas fa-chevron-left fa-3x"></i></a>
-            <a class="float-right" href="#{{type}}-carousel-small" data-slide="next"><i class="fas fa-chevron-right fa-3x"></i></a>
+            <a href="#{{type}}-carousel-small" data-slide="prev"><i class="fas fa-chevron-left fa-2x"></i></a>
+            <a class="float-right" href="#{{type}}-carousel-small" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
         </div>
 
         <!--Indicators-->
@@ -295,16 +317,16 @@
         </ol>
 
         <div class="carousel-inner" role="listbox" >
-            {% for item_set in items | batch(1, '&nbsp;') %}
+            {% for item_set in items | batch(1, none) %}
                 <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
                     {% for item in item_set %}
                         <div class="col-12" style="float:left">
                             {%if type == "Icons"%}
                                 {{icon_card(item, false, false, current_user)}}
                             {% elif type == "Titles" %}
-                                {{title_card(item.title, item.description, item.price, false, false)}}
+                                {{title_card(item, false, false, current_user)}}
                             {% elif type == "Slogans" %}
-                                {{slogan_card(item.slogan, item.price, false, false)}}
+                                {{slogan_card(item, false, false, current_user)}}
                             {%endif%}
                         </div>
                     {% endfor %}

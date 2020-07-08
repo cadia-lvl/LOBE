@@ -19,8 +19,8 @@ from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
-                   VerifierIconForm)
-from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierIcon, db
+                   VerifierIconForm, VerifierTitleForm, VerifierQuoteForm)
+from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierIcon, VerifierTitle, VerifierQuote, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
@@ -849,7 +849,10 @@ def verify_index():
 @roles_accepted('Greinir', 'admin')
 def lobe_shop():
     icons = VerifierIcon.query.all()
-    return render_template('lobe_shop.jinja', icons=icons)
+    titles = VerifierTitle.query.all()
+    quotes = VerifierQuote.query.all()
+    return render_template('lobe_shop.jinja', icons=icons,
+        titles=titles, quotes=quotes)
 
 @app.route('/shop/icons/create', methods=['GET', 'POST'])
 @login_required
@@ -866,8 +869,8 @@ def icon_create():
             flash("Nýju merki bætt við", category="success")
             return redirect(url_for('lobe_shop'))
         except Exception as error:
-            flash("Error creating configuration.", category="danger")
-            app.logger.error("Error creating configuration {}\n{}".format(error,traceback.format_exc()))
+            flash("Error creating verifier icon.", category="danger")
+            app.logger.error("Error creating verifier icon {}\n{}".format(error,traceback.format_exc()))
     return render_template('forms/model.jinja', form=form,
         action=url_for('icon_create'), section='verification', type='create')
 
@@ -890,6 +893,83 @@ def icon_edit(id):
         app.logger.error("Error updating icon {}\n{}".format(error,traceback.format_exc()))
     return render_template('forms/model.jinja', form=form,
         action=url_for('icon_edit', id=id), section='verification', type='edit')
+
+@app.route('/shop/titles/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def title_create():
+    form = VerifierTitleForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            title = VerifierTitle()
+            form.populate_obj(title)
+            db.session.add(title)
+            db.session.commit()
+            flash("Nýjum titli bætt við", category="success")
+            return redirect(url_for('lobe_shop'))
+        except Exception as error:
+            flash("Error creating verifier title.", category="danger")
+            app.logger.error("Error creating title {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('title_create'), section='verification', type='create')
+
+@app.route('/shop/titles/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def title_edit(id):
+    title = VerifierTitle.query.get(id)
+    form = VerifierTitleForm(obj=title)
+    try:
+        if request.method == 'POST' and form.validate():
+            form = VerifierTitleForm(request.form, obj=title)
+            form.populate_obj(title)
+            db.session.commit()
+            flash("Titli var breytt", category="success")
+            return redirect(url_for('lobe_shop'))
+    except Exception as error:
+        flash("Error updating title.", category="danger")
+        app.logger.error("Error updating title {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('title_edit', id=id), section='verification', type='edit')
+
+
+@app.route('/shop/quotes/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def quote_create():
+    form = VerifierQuoteForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            quote = VerifierQuote()
+            form.populate_obj(quote)
+            db.session.add(quote)
+            db.session.commit()
+            flash("Nýjum titli bætt við", category="success")
+            return redirect(url_for('lobe_shop'))
+        except Exception as error:
+            flash("Error creating verifier quote.", category="danger")
+            app.logger.error("Error creating quote {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('quote_create'), section='verification', type='create')
+
+@app.route('/shop/quotes/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def quote_edit(id):
+    quote = VerifierQuote.query.get(id)
+    form = VerifierQuoteForm(obj=quote)
+    try:
+        if request.method == 'POST' and form.validate():
+            form = VerifierQuoteForm(request.form, obj=quote)
+            form.populate_obj(quote)
+            db.session.commit()
+            flash("Titli var breytt", category="success")
+            return redirect(url_for('lobe_shop'))
+    except Exception as error:
+        flash("Error updating quote.", category="danger")
+        app.logger.error("Error updating quote {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('quote_edit', id=id), section='verification', type='edit')
 
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])

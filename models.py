@@ -842,6 +842,14 @@ progression_icon = db.Table('progression_icon',
     db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
     db.Column('icon_id', db.Integer(), db.ForeignKey('verifier_icon.id')))
 
+progression_title = db.Table('progression_title',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('title_id', db.Integer(), db.ForeignKey('verifier_title.id')))
+
+progression_quote = db.Table('progression_quote',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('quote_id', db.Integer(), db.ForeignKey('verifier_quote.id')))
+
 
 class VerifierProgression(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
@@ -853,6 +861,10 @@ class VerifierProgression(BaseModel, db.Model):
 
     owned_icons = db.relationship("VerifierIcon",
         secondary=progression_icon)
+    owned_titles = db.relationship("VerifierTitle",
+        secondary=progression_title)
+    owned_quotes = db.relationship("VerifierQuote",
+        secondary=progression_quote)
 
 class VerifierIcon(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
@@ -875,14 +887,27 @@ class VerifierIcon(BaseModel, db.Model):
         return url_for('icon_edit', id=self.id)
 
 
-#class VerifierTitle:
-#    id = db.Column(db.Integer(), default=0)
-#    title = db.Column(db.String(64))
-#    description = db.Column(db.String(255))
-#    price = db.Column(db.Integer(), default=0)
-#
-#class VerifierQuote:
-#    id = db.Column(db.Integer(), default=0)
-#    quote = db.Column(db.String(255))
-#    price = db.Column(db.Integer(), default=0)
-#
+class VerifierTitle(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    title = db.Column(db.String(64), info={
+        'label': 'Titillinn'})
+    description = db.Column(db.String(255), info={
+        'label': 'Stutt lýsing'})
+    price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð'})
+
+    @property
+    def edit_url(self):
+        return url_for('title_edit', id=self.id)
+
+
+class VerifierQuote(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    quote = db.Column(db.String(255), info={
+        'label': 'Slagorðið'})
+    price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð'})
+
+    @property
+    def edit_url(self):
+        return url_for('quote_edit', id=self.id)

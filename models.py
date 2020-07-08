@@ -805,6 +805,13 @@ class User(db.Model, UserMixin):
         cascade='all, delete, delete-orphan')
     recordings = db.relationship("Recording")
 
+    progression_id = db.Column(db.Integer, db.ForeignKey('verifier_progression.id'))
+
+    @property
+    def progression(self):
+        if self.progression_id is not None:
+            return VerifierProgression.query.get(self.progression_id)
+
     def get_url(self):
         return url_for('user', id=self.id)
 

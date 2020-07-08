@@ -3,7 +3,7 @@
     <div class='row'>
         <div class="col-12">
             <h3>Kolaportið</h3>
-            <p>{{current_user.name}} - My LOBE-coins: 110 </p>
+            <p>{{current_user.name}} - My LOBE-coins: {{current_user.progression.lobe_coins}} </p>
         </div>
     </div>
     {% with items=icons, type="Icons"%}

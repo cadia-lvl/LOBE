@@ -17,8 +17,10 @@ from termcolor import colored
 from collections import defaultdict
 
 from app import app, db, user_datastore
-from models import Recording, Token, User, Role, Collection, Configuration, Session
+from models import Recording, Token, User, Role, Collection, Configuration, Session, VerifierProgression
 from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
+from db import get_verifiers
+
 migrate = Migrate(app, db)
 manager = Manager(app)
 
@@ -447,6 +449,17 @@ def fix_verified_status():
             session = Session.query.get(rec.session_id)
             session.is_secondarily_verified = False
     db.session.commit()
+
+@manager.command
+def add_progression_to_verifiers():
+    verifiers = get_verifiers()
+    for verifier in verifiers:
+        if verifier.progression_id is None:
+            progression = VerifierProgression()
+            db.session.add(progression)
+            db.session.flush()
+            verifier.progression_id = progression.id
+        db.session.commit()
 
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)

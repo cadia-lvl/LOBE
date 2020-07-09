@@ -61,9 +61,8 @@ def create_tokens(collection_id, files, is_g2p):
 
 
 def insert_collection(form):
-    collection = Collection(form.name.data, form.sort_by.data,
-        assigned_user_id=form.assigned_user_id.data,
-        configuration_id=form.configuration_id.data)
+    collection = Collection()
+    form.populate_obj(collection)
     db.session.add(collection)
     db.session.flush()
 
@@ -87,6 +86,7 @@ def insert_collection(form):
                 """.format(dir))
     db.session.commit()
     return collection
+
 
 def save_recording_session(form, files):
     duration = float(form['duration'])

@@ -8,7 +8,7 @@
             <p>Tekin upp þann: {{session.created_at | datetime(format='low')}}</p>
             <p>Setningar teknar upp: {{session.num_recordings}}</p>
             <p>Lengd lotu: {{session.get_printable_duration() | default("N/A")}}</p>
-            <a href='{{url_for("record_session", coll_id=session.collection.id)}}?user_id={{session.user_id}}'
+            <a href='{{url_for("record_session", collection_id=session.collection.id)}}?user_id={{session.user_id}}'
                 class='btn btn-success btn-sm float-right mb-2 ml-2'
                 data-toggle="tooltip" data-placement="bottom" title="Sama rödd, {{session.get_user}}, verður notuð.">
                 {{macros.btn_icon('microphone', 'r')}}

@@ -48,13 +48,6 @@ class BaseModel(db.Model):
 class Collection(BaseModel, db.Model):
     __tablename__ = 'Collection'
 
-    def __init__(self, name, sort_by, assigned_user_id=None,
-        configuration_id=None):
-        self.name = name
-        self.sort_by = sort_by
-        self.assigned_user_id = assigned_user_id
-        self.configuration_id = configuration_id
-
     @hybrid_property
     def num_nonrecorded_tokens(self):
         return self.num_tokens - self.num_recorded_tokens
@@ -157,6 +150,10 @@ class Collection(BaseModel, db.Model):
             return Configuration.query.get(self.configuration_id)
         return None
 
+    @hybrid_property
+    def posting(self):
+        return Posting.query.filter(Posting.collection == self.id).first()
+
     @property
     def printable_id(self):
         return "T-{:04d}".format(self.id)
@@ -168,6 +165,7 @@ class Collection(BaseModel, db.Model):
 
     # the assigned user
     assigned_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    is_multi_speaker = db.Column(db.Boolean, default=False)
     configuration_id = db.Column(db.Integer, db.ForeignKey('Configuration.id'))
     tokens = db.relationship("Token", lazy='select', backref='collection',
         cascade='all, delete, delete-orphan')
@@ -759,6 +757,7 @@ roles_users = db.Table('roles_users',
         db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
         db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
+
 class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
@@ -818,30 +817,60 @@ class User(db.Model, UserMixin):
             'dialect': self.dialect}
 
 
-class PostAd(BaseModel, db.Model):
+class Posting(BaseModel, db.Model):
+    __tablename__ = 'Posting'
+
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
 
     name = db.Column(db.String)
-    ad = db.Column(db.String)
+    ad_text = db.Column(db.String)
 
     utterances = db.Column(db.String)
+    collection = db.Column(db.Integer, db.ForeignKey("Collection.id"))
 
-    token = db.Column(db.String, default=str(uuid.uuid4()))
+    uuid = db.Column(db.String, default=str(uuid.uuid4()))
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    applications = db.relationship("Application", lazy="select", backref='posting',
+        cascade='all, delete, delete-orphan')
+
+    def get_url(self):
+        return url_for("posting", id=self.id)
+
+    def get_apply_url(self):
+        return url_for("new_application", posting_uuid=self.uuid)
+
+    @hybrid_property
+    def delete_url(self):
+        return url_for("delete_posting", id=self.id)
 
 
 class Application(BaseModel, db.Model):
+    __tablename__ = 'Application'
+
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
 
     name = db.Column(db.String)
     sex = db.Column(db.String)
     age = db.Column(db.Integer)
+    voice = db.Column(db.String)
 
     email = db.Column(db.String)
     phone = db.Column(db.String)
 
-    recordings = db.relationship("Recordings", lazy='joined', backref='application')
+    uuid = db.Column(db.String, default=str(uuid.uuid4()))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
-    ad = db.relationship("PostAd", lazy="select", backref='application',
-        cascade='all, delete, delete-orphan')
+    posting_id = db.Column(db.Integer, db.ForeignKey("Posting.id"))
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    def get_url(self):
+        return url_for("application", id=self.id)
+
+    @hybrid_property
+    def delete_url(self):
+        return url_for("delete_application", id=self.id)
+
+    @hybrid_property
+    def user_url(self):
+        return url_for("user", id=self.user_id)

@@ -175,7 +175,7 @@ class changeDataRoot(Command):
         db.session.commit()
 
 @manager.command
-def download_collection(coll_id, out_dir):
+def download_collection(collection_id, out_dir):
     '''
     Will create:
     * out_dir/audio/...
@@ -184,7 +184,7 @@ def download_collection(coll_id, out_dir):
     * out_dir/info.json
     * out_dir/meta.json
     '''
-    collection = Collection.query.get(coll_id)
+    collection = Collection.query.get(collection_id)
     tokens = collection.tokens
     dl_tokens = []
     for token in tokens:

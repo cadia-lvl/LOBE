@@ -22,7 +22,7 @@ from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
-                   VerifierIconForm, VerifierTitleForm, VerifierQuoteForm)
+                   VerifierIconForm, VerifierTitleForm, VerifierQuoteForm, VerifierLootbox)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, VerifierIcon, VerifierTitle, VerifierQuote, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
@@ -880,6 +880,17 @@ def lobe_shop():
     icons = VerifierIcon.query.order_by(VerifierIcon.price).all()
     titles = VerifierTitle.query.order_by(VerifierTitle.price).all()
     quotes = VerifierQuote.query.order_by(VerifierQuote.price).all()
+    #loot_boxes = VerifierLootbox.query.order_by(VerifierLootbox.price).all()
+    loot_boxes = [
+        {'rarity': 0, 'price': 50},
+        {'rarity': 0, 'price': 60},
+        {'rarity': 0, 'price': 70},
+        {'rarity': 1, 'price': 100},
+        {'rarity': 1, 'price': 120},
+        {'rarity': 2, 'price': 150},
+        {'rarity': 2, 'price': 170},
+        {'rarity': 3, 'price': 250}
+        ]
 
     loot_box_message = request.args.get('messages', None)
     loot_box_items = []
@@ -892,8 +903,9 @@ def lobe_shop():
             if item['type'] == 'quote':
                 loot_box_items.append(VerifierQuote.query.get(item['id']))
 
-    return render_template('lobe_shop.jinja', icons=icons,
-        titles=titles, quotes=quotes, progression_view=True, full_width=True, loot_box_items=loot_box_items)
+    return render_template('lobe_shop.jinja', 
+        icons=icons,titles=titles, quotes=quotes, loot_boxes=loot_boxes, 
+        progression_view=True, full_width=True, loot_box_items=loot_box_items)
 
 @app.route('/shop/random_equip', methods=['GET'])
 @login_required
@@ -975,6 +987,7 @@ def loot_box(rarity):
         db.session.commit()
 
         loot_box_message = json.dumps({str(i):{'type': types[i], 'id': item.id} for i,item in enumerate(selected_items)})
+        print(loot_box_message)
         flash("Kaup samþykkt", category='success')
         return redirect(url_for('lobe_shop', messages=loot_box_message))
 

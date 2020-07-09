@@ -86,9 +86,9 @@
 
     <div class='row'>
         <div class='col-12'>
-            <h3 class='font-weight-bold'>Hjólið</h3>
+            <h3 class='font-weight-bold'>Slembikassar</h3>
             <p class='mb-0'>Snúðu hjólinu eins og þú sért á English.</p>
-            <p class='mb-0'>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} lottómiðum.</p>
+            <p class='mb-0'>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} slembikössum.</p>
 
             {% if current_user.is_admin() %}
                 <a href="{{url_for('quote_create')}}" class='btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
@@ -98,16 +98,9 @@
             {% endif %}
         </div>
     </div>
-    {% with items=icons, type="Lootbox"%}
+    {% with items=loot_boxes, type="Lootbox"%}
         {% include 'carousel_item.jinja'%}
     {% endwith %}
-
-    <div class='row'>
-        <a href="{{url_for('loot_box', rarity=0)}}" class='btn'>Loot box 1</a>
-        <a href="{{url_for('loot_box', rarity=1)}}" class='btn'>Loot box 2</a>
-        <a href="{{url_for('loot_box', rarity=2)}}" class='btn'>Loot box 3</a>
-        <a href="{{url_for('loot_box', rarity=3)}}" class='btn'>Loot box 4</a>
-    </div>
 </div>
 </div>
 {% endblock %}
@@ -117,19 +110,12 @@
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class='container-fluid'>
-                        <div class='row'>
-                            {% for item in loot_box_items %}
-                                <div class='col-4'>
-                                    {% if item.__class__.__name__ == 'VerifierIcon' %}
-                                        {{macros.icon_card(item, false, false, current_user)}}
-                                    {% elif item.__class__.__name__ == 'VerifierTitle' %}
-                                        {{macros.title_card(item, false, false, current_user)}}
-                                    {% else %}
-                                        {{macros.slogan_card(item, false, false, current_user)}}
-                                    {% endif %}
-                                </div>
-                            {% endfor %}
-                        </div>
+                        <p class="text-center h3" style="padding-top: 15px; padding-bottom:10px">
+                            Þú vannst
+                        </p>
+                        {% with items=loot_box_items, type="Winnings"%}
+                            {% include 'lootbox_carousel.jinja'%}
+                        {% endwith %}
                     </div>
                 </div>
             </div>

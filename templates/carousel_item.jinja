@@ -1,3 +1,4 @@
+    
     <!--Large screen Carousel Wrapper-->
     <div id="{{type}}-carousel-large" class="carousel slide carousel-multi-item d-lg-block d-none" style="margin-bottom:40px" data-interval="false">
 
@@ -13,11 +14,11 @@
                                 {% if item is not none%}
                                     <div class="col-md-3 col-sm-6 d-flex align-items-stretch">
                                         {%if type == "Icons"%}
-                                            {{macros.icon_card(item, current_user)}}
+                                            {{macros.icon_card(item, false, current_user)}}
                                         {% elif type == "Titles" %}
-                                            {{macros.title_card(item, current_user)}}
+                                            {{macros.title_card(item, false, current_user)}}
                                         {% elif type == "Slogans" %}
-                                            {{macros.slogan_card(item, current_user)}}
+                                            {{macros.slogan_card(item, false, current_user)}}
                                         {% elif type == "Lootbox" %}
                                             {{macros.loot_card(item, current_user)}}
                                         {%endif%}
@@ -48,7 +49,7 @@
 
         <div class="row justify-content-md-center">
             <div class="col align-self-center">
-                <a href="#{{type}}-carousel-large" data-slide="prev"><i class="fas fa-chevron-left fa-2x"></i></a>
+                <a href="#{{type}}-carousel-small" data-slide="prev"><i class="fas fa-chevron-left fa-2x"></i></a>
             </div>
             <div class="carousel-inner col-9" role="listbox" >
                 {% for item_set in items | batch(1, '&nbsp;') %}
@@ -56,11 +57,11 @@
                         {% for item in item_set %}
                             <div class="col-12 col-md-8 offset-md-2" style="float:left">
                                 {%if type == "Icons"%}
-                                    {{macros.icon_card(item, current_user)}}
+                                    {{macros.icon_card(item, false, current_user)}}
                                 {% elif type == "Titles" %}
-                                    {{macros.title_card(item, current_user)}}
+                                    {{macros.title_card(item, false, current_user)}}
                                 {% elif type == "Slogans" %}
-                                    {{macros.slogan_card(item, current_user)}}
+                                    {{macros.slogan_card(item, false, current_user)}}
                                 {% elif type == "Lootbox" %}
                                     {{macros.loot_card(item, current_user)}}
                                 {%endif%}
@@ -70,7 +71,7 @@
                 {% endfor %}
             </div>
             <div class="col align-self-center">
-                <a class="float-right" href="#{{type}}-carousel-large" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
+                <a class="float-right" href="#{{type}}-carousel-small" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
             </div>
 
         </div>

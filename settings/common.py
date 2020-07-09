@@ -38,6 +38,21 @@ VIDEO_W = 1280
 VIDEO_H = 720
 VIDEO_CODEC = 'vp8'
 
+COLORS = {
+    'common': "#bdbdbd",
+    'rare': "#42a5f5",
+    'epic': "#7e57c2",
+    'legendary': "#ffee58",
+
+    'danger': "#d9534f",
+    'primary': "#0275d8",
+    'sucsess': "#5cb85c",
+    'info': "#5bc0de",
+    'warning': "#f0ad4e",
+    'lootarrows': "#ffee58",
+
+}
+
 ECONOMY = {
     'weekly_challenge': {
         'goal': 15000,

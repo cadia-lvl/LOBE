@@ -858,6 +858,10 @@ progression_quote = db.Table('progression_quote',
     db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
     db.Column('quote_id', db.Integer(), db.ForeignKey('verifier_quote.id')))
 
+progression_lootbox = db.Table('progression_lootbox',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('lootbox_id', db.Integer(), db.ForeignKey('verifier_lootbox.id')))
+
 
 class VerifierProgression(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
@@ -884,6 +888,8 @@ class VerifierProgression(BaseModel, db.Model):
         secondary=progression_title)
     owned_quotes = db.relationship("VerifierQuote",
         secondary=progression_quote)
+    owned_lootboxes = db.relationship("VerifierLootbox",
+        secondary=progression_lootbox)
 
     def owns_icon(self, icon):
         return any([i.id == icon.id for i in self.owned_icons])
@@ -902,6 +908,10 @@ class VerifierProgression(BaseModel, db.Model):
 
     def is_quote_equipped(self, quote):
         return self.equipped_quote_id == quote.id
+
+    def owns_lootbox(self, lootbox):
+        return False
+        #return any([q.id == lootbox.id for q in self.owned_lootboxes])
 
     @property
     def equipped_icon(self):
@@ -1004,3 +1014,21 @@ class VerifierQuote(BaseModel, db.Model):
     @property
     def edit_url(self):
         return url_for('quote_edit', id=self.id)
+
+class VerifierLootbox(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð'})
+    rarity = db.Column(db.Integer(), info={
+        'validators': [validators.InputRequired()],
+        'label': 'Tegund',
+        'choices': [
+            (0, 'Basic'),
+            (1, 'Rare'),
+            (2, 'Epic'),
+            (3, 'Legendary')
+        ]})
+
+    @property
+    def edit_url(self):
+        return url_for('lootbox_edit', id=self.id)

@@ -1,0 +1,29 @@
+<div class="modal fade" id='deletePostingModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú ert við það að eyða auglýsingu!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                Með því að eyða auglýsingu eyðast allar umsóknir í stöðuna.
+                <br><br>
+                Það hefur verið sótt um í stöðuna {{posting.applications | length}} sinnum
+                <br><br>
+                Ertu viss um að þú viljir eyða þessari auglýsingu?
+                </p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a href={{posting.delete_url}} class='btn btn-danger'>
+                    Eyða
+                    {{macros.btn_icon('times', 'l')}}
+                </a>
+            </div>
+            </div>
+        </div>
+    </div>

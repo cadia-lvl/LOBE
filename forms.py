@@ -1,21 +1,21 @@
 import os
 
-from flask import current_app as app
 from flask_security.forms import LoginForm, RegisterForm
 from flask_wtf import RecaptchaField
-from wtforms import (fields, FileField, Form, HiddenField, MultipleFileField, SelectMultipleField,
-                     PasswordField, SelectField, TextAreaField, TextField, IntegerField, BooleanField,
+from wtforms import (Form, HiddenField, MultipleFileField, SelectMultipleField,
+                     SelectField, TextField, IntegerField, BooleanField,
                      validators, ValidationError, FloatField, widgets, StringField)
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms.ext.sqlalchemy.orm import model_form
+from wtforms.fields.html5 import EmailField
 from wtforms.validators import InputRequired
-from wtforms_alchemy import ModelForm
 
-from models import Role, User, Collection, Configuration, db, Application, PostAd
+from models import Role, User, Configuration, db, Posting, Application
 
 # TODO: move to app configuration
 sex_choices = [('Kona','Kona'), ('Karl','Karl'), ('Annað','Annað')]
-dialect_choices = [('Linmæli', 'Linmæli'),
+dialect_choices = [
+    ('Linmæli', 'Linmæli'),
     ('Harðmæli', 'Harðmæli'),
     ('Raddaður framburður', 'Raddaður framburður'),
     ('hv-framburður', 'hv-framburður'),
@@ -23,7 +23,14 @@ dialect_choices = [('Linmæli', 'Linmæli'),
     ('ngl-framburður', 'ngl-framburður'),
     ('rn-, rl-framburður', 'rn-, rl-framburður'),
     ('Vestfirskur einhljóðaframburður', 'Vestfirskur einhljóðaframburður'),
-    ('Skaftfellskur einhljóðaframburður', 'Skaftfellskur einhljóðaframburður')]
+    ('Skaftfellskur einhljóðaframburður', 'Skaftfellskur einhljóðaframburður')
+]
+voice_choices = [
+    ("sopran", "Sópran"),
+    ("alt", "Alt"),
+    ("tenor", "Tenór"),
+    ("bassi", "Bassi"),
+]
 
 
 class MultiCheckboxField(SelectMultipleField):
@@ -48,8 +55,7 @@ class CollectionForm(Form):
         ('same', 'Sömu röð og í skjali'),
         ('random', 'Slembiröðun')])
     is_dev = BooleanField('Tilraunarsöfnun')
-
-
+    is_multi_speaker = BooleanField("Margar raddir")
 
     def validate_assigned_user_id(self, field):
         # HACK to user the QuerySelectField on User objects
@@ -238,8 +244,20 @@ class ConfigurationForm(Form):
 RoleForm = model_form(model=Role, base_class=Form,
                       db_session=db.session)
 
-PostAdForm = model_form(PostAd, db_session=db.session,
-                        exclude=["id", "created_at", "token"])
+PostingForm = model_form(Posting, db_session=db.session,
+                         field_args={
+                             "name": {"label": "Nafn"},
+                             "ad_text": {"widget": widgets.TextArea()},
+                             "utterances": {"widget": widgets.TextArea()},
+                         },
+                         exclude=["id", "created_at", "uuid", "collection", "applications"])
 
-ApplicationForm = model_form(Application, db_session=db.session,
-                             exclude=["id", "created_at", "recordings", "ad"])
+
+class ApplicationForm(Form):
+    name = StringField("Nafn", [validators.required()])
+    sex = SelectField("Kyn", [validators.required()], choices=sex_choices)
+    age = IntegerField("Aldur", [validators.required(),
+                       validators.NumberRange(min=10, max=120)])
+    voice = SelectField("Rödd", [validators.required()], choices=voice_choices)
+    email = EmailField("Netfang", [validators.required()])
+    phone = StringField("Sími")

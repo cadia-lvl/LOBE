@@ -1,0 +1,37 @@
+<div class='table-responsive'>
+    <table class='table'>
+        <thead>
+            <th>
+                Dagsetning
+                {{macros.sort_th_a('created_at')}}
+            </th>
+            <th>
+                Nafn
+                {{macros.sort_th_a('name')}}
+            </th>
+            <th>
+                Kyn
+                {{macros.sort_th_a('sex')}}
+            </th>
+            <th>
+                Rödd
+                {{macros.sort_th_a('voice')}}
+            </th>
+            <th>
+                Aldur
+                {{macros.sort_th_a('age')}}
+            </th>
+        </thead>
+        <tbody>
+            {% for application in applications %}
+                <tr>
+                    <td>{{application.created_at | datetime(format='low')}}</td>
+                    <td><a href={{application.get_url()}}>{{application.name}}</a></td>
+                    <td>{{application.sex}}</td>
+                    <td>{{application.voice}}</td>
+                    <td>{{application.age}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

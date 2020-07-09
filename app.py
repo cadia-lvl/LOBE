@@ -3,7 +3,10 @@ import os
 import traceback
 import shutil
 import logging
+import random
 from logging.handlers import RotatingFileHandler
+
+import numpy as np
 
 from flask import (Flask, Response, redirect, render_template, request,
                    send_from_directory, url_for, flash, jsonify)
@@ -874,11 +877,23 @@ def verify_index():
 @login_required
 @roles_accepted('Greinir', 'admin')
 def lobe_shop():
-    icons = VerifierIcon.query.all()
-    titles = VerifierTitle.query.all()
-    quotes = VerifierQuote.query.all()
+    icons = VerifierIcon.query.order_by(VerifierIcon.price).all()
+    titles = VerifierTitle.query.order_by(VerifierTitle.price).all()
+    quotes = VerifierQuote.query.order_by(VerifierQuote.price).all()
+
+    loot_box_message = request.args.get('messages', None)
+    loot_box_items = []
+    if loot_box_message is not None:
+        for _, item in json.loads(loot_box_message).items():
+            if item['type'] == 'icon':
+                loot_box_items.append(VerifierIcon.query.get(item['id']))
+            if item['type'] == 'title':
+                loot_box_items.append(VerifierTitle.query.get(item['id']))
+            if item['type'] == 'quote':
+                loot_box_items.append(VerifierQuote.query.get(item['id']))
+
     return render_template('lobe_shop.jinja', icons=icons,
-        titles=titles, quotes=quotes, progression_view=True)
+        titles=titles, quotes=quotes, progression_view=True, full_width=True, loot_box_items=loot_box_items)
 
 @app.route('/shop/random_equip', methods=['GET'])
 @login_required
@@ -895,6 +910,75 @@ def random_equip():
     else:
         flash('Þú verður að eiga a.m.k. tvö stykki af hverri tegund',
             category='warning')
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/loot_box/<int:rarity>', methods=['GET'])
+@login_required
+@roles_accepted('Greinir', 'admin')
+def loot_box(rarity):
+    set_price = app.config['ECONOMY']['loot_boxes']['prices'][str(rarity)]
+
+    if set_price <= current_user.progression.lobe_coins:
+        icons = VerifierIcon.query.all()
+        titles = VerifierTitle.query.all()
+        quotes = VerifierQuote.query.all()
+
+        common_items = [icon for icon in icons if icon.rarity == 0] + \
+            [title for title in titles if title.rarity == 0] + \
+            [quote for quote in quotes if quote.rarity == 0]
+
+        rare_items = [icon for icon in icons if icon.rarity == 1] + \
+            [title for title in titles if title.rarity == 1] + \
+            [quote for quote in quotes if quote.rarity == 1]
+
+        epic_items = [icon for icon in icons if icon.rarity == 2] + \
+            [title for title in titles if title.rarity == 2] + \
+            [quote for quote in quotes if quote.rarity == 2]
+
+        legendary_items = [icon for icon in icons if icon.rarity == 3] + \
+            [title for title in titles if title.rarity == 3] + \
+            [quote for quote in quotes if quote.rarity == 3]
+
+        if rarity == 1:
+            # we guarantee one rare item
+            guaranteed_item = random.choice(rare_items)
+        elif rarity == 2:
+            # we guarantee one epic item
+            guaranteed_item = random.choice(epic_items)
+        elif rarity == 3:
+            # we guarantee one legendary item
+            guaranteed_item = random.choice(legendary_items)
+        else:
+            # we guarantee one common item
+            guaranteed_item = random.choice(common_items)
+
+        all_items = common_items + rare_items + epic_items + legendary_items
+        probabilities = [app.config['ECONOMY']['loot_boxes']['rarity_weights'][str(item.rarity)] for item in all_items]
+        norm_probabilities = [p_val/np.sum(probabilities) for p_val in probabilities]
+        selected_items = list(np.random.choice(all_items, app.config['ECONOMY']['loot_boxes']['num_items']-1,
+            p=norm_probabilities))
+        selected_items.append(guaranteed_item)
+
+        progression = current_user.progression
+        progression.lobe_coins -= set_price
+        types = []
+        for item in selected_items:
+            if type(item) == VerifierQuote:
+                progression.owned_quotes.append(item)
+                types.append('quote')
+            if type(item) == VerifierTitle:
+                progression.owned_titles.append(item)
+                types.append('title')
+            if type(item) == VerifierIcon:
+                progression.owned_icons.append(item)
+                types.append('icon')
+        db.session.commit()
+
+        loot_box_message = json.dumps({str(i):{'type': types[i], 'id': item.id} for i,item in enumerate(selected_items)})
+        flash("Kaup samþykkt", category='success')
+        return redirect(url_for('lobe_shop', messages=loot_box_message))
+
+    flash("Þú átt ekki nóg fyrir þessum lukkukassa", category='warning')
     return redirect(url_for('lobe_shop'))
 
 @app.route('/shop/icons/<int:icon_id>/buy/<int:user_id>', methods=['GET', 'POST'])

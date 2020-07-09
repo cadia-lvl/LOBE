@@ -14,7 +14,7 @@ from sqlalchemy import func, select, MetaData
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug import secure_filename
-from wtforms_components import ColorField
+from wtforms_components import ColorField, SelectField
 from wtforms import validators
 
 '''
@@ -931,11 +931,14 @@ class VerifierProgression(BaseModel, db.Model):
 class VerifierIcon(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     fa_id = db.Column(db.String(), info={
+        'validators': [validators.InputRequired()],
         'label': 'Merkisklassar',
         'description': 'Til dæmis: fab fa-apple'})
     title = db.Column(db.String(64), info={
+        'validators': [validators.InputRequired()],
         'label': 'Titill'})
     description = db.Column(db.String(255), info={
+        'validators': [validators.InputRequired()],
         'label': 'Stutt lýsing'})
     price = db.Column(db.Integer(), default=0, info={
         'label': 'Verð'})
@@ -943,6 +946,16 @@ class VerifierIcon(BaseModel, db.Model):
         'label': 'Litur á merki',
         'form_field_class': ColorField,
         'validators': [validators.InputRequired()]})
+    rarity = db.Column(db.Integer(), info={
+        'validators': [validators.InputRequired()],
+        'label': 'Tegund',
+        'choices': [
+            (0, 'Basic'),
+            (1, 'Rare'),
+            (2, 'Epic'),
+            (3, 'Legendary')
+        ]})
+
 
     @property
     def edit_url(self):
@@ -957,6 +970,15 @@ class VerifierTitle(BaseModel, db.Model):
         'label': 'Stutt lýsing'})
     price = db.Column(db.Integer(), default=0, info={
         'label': 'Verð'})
+    rarity = db.Column(db.Integer(), info={
+        'validators': [validators.InputRequired()],
+        'label': 'Tegund',
+        'choices': [
+            (0, 'Basic'),
+            (1, 'Rare'),
+            (2, 'Epic'),
+            (3, 'Legendary')
+        ]})
 
     @property
     def edit_url(self):
@@ -969,6 +991,15 @@ class VerifierQuote(BaseModel, db.Model):
         'label': 'Slagorðið'})
     price = db.Column(db.Integer(), default=0, info={
         'label': 'Verð'})
+    rarity = db.Column(db.Integer(), info={
+        'validators': [validators.InputRequired()],
+        'label': 'Tegund',
+        'choices': [
+            (0, 'Basic'),
+            (1, 'Rare'),
+            (2, 'Epic'),
+            (3, 'Legendary')
+        ]})
 
     @property
     def edit_url(self):

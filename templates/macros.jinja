@@ -171,6 +171,30 @@
                 {% endif %}
             </div>
         </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item {% if icon.rarity == 1 %}bg-primary{% elif icon.rarity==2 %}bg-danger{% elif icon.rarity==3%}bg-warning{% else %}bg-info{% endif %}">
+                <span>
+                    {% if icon.rarity == 1 %}
+                        Sjaldgæft
+                    {% elif icon.rarity==2 %}
+                        Epískt
+                    {% elif icon.rarity==3%}
+                        Goðsagnakennt
+                    {% else %}
+                        Algengt
+                    {% endif %}
+                </span>
+                    <span class='float-right'>
+                    {% for i in range(4) %}
+                        {% if i < icon.rarity + 1 %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+        </ul>
     </div>
 {% endmacro %}
 
@@ -211,6 +235,30 @@
                 {% endif %}
             </div>
         </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item {% if title.rarity == 1 %}bg-primary{% elif title.rarity==2 %}bg-danger{% elif title.rarity==3%}bg-warning{% else %}bg-info{% endif %}">
+                <span>
+                    {% if title.rarity == 1 %}
+                        Sjaldgæft
+                    {% elif title.rarity==2 %}
+                        Epískt
+                    {% elif title.rarity==3%}
+                        Goðsagnakennt
+                    {% else %}
+                        Algengt
+                    {% endif %}
+                </span>
+                    <span class='float-right'>
+                    {% for i in range(4) %}
+                        {% if i < title.rarity + 1 %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+        </ul>
     </div>
 {% endmacro %}
 
@@ -248,6 +296,30 @@
                 {% endif %}
             </div>
         </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item {% if quote.rarity == 1 %}bg-primary{% elif quote.rarity==2 %}bg-danger{% elif quote.rarity==3%}bg-warning{% else %}bg-info{% endif %}">
+                <span>
+                    {% if quote.rarity == 1 %}
+                        Sjaldgæft
+                    {% elif quote.rarity==2 %}
+                        Epískt
+                    {% elif quote.rarity==3%}
+                        Goðsagnakennt
+                    {% else %}
+                        Algengt
+                    {% endif %}
+                </span>
+                    <span class='float-right'>
+                    {% for i in range(4) %}
+                        {% if i < quote.rarity + 1 %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+        </ul>
     </div>
 {% endmacro %}
 
@@ -261,13 +333,13 @@
             <p class='font-weight-bold text-center'>{{current_user.progression.equipped_title.title}} {{current_user.name}}</p>
             <p class='font-italic text-center'>{{current_user.progression.equipped_quote.quote}}</p>
             <p class='text-center mb-0'>
-                <span class='text-warning'>
+                <span class='text-warning mr-4'>
                     {{current_user.progression.lobe_coins}}
-                    <i class='fa fa-coins ml-2'></i>
+                    <i class='fa fa-coins ml-1'></i>
                 </span>
                 <span class='text-danger'>
                     {{current_user.progression.experience}}
-                    <i class='fa fa-gem ml-2'></i>
+                    <i class='fa fa-gem ml-1'></i>
                 </span>
             </p>
         </div>

@@ -474,6 +474,20 @@ def give_coins():
     progression.lobe_coins += coins
     db.session.commit()
 
+
+@manager.command
+def set_verifier_levels():
+    verifiers = get_verifiers()
+    for verifier in verifiers:
+        progression = verifier.progression
+        if progression.verification_level is None:
+            progression.verification_level = 0
+        if progression.spy_level is None:
+            progression.spy_level = 0
+        if progression.streak_level is None:
+            progression.streak_level = 0
+    db.session.commit()
+
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)
 manager.add_command('change_pass', changePass)

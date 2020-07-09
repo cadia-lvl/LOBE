@@ -81,4 +81,22 @@
     {% with items=quotes, type="Slogans"%}
         {% include 'carousel_item.jinja'%}
     {% endwith %}
+
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Hjólið</h3>
+            <p class='mb-0'>Snúðu hjólinu eins og þú sért á English.</p>
+            <p class='mb-0'>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} lottómiðum.</p>
+
+            {% if current_user.is_admin() %}
+                <a href="{{url_for('quote_create')}}" class='btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                    Búa til
+                    {{macros.btn_icon('plus', 'l')}}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% with items=icons, type="Lootbox"%}
+        {% include 'carousel_item.jinja'%}
+    {% endwith %}
 {% endblock %}

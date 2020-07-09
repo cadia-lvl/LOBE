@@ -5,8 +5,14 @@ data_old/
 data_backup/
 migrations_old/
 temp/
+zips/
+videos/
+records/
+tokens/
+wav_audio/
 logs/[^\.]*
 .vscode/
+.idea/
 __pycache__/
 settings/production.py
 *.sql

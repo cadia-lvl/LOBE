@@ -147,7 +147,7 @@
                 {% if not current_user.progression.owns_icon(icon) and not loot_display%}
                     <a href="{{url_for('icon_buy', icon_id=icon.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
                         <span class="mr-2 ml-2 font-weight-bold">{{icon.price}}</span>
-                        <i class="fas fa-dollar-sign mr-2"></i>
+                        <i class="fas fa-coins mr-2"></i>
                     </a>
                 {% else %}
                     {% if not current_user.progression.is_icon_equipped(icon) %}
@@ -172,7 +172,7 @@
             </div>
         </div>
         <ul class="list-group list-group-flush">
-            <li class="list-group-item {% if icon.rarity == 1 %}bg-primary{% elif icon.rarity==2 %}bg-danger{% elif icon.rarity==3%}bg-warning{% else %}bg-info{% endif %}">
+            <li class="list-group-item {% if icon.rarity == 1 %}bg-primary{% elif icon.rarity==2 %}bg-danger{% elif icon.rarity==3%}bg-warning{% else %}bg-info{% endif %}" style='padding: 0.5rem 1rem'>
                 <span>
                     {% if icon.rarity == 1 %}
                         Sjaldgæft
@@ -210,7 +210,7 @@
                 {% if not current_user.progression.owns_title(title) and not loot_display%}
                     <a href="{{url_for('title_buy', title_id=title.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
                         <span class="mr-2 ml-2 font-weight-bold">{{title.price}}</span>
-                        <i class="fas fa-dollar-sign mr-2"></i>
+                        <i class="fas fa-coins mr-2"></i>
                     </a>
                 {% else %}
                     {% if not current_user.progression.is_title_equipped(title) %}
@@ -266,13 +266,13 @@
     <div class="card {% if current_user.progression.is_quote_equipped(quote)%}border border-success{% endif %}" style="width:100%">
         <div class="card-body d-flex justify-content-between flex-column">
             <div>
-                <p class="card-title text-center">{{quote.quote}}</p>
+                <p class="card-title text-center font-italic">{{quote.quote}}</p>
             </div>
             <div>
                 {% if not current_user.progression.owns_quote(quote) and not loot_display%}
                     <a href="{{url_for('quote_buy', quote_id=quote.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
                         <span class="mr-2 ml-2 font-weight-bold">{{quote.price}}</span>
-                        <i class="fas fa-dollar-sign mr-2"></i>
+                        <i class="fas fa-coins mr-2"></i>
                     </a>
                 {% else %}
                     {% if not current_user.progression.is_quote_equipped(quote) %}
@@ -297,7 +297,7 @@
             </div>
         </div>
         <ul class="list-group list-group-flush">
-            <li class="list-group-item {% if quote.rarity == 1 %}bg-primary{% elif quote.rarity==2 %}bg-danger{% elif quote.rarity==3%}bg-warning{% else %}bg-info{% endif %}">
+            <li class="list-group-item {% if quote.rarity == 1 %}bg-primary{% elif quote.rarity==2 %}bg-danger{% elif quote.rarity==3%}bg-warning{% else %}bg-info{% endif %}" style='padding: 0.5rem 1rem'>
                 <span>
                     {% if quote.rarity == 1 %}
                         Sjaldgæft
@@ -342,7 +342,7 @@
                 {% if not current_user.progression.owns_lootbox(loot) %}
                     <a href="{{url_for('loot_box', rarity=loot.rarity)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
                         <span class="mr-2 ml-2 font-weight-bold">{{loot.price}}</span>
-                        <i class="fas fa-dollar-sign mr-2"></i>
+                        <i class="fas fa-coins mr-2"></i>
                     </a>
                 {% else %}
                     <div class=" text-success rounded-pill text-center float-right">

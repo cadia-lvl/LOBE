@@ -37,7 +37,7 @@
             <p class='mb-0'>Þú átt {{current_user.progression.owned_icons|length}} af {{icons|length}} merkjum.</p>
 
             {% if current_user.is_admin() %}
-                <a href="{{url_for('icon_create')}}" class='btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                <a href="{{url_for('icon_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
                     Búa til
                     {{macros.btn_icon('plus', 'l')}}
                 </a>
@@ -55,7 +55,7 @@
             <p class='mb-0'>Þú átt {{current_user.progression.owned_titles|length}} af {{titles|length}} titlum.</p>
 
             {% if current_user.is_admin() %}
-                <a href="{{url_for('title_create')}}" class='btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                <a href="{{url_for('title_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
                     Búa til
                     {{macros.btn_icon('plus', 'l')}}
                 </a>
@@ -73,7 +73,7 @@
             <p class='mb-0'>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} titlum.</p>
 
             {% if current_user.is_admin() %}
-                <a href="{{url_for('quote_create')}}" class='btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                <a href="{{url_for('quote_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
                     Búa til
                     {{macros.btn_icon('plus', 'l')}}
                 </a>
@@ -88,10 +88,9 @@
         <div class='col-12'>
             <h3 class='font-weight-bold'>Slembikassar</h3>
             <p class='mb-0'>Snúðu hjólinu eins og þú sért á English.</p>
-            <p class='mb-0'>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} slembikössum.</p>
 
             {% if current_user.is_admin() %}
-                <a href="{{url_for('quote_create')}}" class='btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                <a href="{{url_for('quote_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
                     Búa til
                     {{macros.btn_icon('plus', 'l')}}
                 </a>
@@ -107,16 +106,19 @@
 {% block modals %}
     {% if loot_box_items %}
         <div class="modal fade bd-example-modal-lg"  id='lootModal' tabindex="-1" role="dialog">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style='background-color:#131313; z-index:1000'>
                     <div class='container-fluid'>
-                        <p class="text-center h3" style="padding-top: 15px; padding-bottom:10px">
-                            Þú vannst
-                        </p>
+                        <h3 class="text-center font-weight-bold mt-4 mb-4">
+                            Og upp úr kassanum kom...
+                        </h3>
                         {% with items=loot_box_items, type="Winnings"%}
                             {% include 'lootbox_carousel.jinja'%}
                         {% endwith %}
                     </div>
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary text-success">Loka glugga</button>
+                </div>
                 </div>
             </div>
         </div>
@@ -125,8 +127,15 @@
 {% block scripts %}
     {{super()}}
     {% if loot_box_items %}
+        <script src='{{url_for("static", filename="js/confetti.min.js")}}'></script>
         <script>
             $('#lootModal').modal('show');
+            confetti.maxCount = 150; // Maybe change based on rarity received?
+            confetti.start();
+            $('#confetti-canvas').css('z-index', 999);
+            $('#lootModal').on('hide.bs.modal', function(e){
+                confetti.stop();
+            })
         </script>
     {% endif %}
 {% endblock %}

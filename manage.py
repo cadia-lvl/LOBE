@@ -17,7 +17,7 @@ from termcolor import colored
 from collections import defaultdict
 
 from app import app, db, user_datastore
-from models import Recording, Token, User, Role, Collection, Configuration, Session, VerifierProgression
+from models import Recording, Token, User, Role, Collection, Configuration, Session, VerifierProgression, VerifierIcon, VerifierQuote, VerifierTitle
 from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
 from db import get_verifiers
 
@@ -487,6 +487,18 @@ def set_verifier_levels():
         if progression.streak_level is None:
             progression.streak_level = 0
     db.session.commit()
+
+@manager.command
+def set_rarity():
+    icons = VerifierIcon.query.all()
+    titles = VerifierTitle.query.all()
+    quotes = VerifierQuote.query.all()
+    items = icons + titles + quotes
+    for item in items:
+        if item.rarity is None:
+            item.rarity = 0
+    db.session.commit()
+
 
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)

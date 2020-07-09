@@ -40,9 +40,24 @@ VIDEO_CODEC = 'vp8'
 
 ECONOMY = {
     'weekly_challenge': {
-        'goal': 10000,
+        'goal': 15000,
         'coin_reward': 100,
         'experience_reward': 500
+    },
+    'loot_boxes':{
+        'prices':{
+            '0': 100,
+            '1': 200,
+            '2': 300,
+            '3': 400
+        },
+        'rarity_weights':{
+            '0': 1,
+            '1': 0.2,
+            '2': 0.1,
+            '3': 0.05,
+        },
+        'num_items': 3
     },
     'verification':{
         'coin_reward': 0,
@@ -82,6 +97,20 @@ ECONOMY = {
                 'experience_reward': 300,
                 'fa_id': "fa fa-gem"
             },
+            '4':{
+                'title': 'Everest',
+                'goal': 5000,
+                'coin_reward': 300,
+                'experience_reward': 500,
+                'fa_id': 'fa fa-crown',
+            },
+            '5':{
+                'title': 'Mt. Fuji',
+                'goal': 15000,
+                'coin_reward': 1300,
+                'experience_reward': 1500,
+                'fa_id': 'fa fa-thumbs-up',
+            }
         }, 'spy':{
             '0':{
                 'title': 'Spæjaraskólinn',

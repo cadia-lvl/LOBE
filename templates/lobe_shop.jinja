@@ -1,5 +1,7 @@
 {% extends "__base.jinja" %}
 {% block body %}
+<div class='row'>
+<div class='col-lg-10 offset-lg-1 col-12'>
     <div class='row mb-5'>
         <div class="col-md-6 d-flex flex-column justify-content-between">
             <h1 class='font-weight-bold'>Búðin</h1>
@@ -8,12 +10,13 @@
                     Notaðu LOBE auranna sem þú hefur unnið hörðum höndum að safna. Veldu þér merki, titil og slagorð til að sýna hinum
                     að þú ert flottasti greinandinn.
                 </p>
-                <p class='d-md-block d-none'>
+                <p>
                     Þú vinnur þér inn aura og stig með því að klára að greina lotur og gera ýmis afrek. Prófíllinn þinn er hér til hliðar
                     og sýnir núverandi merki, titil og slagorð. Prófíllinn þinn sýnir líka hversu marga aura og hversu mörg stig þú hefur
                     unnið þér inn.
                 </p>
-                <a href="{{url_for('random_equip')}}" class='btn btn-secondary rounded-pill text-success float-right px-3 mb-2'>
+
+                <a href="{{url_for('verify_index')}}" class='btn btn-secondary rounded-pill text-success float-right px-3 mb-2'>
                     Heimaskjár
                     {{macros.btn_icon('home', 'l')}}
                 </a>
@@ -27,7 +30,6 @@
             {{macros.verifier_card(current_user)}}
         </div>
     </div>
-
     <div class='row'>
         <div class='col-12'>
             <h3 class='font-weight-bold'>Merki</h3>
@@ -50,7 +52,7 @@
         <div class='col-12'>
             <h3 class='font-weight-bold'>Titill</h3>
             <p class='mb-0'>Titlar birtast fyrir framan nafnið þitt alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
-            <p class='mb-0'>Þú átt {{current_user.progression.owned_titles|length}} af {{titles|length}} merkjum.</p>
+            <p class='mb-0'>Þú átt {{current_user.progression.owned_titles|length}} af {{titles|length}} titlum.</p>
 
             {% if current_user.is_admin() %}
                 <a href="{{url_for('title_create')}}" class='btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
@@ -68,7 +70,7 @@
         <div class='col-12'>
             <h3 class='font-weight-bold'>Slagorð</h3>
             <p class='mb-0'>Slagorð birtast alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
-            <p class='mb-0'>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} merkjum.</p>
+            <p class='mb-0'>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} titlum.</p>
 
             {% if current_user.is_admin() %}
                 <a href="{{url_for('quote_create')}}" class='btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
@@ -99,4 +101,46 @@
     {% with items=icons, type="Lootbox"%}
         {% include 'carousel_item.jinja'%}
     {% endwith %}
+
+    <div class='row'>
+        <a href="{{url_for('loot_box', rarity=0)}}" class='btn'>Loot box 1</a>
+        <a href="{{url_for('loot_box', rarity=1)}}" class='btn'>Loot box 2</a>
+        <a href="{{url_for('loot_box', rarity=2)}}" class='btn'>Loot box 3</a>
+        <a href="{{url_for('loot_box', rarity=3)}}" class='btn'>Loot box 4</a>
+    </div>
+</div>
+</div>
+{% endblock %}
+{% block modals %}
+    {% if loot_box_items %}
+        <div class="modal fade bd-example-modal-lg"  id='lootModal' tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class='container-fluid'>
+                        <div class='row'>
+                            {% for item in loot_box_items %}
+                                <div class='col-4'>
+                                    {% if item.__class__.__name__ == 'VerifierIcon' %}
+                                        {{macros.icon_card(item, false, false, current_user)}}
+                                    {% elif item.__class__.__name__ == 'VerifierTitle' %}
+                                        {{macros.title_card(item, false, false, current_user)}}
+                                    {% else %}
+                                        {{macros.slogan_card(item, false, false, current_user)}}
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+    {% if loot_box_items %}
+        <script>
+            $('#lootModal').modal('show');
+        </script>
+    {% endif %}
 {% endblock %}

@@ -39,7 +39,7 @@
         </div>
       </div>
     {% endif %}
-    <div class='container pt-5'>
+    <div class='container{% if full_width %}-fluid{% endif %} pt-5'>
         {% block body %}
         {% endblock %}
         {% block modals%}

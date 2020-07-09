@@ -1,17 +1,83 @@
 {% extends "__base.jinja" %}
 {% block body %}
+    <div class='row mb-5'>
+        <div class="col-md-6 d-flex flex-column justify-content-between">
+            <h1 class='font-weight-bold'>Búðin</h1>
+            <div>
+                <p>
+                    Notaðu LOBE auranna sem þú hefur unnið hörðum höndum að safna. Veldu þér merki, titil og slagorð til að sýna hinum
+                    að þú ert flottasti greinandinn.
+                </p>
+                <p class='d-md-block d-none'>
+                    Þú vinnur þér inn aura og stig með því að klára að greina lotur og gera ýmis afrek. Prófíllinn þinn er hér til hliðar
+                    og sýnir núverandi merki, titil og slagorð. Prófíllinn þinn sýnir líka hversu marga aura og hversu mörg stig þú hefur
+                    unnið þér inn.
+                </p>
+                <a href="{{url_for('random_equip')}}" class='btn btn-secondary rounded-pill text-success float-right px-3 mb-2'>
+                    Heimaskjár
+                    {{macros.btn_icon('home', 'l')}}
+                </a>
+                <a href="{{url_for('random_equip')}}" class='btn btn-secondary rounded-pill text-warning float-right px-3 mb-2 mr-2'>
+                    Slembival
+                    {{macros.btn_icon('dice-five', 'l')}}
+                </a>
+            </div>
+        </div>
+        <div class='col-md-6 offset-xl-3 col-xl-3'>
+            {{macros.verifier_card(current_user)}}
+        </div>
+    </div>
+
     <div class='row'>
-        <div class="col-12">
-            <h3>Kolaportið</h3>
-            <p>{{current_user.name}} - My LOBE-coins: {{current_user.progression.lobe_coins}} </p>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Merki</h3>
+            <p class='mb-0'>Merki birtast alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
+            <p class='mb-0'>Þú átt {{current_user.progression.owned_icons|length}} af {{icons|length}} merkjum.</p>
+
+            {% if current_user.is_admin() %}
+                <a href="{{url_for('icon_create')}}" class='btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                    Búa til
+                    {{macros.btn_icon('plus', 'l')}}
+                </a>
+            {% endif %}
         </div>
     </div>
     {% with items=icons, type="Icons"%}
         {% include 'carousel_item.jinja'%}
     {% endwith %}
+
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Titill</h3>
+            <p class='mb-0'>Titlar birtast fyrir framan nafnið þitt alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
+            <p class='mb-0'>Þú átt {{current_user.progression.owned_titles|length}} af {{titles|length}} merkjum.</p>
+
+            {% if current_user.is_admin() %}
+                <a href="{{url_for('title_create')}}" class='btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                    Búa til
+                    {{macros.btn_icon('plus', 'l')}}
+                </a>
+            {% endif %}
+        </div>
+    </div>
     {% with items=titles, type="Titles"%}
         {% include 'carousel_item.jinja'%}
     {% endwith %}
+
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Slagorð</h3>
+            <p class='mb-0'>Slagorð birtast alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
+            <p class='mb-0'>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} merkjum.</p>
+
+            {% if current_user.is_admin() %}
+                <a href="{{url_for('quote_create')}}" class='btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                    Búa til
+                    {{macros.btn_icon('plus', 'l')}}
+                </a>
+            {% endif %}
+        </div>
+    </div>
     {% with items=quotes, type="Slogans"%}
         {% include 'carousel_item.jinja'%}
     {% endwith %}

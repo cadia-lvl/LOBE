@@ -3,6 +3,7 @@ import os
 import wave
 import json
 import subprocess
+import random
 from datetime import datetime, timedelta
 
 from flask import current_app as app
@@ -865,9 +866,17 @@ class VerifierProgression(BaseModel, db.Model):
     num_invalid = db.Column(db.Integer(), default=0)
 
     lobe_coins = db.Column(db.Integer(), default=0)
+    experience = db.Column(db.Integer(), default=0)
+
+    verification_level = db.Column(db.Integer(), default=0)
+    spy_level = db.Column(db.Integer(), default=0)
+    streak_level = db.Column(db.Integer(), default=0)
 
     equipped_icon_id = db.Column(db.Integer, db.ForeignKey('verifier_icon.id'))
     equipped_title_id = db.Column(db.Integer, db.ForeignKey('verifier_title.id'))
+    equipped_quote_id = db.Column(db.Integer, db.ForeignKey('verifier_quote.id'))
+
+
 
     owned_icons = db.relationship("VerifierIcon",
         secondary=progression_icon)
@@ -887,6 +896,37 @@ class VerifierProgression(BaseModel, db.Model):
 
     def is_title_equipped(self, title):
         return self.equipped_title_id == title.id
+
+    def owns_quote(self, quote):
+        return any([q.id == quote.id for q in self.owned_quotes])
+
+    def is_quote_equipped(self, quote):
+        return self.equipped_quote_id == quote.id
+
+    @property
+    def equipped_icon(self):
+        if self.equipped_icon_id is not None:
+            return VerifierIcon.query.get(self.equipped_icon_id)
+
+    @property
+    def equipped_title(self):
+        if self.equipped_title_id is not None:
+            return VerifierTitle.query.get(self.equipped_title_id)
+
+    @property
+    def equipped_quote(self):
+        if self.equipped_quote_id is not None:
+            return VerifierQuote.query.get(self.equipped_quote_id)
+
+    def equip_random_icon(self):
+        self.equipped_icon_id = random.choice([i.id for i in self.owned_icons])
+
+    def equip_random_title(self):
+        self.equipped_title_id = random.choice([t.id for t in self.owned_titles])
+
+    def equip_random_quote(self):
+        self.equipped_quote_id = random.choice([q.id for q in self.owned_quotes])
+
 
 class VerifierIcon(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)

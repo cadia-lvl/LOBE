@@ -120,3 +120,13 @@ textarea#comment:disabled {
     background-color:#444;
     color:#ccc;
 }
+
+@keyframes color-change {
+    0% { color: #E74C3C; }
+    50% { color: #F39C12; }
+    100% { color: #E74C3C; }
+  }
+
+.color-change{
+    animation: color-change 1s infinite;
+}

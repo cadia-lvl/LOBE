@@ -136,7 +136,7 @@
 {% endmacro %}
 
 {% macro icon_card(icon, is_owned, is_equipped, current_user)%}
-    <div class="card" style='width: 100%'>
+    <div class="card {% if current_user.progression.is_icon_equipped(icon)%}border border-success{% endif %}" style='width: 100%'>
         <div class="card-body d-flex justify-content-between flex-column">
             <div>
                 <p class="card-title text-center font-weight-bold">{{icon.title}}</p>
@@ -164,7 +164,9 @@
 
                 {% if current_user.is_admin() %}
                     <a href="{{icon.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">Breyta</span>
+                        <span class="mr-2 ml-2 font-weight-bold">
+                            <i class='fa fa-edit'></i>
+                        </span>
                     </a>
                 {% endif %}
             </div>
@@ -173,7 +175,7 @@
 {% endmacro %}
 
 {% macro title_card(title, is_owned, is_equipped, current_user)%}
-    <div class="card" style='width: 100%'>
+    <div class="card {% if current_user.progression.is_title_equipped(title)%}border border-success{% endif %}" style='width: 100%'>
         <div class="card-body d-flex justify-content-between flex-column">
             <div>
                 <p class="card-title text-center font-weight-bold h4">{{title.title}}</p>
@@ -202,7 +204,9 @@
 
                 {% if current_user.is_admin() %}
                     <a href="{{title.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">Breyta</span>
+                        <span class="mr-2 ml-2 font-weight-bold">
+                            <i class='fa fa-edit'></i>
+                        </span>
                     </a>
                 {% endif %}
             </div>
@@ -211,15 +215,20 @@
 {% endmacro %}
 
 {% macro slogan_card(quote, is_owned, is_equipped, current_user)%}
-    <div class="card" style="width:100%">
+    <div class="card {% if current_user.progression.is_quote_equipped(quote)%}border border-success{% endif %}" style="width:100%">
         <div class="card-body d-flex justify-content-between flex-column">
             <div>
                 <p class="card-title text-center">{{quote.quote}}</p>
             </div>
             <div>
-                {% if is_owned %}
-                    {% if not is_equipped %}
-                        <a class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
+                {% if not current_user.progression.owns_quote(quote) %}
+                    <a href="{{url_for('quote_buy', quote_id=quote.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">{{quote.price}}</span>
+                        <i class="fas fa-dollar-sign mr-2"></i>
+                    </a>
+                {% else %}
+                    {% if not current_user.progression.is_quote_equipped(quote) %}
+                        <a href="{{url_for('quote_equip', quote_id=quote.id, user_id=current_user.id)}}" class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
                             <span class="mr-2 ml-2 font-weight-bold">Velja</span>
                             <i class="fas fa-check mr-2"></i>
                         </a>
@@ -228,19 +237,77 @@
                             <span class="mr-2 ml-2 font-weight-bold">Valinn</span>
                         </a>
                     {% endif %}
-                {% else %}
-                    <a class="btn btn-warning btn-sm btn-disabled rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">{{quote.price}}</span>
-                        <i class="fas fa-dollar-sign mr-2"></i>
-                    </a>
-                    {% if current_user.is_admin() %}
-                        <a href="{{quote.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
-                            <span class="mr-2 ml-2 font-weight-bold">Breyta</span>
-                        </a>
-                    {% endif %}
+                {% endif %}
 
+                {% if current_user.is_admin() %}
+                    <a href="{{quote.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">
+                            <i class='fa fa-edit'></i>
+                        </span>
+                    </a>
                 {% endif %}
             </div>
         </div>
+    </div>
+{% endmacro %}
+
+
+{% macro verifier_card(current_user) %}
+    <div class='card'>
+        <div class='card-body'>
+            <p class='text-center'>
+                {{verifier_icon(current_user.progression.equipped_icon.fa_id, current_user.progression.equipped_icon.color, '4x')}}
+            </p>
+            <p class='font-weight-bold text-center'>{{current_user.progression.equipped_title.title}} {{current_user.name}}</p>
+            <p class='font-italic text-center'>{{current_user.progression.equipped_quote.quote}}</p>
+            <p class='text-center mb-0'>
+                <span class='text-warning'>
+                    {{current_user.progression.lobe_coins}}
+                    <i class='fa fa-coins ml-2'></i>
+                </span>
+                <span class='text-danger'>
+                    {{current_user.progression.experience}}
+                    <i class='fa fa-gem ml-2'></i>
+                </span>
+            </p>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+                <span>Greinandi</span>
+                <span class='text-warning float-right'>
+                    {% for key, _ in config.ECONOMY.achievements.verification.items() %}
+                        {% if current_user.progression.verification_level > key|int %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+            <li class="list-group-item">
+                <span>Spæjari</span>
+                <span class='text-warning float-right'>
+                    {% for key, _ in config.ECONOMY.achievements.spy.items() %}
+                        {% if current_user.progression.spy_level > key|int %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+            <li class="list-group-item">
+                <span>Garpur</span>
+                <span class='text-warning float-right'>
+                    {% for key, _ in config.ECONOMY.achievements.streak.items() %}
+                        {% if current_user.progression.streak_level > key|int %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+        </ul>
     </div>
 {% endmacro %}

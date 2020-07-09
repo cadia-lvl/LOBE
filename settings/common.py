@@ -37,3 +37,81 @@ AUDIO_CODEC = 'pcm'
 VIDEO_W = 1280
 VIDEO_H = 720
 VIDEO_CODEC = 'vp8'
+
+ECONOMY = {
+    'weekly_challenge': {
+        'goal': 10000,
+        'coin_reward': 100,
+        'experience_reward': 500
+    },
+    'verification':{
+        'coin_reward': 0,
+        'experience_reward': 5
+    },
+    'session':{
+        'coin_reward': 5,
+        'experience_reward': 50,
+    },
+    'achievements':{
+        'verification':{
+            '0':{
+                'title': 'Leiðangur hefst',
+                'goal': 50,
+                'coin_reward': 10,
+                'experience_reward': 50,
+                'fa_id': "fa fa-play"
+            },
+            '1':{
+                'title': 'Upp á við',
+                'goal': 500,
+                'coin_reward': 50,
+                'experience_reward': 100,
+                'fa_id': "fa fa-check"
+            },
+            '2':{
+                'title': 'Veggjaklifur',
+                'goal': 1000,
+                'coin_reward': 100,
+                'experience_reward': 200,
+                'fa_id': "fa fa-coins"
+            },
+            '3':{
+                'title': 'Hástökk',
+                'goal': 2000,
+                'coin_reward': 200,
+                'experience_reward': 300,
+                'fa_id': "fa fa-gem"
+            },
+        }, 'spy':{
+            '0':{
+                'title': 'Spæjaraskólinn',
+                'goal': 10,
+                'coin_reward': 10,
+                'experience_reward': 50,
+                'fa_id': 'fa fa-search'
+            },
+            '1':{
+                'title': 'Spæjaraskólinn',
+                'goal': 50,
+                'coin_reward': 50,
+                'experience_reward': 100,
+                'fa_id': 'fa fa-search'
+            }
+        }, 'streak':{
+            '0':{
+                'title': 'Hlaupaskólinn',
+                'goal': 10,
+                'coin_reward': 10,
+                'experience_reward': 50,
+                'fa_id': 'fa fa-search'
+            },
+            '1':{
+                'title': 'Hlaupaakademían',
+                'goal': 50,
+                'coin_reward': 50,
+                'experience_reward': 100,
+                'fa_id': 'fa fa-search'
+            }
+        }
+    }
+}

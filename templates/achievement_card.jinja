@@ -1,0 +1,22 @@
+<div class='card'>
+    <div class='card-body'>
+        {% if level >= category.items()|length %}
+            <p class='text-center'><i class='fa fa-check fa-5x text-success'></i></p>
+            <h5 class='card-title text-center'>Leiðarendi</h5>
+            <p class='card-text text-center'>Þú hefur klárað öll afrek í þessum flokk.</p>
+        {% else %}
+            <p class='text-center'><i class='fa {{category[level|string].fa_id}} fa-5x text-success'></i></p>
+            <h5 class='card-title text-center'>{{category[level|string].title}}</h5>
+            <p class='card-text text-center'>Kláraðu {{category[level|string].goal}} greiningar til að fá þessi verðlaun</p>
+        {% endif %}
+        <p class='text-center text-warning mb-0'>
+            {% for key, _ in category.items() %}
+                {% if level > key|int %}
+                    <i class='fa fa-circle'></i>
+                {% else %}
+                    <i class='far fa-circle'></i>
+                {% endif %}
+            {% endfor %}
+        </p>
+    </div>
+</div>

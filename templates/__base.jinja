@@ -18,6 +18,27 @@
   </head>
   <body>
     {% include '_header.jinja' %}
+    {% if progression_view %}
+      <div class='container-fluid' style='background-color:#131313;'>
+        <div class='row'>
+          <div class='col-12 mt-3 mb-3'>
+              <span class='font-weight-bold'>
+                <i class='mr-2 {{current_user.progression.equipped_icon.fa_id}}' style='color: {{current_user.progression.equipped_icon.color}}'></i>
+                {{current_user.progression.equipped_title.title }}
+                {{current_user.name}}
+              </span>
+              <span class='float-right text-danger' id='color-change'>
+                <span id='experienceValue'>{{current_user.progression.experience}}</span>
+                <i class='fa fa-gem ml-1'></i>
+              </span>
+              <span class='float-right text-warning mr-3'>
+                <span id='coinValue'>{{current_user.progression.lobe_coins }}</span>
+                <i class='fa fa-coins ml-1'></i>
+              </span>
+          </div>
+        </div>
+      </div>
+    {% endif %}
     <div class='container pt-5'>
         {% block body %}
         {% endblock %}

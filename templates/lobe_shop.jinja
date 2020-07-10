@@ -4,7 +4,8 @@
 <div class='col-lg-10 offset-lg-1 col-12'>
     <div class='row mb-5'>
         <div class="col-md-6 d-flex flex-column justify-content-between">
-            <h1 class='font-weight-bold'>Búðin</h1>
+            <h1 class='font-weight-bold display-1 d-xl-block d-none'>Búðin</h1>
+            <h1 class='font-weight-bold d-xl-none'>Búðin</h1>
             <div>
                 <p>
                     Notaðu LOBE auranna sem þú hefur unnið hörðum höndum að safna. Veldu þér merki, titil og slagorð til að sýna hinum
@@ -109,16 +110,39 @@
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content" style='background-color:#131313; z-index:1000'>
                     <div class='container-fluid'>
-                        <h3 class="text-center font-weight-bold mt-4 mb-4">
-                            Og upp úr kassanum kom...
-                        </h3>
-                        {% with items=loot_box_items, type="Winnings"%}
-                            {% include 'lootbox_carousel.jinja'%}
-                        {% endwith %}
+                        <div id='revealContent'>
+                            <div class='row'>
+                                <div class='col-12 px-5'>
+                                    <h3 class='text-center font-weight-bold mt-4 mb-4'>
+                                        Opnaðu kassann til að komast að því hvaða glaðninga þú fékkst!
+                                    </h3>
+                                </div>
+                                <div class='col-12 text-center'>
+                                    <button id='revealButton' class='btn btn-lg btn-success rounded-pill  mb-5' style='animation-name: stretch;
+                                        animation-duration: 0.7s;
+                                        animation-timing-function: ease-out;
+                                        animation-delay: 0;
+                                        animation-direction: alternate;
+                                        animation-iteration-count: infinite;
+                                        animation-fill-mode: none;
+                                        animation-play-state: running;'>
+                                        Opna Kassa
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id='lootBoxContent' class='d-none'>
+                            <h3 class="text-center font-weight-bold mt-4 mb-4">
+                                Og upp úr kassanum kom...
+                            </h3>
+                            {% with items=loot_box_items, type="Winnings"%}
+                                {% include 'lootbox_carousel.jinja'%}
+                            {% endwith %}
+                        </div>
                     </div>
-                    <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary text-success">Loka glugga</button>
-                </div>
+                    <div class="modal-footer d-none" id='lootBoxFooter'>
+                        <button type="button" class="btn btn-secondary text-success float-right">Loka glugga</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -130,12 +154,22 @@
         <script src='{{url_for("static", filename="js/confetti.min.js")}}'></script>
         <script>
             $('#lootModal').modal('show');
-            confetti.maxCount = 150; // Maybe change based on rarity received?
-            confetti.start();
-            $('#confetti-canvas').css('z-index', 999);
             $('#lootModal').on('hide.bs.modal', function(e){
                 confetti.stop();
             })
+            confetti.maxCount = 150; // Maybe change based on rarity received?
+
+            $('#revealButton').click(function(){
+                $('#revealContent').addClass('d-none');
+                $('#lootBoxContent').addClass('d-block');
+                $('#lootBoxFooter').addClass('d-block');
+                confetti.start();
+                $('#confetti-canvas').css('z-index', 900);
+                var audio = new Audio('{{url_for("static", filename="audio/loot_box.wav")}}');
+                audio.volume = 0.7;
+                audio.play();
+            });
+
         </script>
     {% endif %}
 {% endblock %}

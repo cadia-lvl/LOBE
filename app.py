@@ -755,8 +755,9 @@ def verification_list():
 @login_required
 def verification(id):
     verification = Verification.query.get(id)
+    delete_form=DeleteVerificationForm()
     return render_template('verification.jinja', verification=verification,
-        section='verification')
+        delete_form=delete_form, section='verification',)
 
 
 
@@ -848,22 +849,27 @@ def delete_verification():
         is_secondary = verification.is_secondary
         recording = Recording.query.get(verification.recording_id)
         session = Session.query.get(recording.session_id)
+        session_was_verified = session.is_verified
+        progression = User.query.get(verified_by).progression
+
         if is_secondary:
             recording.is_secondarily_verified = False
             session.is_secondarily_verified = False
         else:
             recording.is_verified = False
             session.is_verified = False
+            if session_was_verified:
+                progression.lobe_coins -= app.config['ECONOMY']['session']['coin_reward']
+                progression.experience -= app.config['ECONOMY']['session']['experience_reward']
 
         db.session.delete(verification)
         db.session.commit()
 
         # update progression on user
-        progression = User.query.get(verified_by).progression
-        progression = User.query.get(form.data['verified_by']).progression
-        progression.lobe_coins += app.config['ECONOMY']['verification']['coin_reward']
-        progression.experience += app.config['ECONOMY']['verification']['experience_reward']
+        progression.lobe_coins = max(0, progression.lobe_coins - app.config['ECONOMY']['verification']['coin_reward'])
+        progression.experience = max(0, progression.experience - app.config['ECONOMY']['verification']['experience_reward'])
         db.session.commit()
+
         response = {
             'coins': progression.lobe_coins,
             'experience': progression.experience}

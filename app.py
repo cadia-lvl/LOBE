@@ -866,6 +866,7 @@ def verify_index():
     verifiers = get_verifiers()
     weekly_verifies = Verification.query.filter(Verification.created_at > last_day('tuesday')).count()
     weekly_progress = 100*(weekly_verifies/app.config['ECONOMY']['weekly_challenge']['goal'])
+    # get the number of verifications per user
     return render_template('verify_index.jinja', verifiers=verifiers, weekly_verifies=weekly_verifies,
         weekly_progress=weekly_progress, progression_view=True)
 
@@ -877,16 +878,7 @@ def lobe_shop():
     titles = VerifierTitle.query.order_by(VerifierTitle.price).all()
     quotes = VerifierQuote.query.order_by(VerifierQuote.price).all()
     #loot_boxes = VerifierLootbox.query.order_by(VerifierLootbox.price).all()
-    loot_boxes = [
-        {'rarity': 0, 'price': 50},
-        {'rarity': 0, 'price': 60},
-        {'rarity': 0, 'price': 70},
-        {'rarity': 1, 'price': 100},
-        {'rarity': 1, 'price': 120},
-        {'rarity': 2, 'price': 150},
-        {'rarity': 2, 'price': 170},
-        {'rarity': 3, 'price': 250}
-        ]
+    loot_boxes = app.config['LOOT_BOXES']
 
     loot_box_message = request.args.get('messages', None)
     loot_box_items = []

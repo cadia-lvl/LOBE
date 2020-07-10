@@ -25,7 +25,9 @@
                 <thead>
                     <tr>
                         <th></th>
-                        <th>Nafn</th>
+                        <th></th>
+                        <th></th>
+                        <th style="color: {{config.COLORS.diamond}}">Demantar</th>
                         <th>Fjöldi greininga</th>
                         <th>Fjöldi 2. stigs greininga</th>
                     </tr>
@@ -34,11 +36,36 @@
                     {% for verifier in verifiers %}
                         <tr>
                             <th scope='row'>{{loop.index}}</th>
+                            <th>
+                                {{macros.verifier_icon(verifier.progression.equipped_icon.fa_id, verifier.progression.equipped_icon.color, '2x')}}
+                            </th>
                             <td>
-                                {{verifier.name}}
-                                {% if loop.index == 1 %}
-                                    <span class='ml-2'><i class='fa fa-crown text-warning'></i></span>
-                                {% endif %}
+                                <div class="row" >
+                                    <a href="#" data-toggle="modal" data-target="#userModal-{{verifier.id}}">
+                                        {{verifier.progression.equipped_title.title}}
+                                        {{verifier.name}}
+                                    
+                                        {% if loop.index == 1 %}
+                                            <span class='ml-2'><i class='fa fa-crown text-warning'></i></span>
+                                        {% endif %}
+                                        
+                                        <div class="row" style="">
+                                            {% if verifier.progression.equipped_quote.quote%}
+                                                <footer class="blockquote-footer">"{{verifier.progression.equipped_quote.quote}}"</footer>
+                                            {% endif %}
+                                        </div>
+                                    </a>
+                                </div>
+                            </td>
+                            <td>
+                                <span style="color: {{config.COLORS.diamond}}">
+                                    {% if verifier.progression.experience %}
+                                        {{verifier.progression.experience}}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                    <i class='fa fa-gem ml-1'></i>
+                                </span>
                             </td>
                             <td>{{verifier.num_verifies}}</td>
                             <td>{{verifier.num_secondary_verifies}}</td>
@@ -63,7 +90,7 @@
                     {{config.ECONOMY.weekly_challenge.coin_reward}}
                     <i class='fa fa-coins ml-1'></i>
                 </span>
-                <span class='text-danger'>
+                <span style="color: {{config.COLORS.diamond}}">
                     {{config.ECONOMY.weekly_challenge.experience_reward}}
                     <i class='fa fa-gem ml-1'></i>
                 </span>
@@ -96,4 +123,28 @@
                 </div>
             </div>
         </div>
+
+    {%for verifier in verifiers %}
+        <!-- userModal -->
+        <div class="modal fade" id="userModal-{{verifier.id}}" tabindex="-1" role="dialog" aria-labelledby="userModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Pokemonspjald</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                {{macros.verifier_card(verifier)}}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+            </div>
+            </div>
+        </div>
+        </div>
+    {%endfor%}
 {% endblock %}
+
+

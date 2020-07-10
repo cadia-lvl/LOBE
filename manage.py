@@ -462,6 +462,44 @@ def add_progression_to_verifiers():
         db.session.commit()
 
 @manager.command
+def set_rarity():
+    icons = VerifierIcon.query.all()
+    titles = VerifierTitle.query.all()
+    quotes = VerifierQuote.query.all()
+    items = icons + titles + quotes
+    for item in items:
+        if item.rarity is None:
+            item.rarity = 0
+    db.session.commit()
+
+@manager.command
+def initialize_verifiers():
+    add_progression_to_verifiers()
+    verifiers = get_verifiers()
+    for verifier in verifiers:
+        progression = verifier.progression
+        if progression.verification_level is None:
+            progression.verification_level = 0
+        if progression.spy_level is None:
+            progression.spy_level = 0
+        if progression.streak_level is None:
+            progression.streak_level = 0
+        if progression.num_verifies is None:
+            progression.num_verifies = 0
+        if progression.num_session_verifies is None:
+            progression.num_session_verifies = 0
+        if progression.num_invalid is None:
+            progression.num_invalid = 0
+        if progression.num_streak_days is None:
+            progression.num_streak_days = 0
+        if progression.lobe_coins is None:
+            progression.lobe_coins = 0
+        if progression.experience is None:
+            progression.experience = 0
+    db.session.commit()
+
+
+@manager.command
 def give_coins():
     verifiers = get_verifiers()
     print("Select a verifier id from the ones below:")
@@ -473,32 +511,6 @@ def give_coins():
     progression = user.progression
     progression.lobe_coins += coins
     db.session.commit()
-
-
-@manager.command
-def set_verifier_levels():
-    verifiers = get_verifiers()
-    for verifier in verifiers:
-        progression = verifier.progression
-        if progression.verification_level is None:
-            progression.verification_level = 0
-        if progression.spy_level is None:
-            progression.spy_level = 0
-        if progression.streak_level is None:
-            progression.streak_level = 0
-    db.session.commit()
-
-@manager.command
-def set_rarity():
-    icons = VerifierIcon.query.all()
-    titles = VerifierTitle.query.all()
-    quotes = VerifierQuote.query.all()
-    items = icons + titles + quotes
-    for item in items:
-        if item.rarity is None:
-            item.rarity = 0
-    db.session.commit()
-
 
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)

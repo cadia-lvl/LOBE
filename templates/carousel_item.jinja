@@ -7,12 +7,12 @@
                 <a href="#{{type}}-carousel-large" data-slide="prev"><i class="fas fa-chevron-left fa-2x"></i></a>
             </div>
             <div class="carousel-inner col-10" role="listbox">
-                {% for item_set in items | batch(4, none) %}
+                {% for item_set in items | batch(3, none) %}
                     <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
                         <div class='row'>
                             {% for item in item_set %}
                                 {% if item is not none%}
-                                    <div class="col-md-3 col-sm-6 d-flex align-items-stretch">
+                                    <div class="col-md-4 col-sm-6 d-flex align-items-stretch">
                                         {%if type == "Icons"%}
                                             {{macros.icon_card(item, false, current_user)}}
                                         {% elif type == "Titles" %}

@@ -9,6 +9,10 @@
             <h5 class='card-title text-center'>{{category[level|string].title}}</h5>
             {% if type == 'verification' %}
                 <p class='card-text text-center'>Kláraðu {{category[level|string].goal}} greiningar til að fá:</p>
+            {% elif type == 'spy' %}
+                <p class='card-text text-center'>Finndu {{category[level|string].goal}} slæmar upptökur til að fá:</p>
+            {% elif type == 'streak' %}
+                <p class='card-text text-center'>Gerðu 300 greiningar á dag í {{category[level|string].goal}} daga til að fá:</p>
             {% endif %}
             <p class='text-center'>
                 <span class='text-warning mr-4'>

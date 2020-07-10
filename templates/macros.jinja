@@ -136,7 +136,12 @@
 {% endmacro %}
 
 {% macro icon_card(icon, loot_display, current_user)%}
-    <div class="card {% if current_user.progression.is_icon_equipped(icon)%}border border-success{% endif %}" style='width: 100%'>
+    <div class="card" style='width: 100%'>
+        {% if current_user.progression.is_icon_equipped(icon) and not loot_display%}
+            <div class="card-header bg-success">
+                Valinn
+            </div>
+        {% endif %}
         <div class="card-body d-flex justify-content-between flex-column">
             <div>
                 <p class="card-title text-center font-weight-bold">{{icon.title}}</p>
@@ -144,7 +149,7 @@
                 <p class='text-center'>{{icon.description}}</p>
             </div>
             <div>
-                {% if not current_user.progression.owns_icon(icon) and not loot_display%}
+                {% if not current_user.progression.owns_icon(icon) and not loot_display %}
                     <a href="{{url_for('icon_buy', icon_id=icon.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
                         <span class="mr-2 ml-2 font-weight-bold">{{icon.price}}</span>
                         <i class="fas fa-coins mr-2"></i>
@@ -154,10 +159,6 @@
                         <a href="{{url_for('icon_equip', icon_id=icon.id, user_id=current_user.id)}}" class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
                             <span class="mr-2 ml-2 font-weight-bold">Velja</span>
                             <i class="fas fa-check mr-2"></i>
-                        </a>
-                    {% else %}
-                        <a class="btn btn-secondary btn-sm rounded-pill text-center float-right">
-                            <span class="mr-2 ml-2 font-weight-bold">Valinn</span>
                         </a>
                     {% endif %}
                 {% endif %}
@@ -199,7 +200,12 @@
 {% endmacro %}
 
 {% macro title_card(title, loot_display, current_user)%}
-    <div class="card {% if current_user.progression.is_title_equipped(title)%}border border-success{% endif %}" style='width: 100%'>
+    <div class="card" style='width: 100%'>
+        {% if current_user.progression.is_title_equipped(title) and not loot_display%}
+            <div class="card-header bg-success">
+                Valinn
+            </div>
+        {% endif %}
         <div class="card-body d-flex justify-content-between flex-column">
             <div>
                 <p class="card-title text-center font-weight-bold h4">{{title.title}}</p>
@@ -217,10 +223,6 @@
                         <a href="{{url_for('title_equip', title_id=title.id, user_id=current_user.id)}}" class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
                             <span class="mr-2 ml-2 font-weight-bold">Velja</span>
                             <i class="fas fa-check mr-2"></i>
-                        </a>
-                    {% else %}
-                        <a class="btn btn-secondary btn-sm rounded-pill text-center float-right">
-                            <span class="mr-2 ml-2 font-weight-bold">Valinn</span>
                         </a>
                     {% endif %}
                 {% endif %}
@@ -263,7 +265,12 @@
 {% endmacro %}
 
 {% macro slogan_card(quote, loot_display, current_user)%}
-    <div class="card {% if current_user.progression.is_quote_equipped(quote)%}border border-success{% endif %}" style="width:100%">
+    <div class="card" style="width:100%">
+        {% if current_user.progression.is_quote_equipped(quote) and not loot_display%}
+            <div class="card-header bg-success">
+                Valið
+            </div>
+        {% endif %}
         <div class="card-body d-flex justify-content-between flex-column">
             <div>
                 <p class="card-title text-center font-italic">{{quote.quote}}</p>
@@ -279,10 +286,6 @@
                         <a href="{{url_for('quote_equip', quote_id=quote.id, user_id=current_user.id)}}" class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
                             <span class="mr-2 ml-2 font-weight-bold">Velja</span>
                             <i class="fas fa-check mr-2"></i>
-                        </a>
-                    {% else %}
-                        <a class="btn btn-secondary btn-sm rounded-pill text-center float-right">
-                            <span class="mr-2 ml-2 font-weight-bold">Valinn</span>
                         </a>
                     {% endif %}
                 {% endif %}
@@ -330,12 +333,16 @@
                 <p class="card-title text-center font-weight-bold">{{loot.title}}</p>
                 {% if loot.rarity == 1 %}
                     <p class='text-center'>{{verifier_icon('fas fa-question', config.COLORS.rare, '5x')}}</p>
+                    <p class='text-center mb-0'>Þessi kassi tryggir að minnsta kosti einn sjaldgæfan hlut.</p>
                 {% elif loot.rarity==2 %}
                     <p class='text-center'>{{verifier_icon('fas fa-question', config.COLORS.epic, '5x')}}</p>
+                    <p class='text-center mb-0'>Þessi kassi tryggir að minnsta kosti einn epískan hlut.</p>
                 {% elif loot.rarity==3%}
                     <p class='text-center'>{{verifier_icon('fas fa-question', config.COLORS.legendary, '5x')}}</p>
+                    <p class='text-center mb-0'>Þessi kassi tryggir að minnsta kosti einn goðsagnakenndan hlut.</p>
                 {% else %}
                     <p class='text-center'>{{verifier_icon('fas fa-question', config.COLORS.common, '5x')}}</p>
+                    <p class='text-center mb-0'>Ódýr kassi tryggir ekki neitt en hver veit hvort þú dettir í lukkupottinn!</p>
                 {% endif %}
             </div>
             <div>
@@ -348,14 +355,6 @@
                     <div class=" text-success rounded-pill text-center float-right">
                         <span class="mr-2 ml-2 font-weight-bold">Keyptur</span>
                     </div>
-                {% endif %}
-
-                {% if current_user.is_admin() %}
-                    <a href="{{loot.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">
-                            <i class='fa fa-edit'></i>
-                        </span>
-                    </a>
                 {% endif %}
             </div>
         </div>

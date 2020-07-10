@@ -895,10 +895,12 @@ def verify_index():
     spy_progress = 100*(current_user.progression.num_invalid/\
         app.config['ECONOMY']['achievements']['spy'][str(current_user.progression.spy_level)]['goal'])
 
+    streak_progress = 0
+
     # get the number of verifications per user
     return render_template('verify_index.jinja', verifiers=verifiers, weekly_verifies=weekly_verifies,
         weekly_progress=weekly_progress, verification_progress=verification_progress, spy_progress=spy_progress,
-        progression_view=True)
+        streak_progress=streak_progress, progression_view=True)
 
 @app.route('/shop/', methods=['GET'])
 @login_required

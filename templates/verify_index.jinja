@@ -97,8 +97,8 @@
         </div>
 
         <div class='col-12 mt-3 mb-3'>
-            <h3 class='font-weight-bold'>Verðlaun</h3>
-            <p>Hérna eru öll verðlaunin sem þú hefur unnið þér inn.</p>
+            <h3 class='font-weight-bold'>Markmið</h3>
+            <p>Önnur markmið og afrek til að fá fleiri aura og demanta.</p>
             <div class='row'>
                 <div class='col-xl-3 col-md-4 col-sm-6 col-12'>
                     {% with category=config.ECONOMY.achievements.verification, level=current_user.progression.verification_level, progress=verification_progress, type='verification' %}
@@ -106,41 +106,37 @@
                     {% endwith %}
                 </div>
                 <div class='col-xl-3 col-md-4 col-sm-6 col-12'>
-                    {% with category=config.ECONOMY.achievements.spy, level=current_user.progression.spy_level, progress=spy_progress %}
+                    {% with category=config.ECONOMY.achievements.spy, level=current_user.progression.spy_level, progress=spy_progress, type='spy' %}
                         {% include 'achievement_card.jinja' %}
                     {% endwith %}
                 </div>
                 <div class='col-3'>
-                    <div class='card'>
-                        <div class='card-body'>
-                            <p class='text-center'><i class='fa fa-crown fa-5x text-warning'></i></p>
-                            <h5 class='card-title text-center'>Toppur</h5>
-                            <p class='card-text text-center'>Þú hefur náð efsta sætinu, enginn er betri en þú!</p>
-                        </div>
-                    </div>
+                    {% with category=config.ECONOMY.achievements.streak, level=current_user.progression.streak_level, progress=streak_progress, type='streak' %}
+                        {% include 'achievement_card.jinja' %}
+                    {% endwith %}
                 </div>
             </div>
         </div>
 
-    {%for verifier in verifiers %}
+    {% for verifier in verifiers %}
         <!-- userModal -->
-        <div class="modal fade" id="userModal-{{verifier.id}}" tabindex="-1" role="dialog" aria-labelledby="userModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Pokemonspjald</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-                </button>
+        <div class="modal fade" id="userModal-{{verifier.id}}" tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Notandi</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    {{macros.verifier_card(verifier)}}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                </div>
+                </div>
             </div>
-            <div class="modal-body" id="modal-body">
-                {{macros.verifier_card(verifier)}}
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
-            </div>
-            </div>
-        </div>
         </div>
     {%endfor%}
 {% endblock %}

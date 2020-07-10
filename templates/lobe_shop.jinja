@@ -35,7 +35,7 @@
         <div class='col-12'>
             <h3 class='font-weight-bold'>Merki</h3>
             <p class='mb-0'>Merki birtast alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
-            <p class='mb-0'>Þú átt {{current_user.progression.owned_icons|length}} af {{icons|length}} merkjum.</p>
+            <p>Þú átt {{current_user.progression.owned_icons|length}} af {{icons|length}} merkjum.</p>
 
             {% if current_user.is_admin() %}
                 <a href="{{url_for('icon_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
@@ -53,7 +53,7 @@
         <div class='col-12'>
             <h3 class='font-weight-bold'>Titill</h3>
             <p class='mb-0'>Titlar birtast fyrir framan nafnið þitt alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
-            <p class='mb-0'>Þú átt {{current_user.progression.owned_titles|length}} af {{titles|length}} titlum.</p>
+            <p>Þú átt {{current_user.progression.owned_titles|length}} af {{titles|length}} titlum.</p>
 
             {% if current_user.is_admin() %}
                 <a href="{{url_for('title_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
@@ -71,7 +71,7 @@
         <div class='col-12'>
             <h3 class='font-weight-bold'>Slagorð</h3>
             <p class='mb-0'>Slagorð birtast alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
-            <p class='mb-0'>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} titlum.</p>
+            <p>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} titlum.</p>
 
             {% if current_user.is_admin() %}
                 <a href="{{url_for('quote_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
@@ -88,14 +88,7 @@
     <div class='row'>
         <div class='col-12'>
             <h3 class='font-weight-bold'>Slembikassar</h3>
-            <p class='mb-0'>Snúðu hjólinu eins og þú sért á English.</p>
-
-            {% if current_user.is_admin() %}
-                <a href="{{url_for('quote_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
-                    Búa til
-                    {{macros.btn_icon('plus', 'l')}}
-                </a>
-            {% endif %}
+            <p>Snúðu hjólinu eins og þú sért á English.</p>
         </div>
     </div>
     {% with items=loot_boxes, type="Lootbox"%}
@@ -106,7 +99,7 @@
 {% endblock %}
 {% block modals %}
     {% if loot_box_items %}
-        <div class="modal fade bd-example-modal-lg"  id='lootModal' tabindex="-1" role="dialog">
+        <div class="modal fade bd-example-modal-lg"  id='lootModal' tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content" style='background-color:#131313; z-index:1000'>
                     <div class='container-fluid'>
@@ -141,7 +134,7 @@
                         </div>
                     </div>
                     <div class="modal-footer d-none" id='lootBoxFooter'>
-                        <button type="button" class="btn btn-secondary text-success float-right">Loka glugga</button>
+                        <button type="button" class="btn btn-secondary text-success float-right" data-dismiss='modal'>Loka glugga</button>
                     </div>
                 </div>
             </div>

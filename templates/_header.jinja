@@ -25,6 +25,17 @@
                 <a class="nav-link {% if section == 'user' %}text-success{% endif %}" href="{{url_for('user_list')}}">Notendur</a>
             </li>
         {% endif %}
+        {% if not current_user.is_anonymous and current_user.is_admin() %}
+            <li class="nav-item dropdown">
+                <a class="nav-link" href="#" id="navbarDropdownMenuLinkPostings" role="button" data-toggle="dropdown">
+                    <span>Auglýsingar</span>
+                </a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{{url_for('postings')}}">Auglýsingar</a>
+                    <a class="dropdown-item" href="{{url_for('applications') }}">Umsóknir</a>
+                </div>
+            </li>
+        {% endif %}
         {% if not current_user.is_anonymous %}
             <li class="nav-item dropdown">
                 <a class="nav-link" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown">

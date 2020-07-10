@@ -1127,7 +1127,6 @@ def applications():
 def application(id):
     page = int(request.args.get('page', 1))
     application = Application.query.get(id)
-    print(application)
     recordings = Recording.query.filter(
         Recording.user_id == application.user_id
     ).order_by(
@@ -1138,7 +1137,7 @@ def application(id):
                            recordings=recordings, section='application')
 
 
-@app.route('/tokens/<int:id>/delete/', methods=['GET'])
+@app.route('/applications/<int:id>/delete/', methods=['GET'])
 @login_required
 @roles_accepted('admin')
 def delete_application(id):
@@ -1173,7 +1172,7 @@ def posting(id):
         section='posting')
 
 
-@app.route('/tokens/<int:id>/delete/', methods=['GET'])
+@app.route('/posting/<int:id>/delete/', methods=['GET'])
 @login_required
 @roles_accepted('admin')
 def delete_posting(id):
@@ -1215,7 +1214,7 @@ def new_application(posting_uuid):
             db.session.commit()
             return redirect(url_for("record_session", collection_id=posting.collection) + f"?user_id={new_user.id}")
 
-    return render_template('apply.jinja', form=form, type='create',
+    return render_template('apply.jinja', form=form, type='create', posting=posting,
                            action=url_for('new_application', posting_uuid=posting_uuid))
 
 
@@ -1259,7 +1258,7 @@ def create_posting():
                 token.save_to_disk()
             db.session.commit()
 
-            return redirect(url_for("collection", id=collection.id))
+            return redirect(url_for("posting", id=posting.id))
 
     return render_template('forms/model.jinja', form=form, type='create',
                            action=url_for('create_posting'))

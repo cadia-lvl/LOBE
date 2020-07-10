@@ -48,7 +48,9 @@
                     <p>Notandi:</p>
                 </div>
                 <div class='col-5 text-right'>
-                    <p><a href='{{application.user_url}}'>{{application.user_id}}</a></p>
+                    {% if application.user_id %}
+                        <p><a href='{{application.user_url}}'>{{application.user_id}}</a></p>
+                    {% endif %}
                 </div>
             </div>
         </div>

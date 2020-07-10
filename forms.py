@@ -247,8 +247,8 @@ RoleForm = model_form(model=Role, base_class=Form,
 PostingForm = model_form(Posting, db_session=db.session,
                          field_args={
                              "name": {"label": "Nafn"},
-                             "ad_text": {"widget": widgets.TextArea()},
-                             "utterances": {"widget": widgets.TextArea()},
+                             "ad_text": {"label": "Texti auglýsingar", "widget": widgets.TextArea()},
+                             "utterances": {"label": "Setningar", "widget": widgets.TextArea()},
                          },
                          exclude=["id", "created_at", "uuid", "collection", "applications"])
 

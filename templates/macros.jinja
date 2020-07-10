@@ -172,7 +172,7 @@
             </div>
         </div>
         <ul class="list-group list-group-flush">
-            <li class="list-group-item {% if icon.rarity == 1 %}bg-primary{% elif icon.rarity==2 %}bg-danger{% elif icon.rarity==3%}bg-warning{% else %}bg-info{% endif %}" style='padding: 0.5rem 1rem'>
+            <li class="list-group-item" style="{% if icon.rarity == 1 %}background-color: {{config.COLORS.rare}}{% elif icon.rarity==2 %}background-color: {{config.COLORS.epic}}{% elif icon.rarity==3%}background-color: {{config.COLORS.legendary}}{% else %}background-color: {{config.COLORS.common}}{% endif %}">
                 <span>
                     {% if icon.rarity == 1 %}
                         Sjaldgæft
@@ -236,7 +236,7 @@
             </div>
         </div>
         <ul class="list-group list-group-flush">
-            <li class="list-group-item {% if title.rarity == 1 %}bg-primary{% elif title.rarity==2 %}bg-danger{% elif title.rarity==3%}bg-warning{% else %}bg-info{% endif %}">
+            <li class="list-group-item" style="{% if title.rarity == 1 %}background-color: {{config.COLORS.rare}}{% elif title.rarity==2 %}background-color: {{config.COLORS.epic}}{% elif title.rarity==3%}background-color: {{config.COLORS.legendary}}{% else %}background-color: {{config.COLORS.common}}{% endif %}">
                 <span>
                     {% if title.rarity == 1 %}
                         Sjaldgæft
@@ -297,7 +297,7 @@
             </div>
         </div>
         <ul class="list-group list-group-flush">
-            <li class="list-group-item {% if quote.rarity == 1 %}bg-primary{% elif quote.rarity==2 %}bg-danger{% elif quote.rarity==3%}bg-warning{% else %}bg-info{% endif %}" style='padding: 0.5rem 1rem'>
+            <li class="list-group-item" style="{% if quote.rarity == 1 %}background-color: {{config.COLORS.rare}}{% elif quote.rarity==2 %}background-color: {{config.COLORS.epic}}{% elif quote.rarity==3%}background-color: {{config.COLORS.legendary}}{% else %}background-color: {{config.COLORS.common}}{% endif %}">
                 <span>
                     {% if quote.rarity == 1 %}
                         Sjaldgæft

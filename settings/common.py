@@ -43,12 +43,13 @@ COLORS = {
     'rare': "#42a5f5",
     'epic': "#7e57c2",
     'legendary': "#ffee58",
-    'danger': "#d9534f",
+    'danger': "#ff4444",
     'primary': "#0275d8",
     'sucsess': "#5cb85c",
     'info': "#5bc0de",
     'warning': "#f0ad4e",
     'lootarrows': "#ffee58",
+    'diamond': "#ff4444",
 
 }
 
@@ -158,3 +159,14 @@ ECONOMY = {
         }
     }
 }
+
+LOOT_BOXES = [
+        {'rarity': 0, 'price': ECONOMY['loot_boxes']['prices']['0']},
+        {'rarity': 0, 'price': ECONOMY['loot_boxes']['prices']['0']},
+        {'rarity': 0, 'price': ECONOMY['loot_boxes']['prices']['0']},
+        {'rarity': 1, 'price': ECONOMY['loot_boxes']['prices']['1']},
+        {'rarity': 1, 'price': ECONOMY['loot_boxes']['prices']['1']},
+        {'rarity': 2, 'price': ECONOMY['loot_boxes']['prices']['2']},
+        {'rarity': 2, 'price': ECONOMY['loot_boxes']['prices']['2']},
+        {'rarity': 3, 'price': ECONOMY['loot_boxes']['prices']['3']}
+        ]

@@ -326,7 +326,7 @@
 {% macro loot_card(loot, current_user)%}
     <div class="card" style='width: 100%;'>
         <div class="card-body d-flex justify-content-between flex-column">
-            <div>
+            <div class="" style="margin-bottom:20px">
                 <p class="card-title text-center font-weight-bold">{{loot.title}}</p>
                 {% if loot.rarity == 1 %}
                     <p class='text-center'>{{verifier_icon('fas fa-question', config.COLORS.rare, '5x')}}</p>
@@ -396,11 +396,19 @@
             <p class='font-italic text-center'>{{current_user.progression.equipped_quote.quote}}</p>
             <p class='text-center mb-0'>
                 <span class='text-warning mr-4'>
-                    {{current_user.progression.lobe_coins}}
+                    {% if current_user.progression.lobe_coins %}
+                        {{current_user.progression.lobe_coins}}
+                    {% else %}
+                        0
+                    {% endif %}
                     <i class='fa fa-coins ml-1'></i>
                 </span>
-                <span class='text-danger'>
-                    {{current_user.progression.experience}}
+                <span style="color: {{config.COLORS.diamond}}">
+                    {% if current_user.progression.experience %}
+                        {{current_user.progression.experience}}
+                    {% else %}
+                        0
+                    {% endif %}
                     <i class='fa fa-gem ml-1'></i>
                 </span>
             </p>

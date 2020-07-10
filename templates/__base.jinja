@@ -27,12 +27,20 @@
                 {{current_user.progression.equipped_title.title }}
                 {{current_user.name}}
               </span>
-              <span class='float-right text-danger' id='color-change'>
-                <span id='experienceValue'>{{current_user.progression.experience}}</span>
+              <span class='float-right' style="color: {{config.COLORS.diamond}}" id='color-change'>
+                {% if current_user.progression.experience %}
+                    {{current_user.progression.experience}}
+                {% else %}
+                    0
+                {% endif %}
                 <i class='fa fa-gem ml-1'></i>
               </span>
               <span class='float-right text-warning mr-3'>
-                <span id='coinValue'>{{current_user.progression.lobe_coins }}</span>
+                {% if current_user.progression.lobe_coins %}
+                  {{current_user.progression.lobe_coins}}
+                {% else %}
+                  0
+                {% endif %}
                 <i class='fa fa-coins ml-1'></i>
               </span>
           </div>

@@ -3,7 +3,7 @@
     <div id="{{type}}-carousel-large" class="carousel slide carousel-multi-item d-lg-block d-none" style="margin-bottom:40px" data-interval="false" data-ride='carousel'>
 
         <div class="row justify-content-md-center">
-            <div class="col align-self-center">
+            <div class="col-1 align-self-center">
                 <a href="#{{type}}-carousel-large" data-slide="prev"><i class="fas fa-chevron-left fa-2x"></i></a>
             </div>
             <div class="carousel-inner col-10" role="listbox">
@@ -29,7 +29,7 @@
                     </div>
                 {% endfor %}
             </div>
-            <div class="col align-self-center">
+            <div class="col-1 align-self-center">
                 <a class="float-right" href="#{{type}}-carousel-large" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
             </div>
 
@@ -48,10 +48,10 @@
     <div id="{{type}}-carousel-small" class="carousel slide carousel-multi-item d-sm-block d-lg-none" style="margin-bottom:30px" data-interval="false">
 
         <div class="row justify-content-md-center">
-            <div class="col align-self-center">
+            <div class="col-1 align-self-center">
                 <a href="#{{type}}-carousel-small" data-slide="prev"><i class="fas fa-chevron-left fa-2x"></i></a>
             </div>
-            <div class="carousel-inner col-9" role="listbox" >
+            <div class="carousel-inner col-10" role="listbox" >
                 {% for item_set in items | batch(1, '&nbsp;') %}
                     <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
                         {% for item in item_set %}
@@ -70,7 +70,7 @@
                     </div>
                 {% endfor %}
             </div>
-            <div class="col align-self-center">
+            <div class="col-1 align-self-center">
                 <a class="float-right" href="#{{type}}-carousel-small" data-slide="next"><i class="fas fa-chevron-right fa-2x"></i></a>
             </div>
 

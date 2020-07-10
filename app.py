@@ -814,6 +814,16 @@ def create_verification():
             verification_info = app.config['ECONOMY']['achievements']['verification'][str(progression.verification_level)]
             if progression.num_verifies >= verification_info['goal']:
                 progression.verifciation_level += 1
+                progression.lobe_coins += verification_info['coin_reward']
+                progression.experience += verification_info['experience_reward']
+
+            # 2. bad verifications
+            spy_info = app.config['ECONOMY']['achievements']['spy'][str(progression.spy_level)]
+            if progression.num_invalid >= spy_info['goal']:
+                progression.spy_level += 1
+                progression.lobe_coins += spy_info['coin_reward']
+                progression.experience += spy_info['experience_reward']
+
             db.session.commit()
 
             response = {
@@ -872,9 +882,17 @@ def verify_index():
     verifiers = get_verifiers()
     weekly_verifies = Verification.query.filter(Verification.created_at > last_day('tuesday')).count()
     weekly_progress = 100*(weekly_verifies/app.config['ECONOMY']['weekly_challenge']['goal'])
+
+    verification_progress = 100*(current_user.progression.num_verifies/\
+        app.config['ECONOMY']['achievements']['verification'][str(current_user.progression.verification_level)]['goal'])
+
+    spy_progress = 100*(current_user.progression.num_invalid/\
+        app.config['ECONOMY']['achievements']['spy'][str(current_user.progression.spy_level)]['goal'])
+
     # get the number of verifications per user
     return render_template('verify_index.jinja', verifiers=verifiers, weekly_verifies=weekly_verifies,
-        weekly_progress=weekly_progress, progression_view=True)
+        weekly_progress=weekly_progress, verification_progress=verification_progress, spy_progress=spy_progress,
+        progression_view=True)
 
 @app.route('/shop/', methods=['GET'])
 @login_required

@@ -21,58 +21,56 @@
                 <i class='fa fa-crown text-warning mr-2'></i>
                 <span>Atli Thor Sigurgeirsson hefur haldið efsta sætinu í 3 daga.</span>
             </p>
-            <table class='table table-striped'>
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th style="color: {{config.COLORS.diamond}}">Demantar</th>
-                        <th>Fjöldi greininga</th>
-                        <th>Fjöldi 2. stigs greininga</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for verifier in verifiers %}
+            <div class='table-responsive'>
+                <table class='table table-sm table-striped'>
+                    <thead>
                         <tr>
-                            <th scope='row'>{{loop.index}}</th>
-                            <th>
-                                {{macros.verifier_icon(verifier.progression.equipped_icon.fa_id, verifier.progression.equipped_icon.color, '2x')}}
-                            </th>
-                            <td>
-                                <div class="row" >
-                                    <a href="#" data-toggle="modal" data-target="#userModal-{{verifier.id}}">
-                                        {{verifier.progression.equipped_title.title}}
-                                        {{verifier.name}}
-                                    
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th style="color: {{config.COLORS.diamond}}; text-align:right;">Demantar</th>
+                            <th style='text-align:right;'>Greiningar</th>
+                            <th style='text-align:right;'>Greindar lotur</th>
+                            <th style='text-align:right;'>Rangar upptökur</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for verifier in verifiers %}
+                            <tr>
+                                <th style='vertical-align:middle;' scope='row'>{{loop.index}}</th>
+                                <td style='vertical-align:middle;'>
+                                    {{macros.verifier_icon(verifier.progression.equipped_icon.fa_id, verifier.progression.equipped_icon.color, '2x')}}
+                                </td>
+                                <td style='vertical-align:middle;'>
+                                    <p class='mb-0'>
+                                        <a href="#" data-toggle="modal" data-target="#userModal-{{verifier.id}}">
+                                            {{verifier.progression.equipped_title.title}}
+                                            {{verifier.name}}
+                                        </a>
                                         {% if loop.index == 1 %}
                                             <span class='ml-2'><i class='fa fa-crown text-warning'></i></span>
                                         {% endif %}
-                                        
-                                        <div class="row" style="">
-                                            {% if verifier.progression.equipped_quote.quote%}
-                                                <footer class="blockquote-footer">"{{verifier.progression.equipped_quote.quote}}"</footer>
-                                            {% endif %}
-                                        </div>
-                                    </a>
-                                </div>
-                            </td>
-                            <td>
-                                <span style="color: {{config.COLORS.diamond}}">
-                                    {% if verifier.progression.experience %}
+                                    </p>
+                                    <p class='mb-0'>
+                                        {% if verifier.progression.equipped_quote.quote %}
+                                            <small class='font-italic'>{{verifier.progression.equipped_quote.quote}}</small>
+                                        {% endif %}
+                                    </p>
+                                </td>
+                                <td style='vertical-align:middle; text-align:right;'>
+                                    <span style="color: {{config.COLORS.diamond}}">
                                         {{verifier.progression.experience}}
-                                    {% else %}
-                                        0
-                                    {% endif %}
-                                    <i class='fa fa-gem ml-1'></i>
-                                </span>
-                            </td>
-                            <td>{{verifier.num_verifies}}</td>
-                            <td>{{verifier.num_secondary_verifies}}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                                        <i class='fa fa-gem ml-1'></i>
+                                    </span>
+                                </td>
+                                <td style='vertical-align:middle; text-align:right;'>{{verifier.progression.num_verifies}}</td>
+                                <td style='vertical-align:middle; text-align:right;'>{{verifier.progression.num_session_verifies}}</td>
+                                <td style='vertical-align:middle; text-align:right;'>{{verifier.progression.num_invalid}}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div class='col-12'>
@@ -103,12 +101,12 @@
             <p>Hérna eru öll verðlaunin sem þú hefur unnið þér inn.</p>
             <div class='row'>
                 <div class='col-xl-3 col-md-4 col-sm-6 col-12'>
-                    {% with category=config.ECONOMY.achievements.verification, level=current_user.progression.verification_level %}
+                    {% with category=config.ECONOMY.achievements.verification, level=current_user.progression.verification_level, progress=verification_progress, type='verification' %}
                         {% include 'achievement_card.jinja' %}
                     {% endwith %}
                 </div>
                 <div class='col-xl-3 col-md-4 col-sm-6 col-12'>
-                    {% with category=config.ECONOMY.achievements.spy, level=current_user.progression.spy_level %}
+                    {% with category=config.ECONOMY.achievements.spy, level=current_user.progression.spy_level, progress=spy_progress %}
                         {% include 'achievement_card.jinja' %}
                     {% endwith %}
                 </div>

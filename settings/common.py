@@ -42,7 +42,7 @@ COLORS = {
     'common': "#bdbdbd",
     'rare': "#42a5f5",
     'epic': "#7e57c2",
-    'legendary': "#ffee58",
+    'legendary': "#ffc107",
     'danger': "#ff4444",
     'primary': "#0275d8",
     'sucsess': "#5cb85c",

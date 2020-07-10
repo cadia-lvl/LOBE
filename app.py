@@ -785,6 +785,7 @@ def create_verification():
             db.session.commit()
 
             insert_trims(form.data['cut'], verification_id)
+            progression = User.query.get(form.data['verified_by']).progression
 
             # check if this was the final recording to be verified and update
             session = Session.query.get(int(form.data['session']))
@@ -796,13 +797,19 @@ def create_verification():
                 db.session.commit()
             elif num_recordings == recordings.filter(Recording.is_verified==True).count():
                 session.is_verified = True
+                progression.num_session_verifies += 1
+                progression.lobe_coins += app.config['ECONOMY']['session']['coin_reward']
+                progression.experience += app.config['ECONOMY']['session']['experience_reward']
                 db.session.commit()
 
             # update progression on user
-            progression = User.query.get(form.data['verified_by']).progression
             progression.lobe_coins += app.config['ECONOMY']['verification']['coin_reward']
             progression.experience += app.config['ECONOMY']['verification']['experience_reward']
+            progression.num_verifies += 1
+            if not verification.recording_is_good:
+                progression.num_invalid += 1
             db.session.commit()
+
             response = {
                 'id':verification_id,
                 'coins': progression.lobe_coins,
@@ -859,17 +866,6 @@ def verify_index():
     verifiers = get_verifiers()
     weekly_verifies = Verification.query.filter(Verification.created_at > last_day('tuesday')).count()
     weekly_progress = 100*(weekly_verifies/app.config['ECONOMY']['weekly_challenge']['goal'])
-    # get the number of verifications per user
-    for verifier in verifiers:
-        verifies = Verification.query.filter(
-            Verification.verified_by==verifier.id)
-        verifier.num_verifies = verifies.filter(
-            Verification.is_secondary==False).count()
-        verifier.num_secondary_verifies = verifies.filter(
-            Verification.is_secondary==True).count()
-    # order by combined score
-    verifiers = sorted(list(verifiers), key=lambda v: \
-        -(v.num_verifies + v.num_secondary_verifies))
     return render_template('verify_index.jinja', verifiers=verifiers, weekly_verifies=weekly_verifies,
         weekly_progress=weekly_progress, progression_view=True)
 
@@ -903,8 +899,8 @@ def lobe_shop():
             if item['type'] == 'quote':
                 loot_box_items.append(VerifierQuote.query.get(item['id']))
 
-    return render_template('lobe_shop.jinja', 
-        icons=icons,titles=titles, quotes=quotes, loot_boxes=loot_boxes, 
+    return render_template('lobe_shop.jinja',
+        icons=icons,titles=titles, quotes=quotes, loot_boxes=loot_boxes,
         progression_view=True, full_width=True, loot_box_items=loot_box_items)
 
 @app.route('/shop/random_equip', methods=['GET'])

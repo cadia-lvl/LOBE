@@ -867,7 +867,9 @@ class VerifierProgression(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
 
     num_verifies = db.Column(db.Integer(), default=0)
+    num_session_verifies = db.Column(db.Integer(), default=0)
     num_invalid = db.Column(db.Integer(), default=0)
+    num_streak_days = db.Column(db.Integer(), default=0)
 
     lobe_coins = db.Column(db.Integer(), default=0)
     experience = db.Column(db.Integer(), default=0)
@@ -879,8 +881,6 @@ class VerifierProgression(BaseModel, db.Model):
     equipped_icon_id = db.Column(db.Integer, db.ForeignKey('verifier_icon.id'))
     equipped_title_id = db.Column(db.Integer, db.ForeignKey('verifier_title.id'))
     equipped_quote_id = db.Column(db.Integer, db.ForeignKey('verifier_quote.id'))
-
-
 
     owned_icons = db.relationship("VerifierIcon",
         secondary=progression_icon)

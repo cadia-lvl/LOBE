@@ -63,7 +63,7 @@ ECONOMY = {
             '0': 100,
             '1': 200,
             '2': 300,
-            '3': 400
+            '3': 200
         },
         'rarity_weights':{
             '0': 1,
@@ -143,14 +143,28 @@ ECONOMY = {
         }, 'streak':{
             '0':{
                 'title': 'Hlaupaskólinn',
-                'goal': 10,
+                'goal': 1,
                 'coin_reward': 10,
                 'experience_reward': 50,
                 'fa_id': 'fa fa-search'
             },
             '1':{
                 'title': 'Hlaupaakademían',
-                'goal': 50,
+                'goal': 2,
+                'coin_reward': 50,
+                'experience_reward': 100,
+                'fa_id': 'fa fa-search'
+            },
+            '5':{
+                'title': 'Hlaupaháskólinn',
+                'goal': 2,
+                'coin_reward': 50,
+                'experience_reward': 100,
+                'fa_id': 'fa fa-search'
+            },
+            '10':{
+                'title': 'Hlaupaólympíuleikar',
+                'goal': 2,
                 'coin_reward': 50,
                 'experience_reward': 100,
                 'fa_id': 'fa fa-search'

@@ -808,6 +808,12 @@ def create_verification():
             progression.num_verifies += 1
             if not verification.recording_is_good:
                 progression.num_invalid += 1
+
+            # check for achivement updates:
+            # 1. verification:
+            verification_info = app.config['ECONOMY']['achievements']['verification'][str(progression.verification_level)]
+            if progression.num_verifies >= verification_info['goal']:
+                progression.verifciation_level += 1
             db.session.commit()
 
             response = {

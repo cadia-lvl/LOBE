@@ -33,7 +33,6 @@
                 <table class='table table-sm table-striped'>
                     <thead>
                         <tr>
-                            290
                             <th></th>
                             <th></th>
                             <th style="color: {{config.COLORS.diamond}}; text-align:right;">Demantar</th>
@@ -142,18 +141,18 @@
             <h3 class='font-weight-bold'>Markmið</h3>
             <p>Önnur markmið og afrek til að fá fleiri aura og demanta.</p>
             <div class='row'>
-                <div class='col-xl-3 col-md-4 col-sm-6 col-12'>
-                    {% with category=config.ECONOMY.achievements.verification, level=current_user.progression.verification_level, progress=verification_progress, type='verification' %}
+                <div class='col-xl-4 col-md-4 col-sm-6 col-12 d-flex align-items-stretch'>
+                    {% with category=config.ECONOMY.achievements.verification, level=current_user.progression.verification_level, progress=verification_progress, type='verification', color='success' %}
                         {% include 'achievement_card.jinja' %}
                     {% endwith %}
                 </div>
-                <div class='col-xl-3 col-md-4 col-sm-6 col-12'>
-                    {% with category=config.ECONOMY.achievements.spy, level=current_user.progression.spy_level, progress=spy_progress, type='spy' %}
+                <div class='col-xl-4 col-md-4 col-sm-6 col-12 d-flex align-items-stretch'>
+                    {% with category=config.ECONOMY.achievements.spy, level=current_user.progression.spy_level, progress=spy_progress, type='spy', color='warning' %}
                         {% include 'achievement_card.jinja' %}
                     {% endwith %}
                 </div>
-                <div class='col-3'>
-                    {% with category=config.ECONOMY.achievements.streak, level=current_user.progression.streak_level, progress=streak_progress, type='streak' %}
+                <div class='col-xl-4 col-md-4 col-sm-6 col-1 d-flex align-items-stretch'>
+                    {% with category=config.ECONOMY.achievements.streak, level=current_user.progression.streak_level, progress=streak_progress, type='streak', color='danger' %}
                         {% include 'achievement_card.jinja' %}
                     {% endwith %}
                 </div>

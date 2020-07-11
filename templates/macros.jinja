@@ -389,25 +389,27 @@
     <div class='card'>
         <div class='card-body'>
             <p class='text-center'>
-                {{verifier_icon(current_user.progression.equipped_icon.fa_id, current_user.progression.equipped_icon.color, '4x')}}
+                {% if current_user.progression.equipped_icon.title %}
+                    {{verifier_icon(current_user.progression.equipped_icon.fa_id, current_user.progression.equipped_icon.color, '4x')}}
+                {% else %}
+                    {{verifier_icon('fa fa-user', '#fff', '4x')}}
+                {% endif %}
             </p>
             <p class='font-weight-bold text-center'>{{current_user.progression.equipped_title.title}} {{current_user.name}}</p>
-            <p class='font-italic text-center'>{{current_user.progression.equipped_quote.quote}}</p>
+            <p class='font-italic text-center'>
+                {% if current_user.progression.equipped_quote.quote %}
+                    {{current_user.progression.equipped_quote.quote}}
+                {% else %}
+                    Ég var að byrja að greina!
+                {% endif %}
+            </p>
             <p class='text-center mb-0'>
                 <span class='text-warning mr-4'>
-                    {% if current_user.progression.lobe_coins %}
-                        {{current_user.progression.lobe_coins}}
-                    {% else %}
-                        0
-                    {% endif %}
+                    {{current_user.progression.lobe_coins}}
                     <i class='fa fa-coins ml-1'></i>
                 </span>
                 <span style="color: {{config.COLORS.diamond}}">
-                    {% if current_user.progression.experience %}
-                        {{current_user.progression.experience}}
-                    {% else %}
-                        0
-                    {% endif %}
+                    {{current_user.progression.experience}}
                     <i class='fa fa-gem ml-1'></i>
                 </span>
             </p>

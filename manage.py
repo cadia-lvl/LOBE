@@ -513,6 +513,19 @@ def give_coins():
     db.session.commit()
 
 @manager.command
+def give_experience():
+    verifiers = get_verifiers()
+    print("Select a verifier id from the ones below:")
+    for verifier in verifiers:
+        print(f'{verifier.name} - [{verifier.id}]')
+    user_id = int(input('user id: '))
+    experience = int(input('amount: '))
+    user = User.query.get(user_id)
+    progression = user.progression
+    progression.experience += experience
+    db.session.commit()
+
+@manager.command
 def reset_weekly_challenge():
     verifiers = get_verifiers()
     best_verifier = sorted(verifiers, key=lambda v: -v.progression.weekly_verifies)[0]

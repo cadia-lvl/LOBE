@@ -862,7 +862,6 @@ progression_lootbox = db.Table('progression_lootbox',
     db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
     db.Column('lootbox_id', db.Integer(), db.ForeignKey('verifier_lootbox.id')))
 
-
 class VerifierProgression(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
 

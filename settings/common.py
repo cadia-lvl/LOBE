@@ -146,7 +146,9 @@ ECONOMY = {
                 'experience_reward': 100,
                 'fa_id': 'fa fa-search'
             }
-        }, 'streak':{
+        },
+        'streak_minimum': 500,
+        'streak':{
             '0':{
                 'title': 'Hlaupaskólinn',
                 'goal': 1,

@@ -245,11 +245,22 @@
             </div>
         </div>
     </div>
+    {% with category=config.ECONOMY.achievements.verification, level=current_user.progression.verification_level, progress=0, type='verification', color='success' %}
+        {% include 'achievement_modal.jinja' %}
+    {% endwith %}
+    {% with category=config.ECONOMY.achievements.spy, level=current_user.progression.spy_level, progress=0, type='spy', color='warning' %}
+        {% include 'achievement_modal.jinja' %}
+    {% endwith %}
+    {% with category=config.ECONOMY.achievements.streak, level=current_user.progression.streak_level, progress=0, type='streak', color='danger' %}
+        {% include 'achievement_modal.jinja' %}
+    {% endwith %}
+
 {% endblock %}
 {% block scripts %}
     {{super()}}
     <script src='{{url_for("static", filename="js/error.js")}}'></script>
     <script src='{{url_for("static", filename="js/surf.js")}}'></script>
+    <script src='{{url_for("static", filename="js/confetti.min.js")}}'></script>
     <script>
         let wavesurfer;
 
@@ -466,6 +477,21 @@
                         updateExperienceVal(response.experience);
                         updateCoinVal(response.coins);
 
+                        if(response.achievements.length > 0){
+                            for(var i=0; i<response.achievements.length; i++){
+                                $("#"+response.achievements[i]+"AchievementModal").modal('show');
+                                $("#"+response.achievements[i]+"AchievementModal").on('hide.bs.modal', function(e){
+                                    confetti.stop();
+                                });
+                            }
+                            confetti.maxCount = 150;
+                            confetti.start();
+                            $('#confetti-canvas').css('z-index', 900);
+                            var audio = new Audio('{{url_for("static", filename="audio/achievement.wav")}}');
+                            audio.volume = 0.7;
+                            audio.play();
+
+                        }
                         recordings[recIndex].verdictComment = commentField.value;
                         recordings[recIndex].hasSent = true;
                         nextAction();

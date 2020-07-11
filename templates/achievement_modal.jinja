@@ -1,0 +1,45 @@
+<div class="modal fade" id='{{type}}AchievementModal' tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú hækkaðir
+                    {% if type=='verification'%}greiningar
+                    {% endif %}
+                    stigið þitt!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class='text-center'>
+                    <span class=' font-weight-bold'>
+                        Markmiðið þitt:
+                    </span>
+                    {% if type == 'verification' %}
+                        <span class='card-text'>Kláraðu {{category[level|string].goal}} greiningar</span>
+                    {% elif type == 'spy' %}
+                        <span class='card-text'>Finndu {{category[level|string].goal}} gallaðar upptökur</span>
+                    {% elif type == 'streak' %}
+                        <span class='card-text'>Greindu {{config.ECONOMY.achievements.streak_minimum}} lotur á dag í {{category[level|string].goal}}</span>
+                    {% endif %}
+                </p>
+                <p class='text-center'>
+                    <span class='font-weight-bold'>Verðlaunin þín:</span>
+                     <span class='text-warning mr-2'>
+                        {{category[level|string].coin_reward}}
+                        <i class='fa fa-coins ml-1'></i>
+                    </span>
+                    <span style="color: {{config.COLORS.diamond}}">
+                        {{category[level|string].experience_reward}}
+                        <i class='fa fa-gem ml-1'></i>
+                    </span>
+                </p>
+
+                <p class='text-center font-weight-bold'>Næsta markmið</p>
+                {% with level=level+1 %}
+                    {% include 'achievement_card.jinja' %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+</div>

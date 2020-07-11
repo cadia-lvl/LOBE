@@ -4,6 +4,7 @@ import traceback
 import shutil
 import logging
 import random
+import datetime
 from logging.handlers import RotatingFileHandler
 
 import numpy as np
@@ -792,6 +793,7 @@ def create_verification():
             session = Session.query.get(int(form.data['session']))
             recordings = Recording.query.filter(Recording.session_id==session.id)
             num_recordings = recordings.count()
+            achievements = []
             if is_secondary and num_recordings ==\
                 recordings.filter(Recording.is_secondarily_verified==True).count():
                 session.is_secondarily_verified = True
@@ -801,6 +803,17 @@ def create_verification():
                 progression.num_session_verifies += 1
                 progression.lobe_coins += app.config['ECONOMY']['session']['coin_reward']
                 progression.experience += app.config['ECONOMY']['session']['experience_reward']
+
+                ## check for streak
+                #if not progression.has_streaked_today:
+                #    num_verifies_today = Verification.query.filter(Verification.verified_by==current_user.id,
+                #        (Verification.created_at+datetime.timedelta(days=1))>datetime.now())
+                #    if num_verifies_today >= app.config['ECONOMY']['achievement']['streak_minimum']:
+                #        progression.num_streak_days += 1
+                #        if progression.num_streak_days >= app.config['ECONOMY']['achievement']['streak'][str(progression.streak_level)]:
+                #            progression.streak_level += 1
+                #            progression.has_streaked_today = True
+                #            achievements.append('streak')
                 db.session.commit()
 
             # update progression on user
@@ -813,10 +826,9 @@ def create_verification():
 
             # check for achivement updates:
             # 1. verification:
-            achievements = []
             verification_info = app.config['ECONOMY']['achievements']['verification'][str(progression.verification_level)]
             if progression.num_verifies >= verification_info['goal']:
-                progression.verifciation_level += 1
+                progression.verification_level += 1
                 progression.lobe_coins += verification_info['coin_reward']
                 progression.experience += verification_info['experience_reward']
                 achievements.append('verification')
@@ -876,7 +888,7 @@ def delete_verification():
         if progression.verification_level > 0:
             verification_info = app.config['ECONOMY']['achievements']['verification'][str(progression.verification_level-1)]
             if progression.num_verifies < verification_info['goal']:
-                progression.verifciation_level -= 1
+                progression.verification_level -= 1
                 progression.lobe_coins -= verification_info['coin_reward']
                 progression.experience -= verification_info['experience_reward']
         # 2. bad verifications

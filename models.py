@@ -857,10 +857,6 @@ progression_quote = db.Table('progression_quote',
     db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
     db.Column('quote_id', db.Integer(), db.ForeignKey('verifier_quote.id')))
 
-progression_lootbox = db.Table('progression_lootbox',
-    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
-    db.Column('lootbox_id', db.Integer(), db.ForeignKey('verifier_lootbox.id')))
-
 class VerifierProgression(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
 
@@ -910,10 +906,6 @@ class VerifierProgression(BaseModel, db.Model):
 
     def is_quote_equipped(self, quote):
         return self.equipped_quote_id == quote.id
-
-    def owns_lootbox(self, lootbox):
-        return False
-        #return any([q.id == lootbox.id for q in self.owned_lootboxes])
 
     @property
     def equipped_icon(self):

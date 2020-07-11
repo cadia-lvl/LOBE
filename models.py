@@ -871,6 +871,12 @@ class VerifierProgression(BaseModel, db.Model):
     num_invalid = db.Column(db.Integer(), default=0)
     num_streak_days = db.Column(db.Integer(), default=0)
 
+    weekly_verifies = db.Column(db.Integer(), default=0)
+    weekly_coin_price = db.Column(db.Integer(), default=0)
+    weekly_experience_price = db.Column(db.Integer(), default=0)
+    has_seen_weekly_prices = db.Column(db.Boolean(), default=False)
+
+
     lobe_coins = db.Column(db.Integer(), default=0)
     experience = db.Column(db.Integer(), default=0)
 

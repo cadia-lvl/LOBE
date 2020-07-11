@@ -19,27 +19,39 @@
             <h3 class='font-weight-bold'>Greinendur</h3>
             <p>
                 <i class='fa fa-crown text-warning mr-2'></i>
-                <span>Atli Thor Sigurgeirsson hefur haldið efsta sætinu í 3 daga.</span>
+                <span>Sá sem er með flestar greiningar í vikunni fær: </span>
+                <span class='text-warning'>
+                    {{config.ECONOMY.weekly_challenge.best_coin_reward}}
+                    <i class='fa fa-coins ml-1'></i>
+                </span>
+                <span style="color: {{config.COLORS.diamond}}">
+                    {{config.ECONOMY.weekly_challenge.best_experience_reward}}
+                    <i class='fa fa-gem ml-1'></i>
+                </span>
             </p>
             <div class='table-responsive'>
                 <table class='table table-sm table-striped'>
                     <thead>
                         <tr>
-                            <th></th>
+                            290
                             <th></th>
                             <th></th>
                             <th style="color: {{config.COLORS.diamond}}; text-align:right;">Demantar</th>
-                            <th style='text-align:right;'>Greiningar</th>
-                            <th style='text-align:right;'>Greindar lotur</th>
-                            <th style='text-align:right;'>Rangar upptökur</th>
+                            <th style='text-align:right;'>Greiningar í vikunni</th>
+                            <th style='text-align:right;'>Heildargreiningar</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for verifier in verifiers %}
                             <tr>
-                                <th style='vertical-align:middle;' scope='row'>{{loop.index}}</th>
                                 <td style='vertical-align:middle;'>
-                                    {{macros.verifier_icon(verifier.progression.equipped_icon.fa_id, verifier.progression.equipped_icon.color, '2x')}}
+                                    <div class='ml-2'>
+                                        {% if verifier.progression.equipped_icon.title %}
+                                            {{macros.verifier_icon(verifier.progression.equipped_icon.fa_id, verifier.progression.equipped_icon.color, '2x')}}
+                                        {% else %}
+                                            {{macros.verifier_icon('fa fa-user', '#fff', '2x')}}
+                                        {% endif %}
+                                    </div>
                                 </td>
                                 <td style='vertical-align:middle;'>
                                     <p class='mb-0'>
@@ -52,20 +64,23 @@
                                         {% endif %}
                                     </p>
                                     <p class='mb-0'>
-                                        {% if verifier.progression.equipped_quote.quote %}
-                                            <small class='font-italic'>{{verifier.progression.equipped_quote.quote}}</small>
-                                        {% endif %}
+                                        <small class='font-italic'>
+                                            {% if verifier.progression.equipped_quote.quote %}
+                                                {{verifier.progression.equipped_quote.quote}}
+                                            {% else %}
+                                                Ég var að byrja að greina!
+                                            {% endif %}
+                                        </small>
                                     </p>
                                 </td>
                                 <td style='vertical-align:middle; text-align:right;'>
-                                    <span style="color: {{config.COLORS.diamond}}">
+                                    <span class='font-weight-bold' style="color: {{config.COLORS.diamond}}">
                                         {{verifier.progression.experience}}
                                         <i class='fa fa-gem ml-1'></i>
                                     </span>
                                 </td>
+                                <td style='vertical-align:middle; text-align:right;'>{{verifier.progression.weekly_verifies}}</td>
                                 <td style='vertical-align:middle; text-align:right;'>{{verifier.progression.num_verifies}}</td>
-                                <td style='vertical-align:middle; text-align:right;'>{{verifier.progression.num_session_verifies}}</td>
-                                <td style='vertical-align:middle; text-align:right;'>{{verifier.progression.num_invalid}}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -73,27 +88,54 @@
             </div>
         </div>
 
-        <div class='col-12'>
+        <div class='col-12 mt-3'>
             <h3 class='font-weight-bold'>Vikulegt markmið hópsins</h3>
-            <p>
-                Í þessari viku ætlum við að reyna að greina {{config.ECONOMY.weekly_challenge.goal}} upptökur.
-                <br>
-                Verðlaun eru gefin út á þriðjudögum.
-            </p>
-            <div class="progress" style="height: 10px;">
-                <div class="progress-bar bg-success" role="progressbar" style="width: {{weekly_progress}}%;"></div>
-            </div>
-            <p class='mt-2'>Verðlaun:
-                <span class='text-warning'>
-                    {{config.ECONOMY.weekly_challenge.coin_reward}}
-                    <i class='fa fa-coins ml-1'></i>
-                </span>
-                <span style="color: {{config.COLORS.diamond}}">
-                    {{config.ECONOMY.weekly_challenge.experience_reward}}
-                    <i class='fa fa-gem ml-1'></i>
-                </span>
-                <span class='float-right'>{{weekly_verifies}}/{{config.ECONOMY.weekly_challenge.goal}}</span>
-            </p>
+            {% if weekly_verifies < config.ECONOMY.weekly_challenge.goal %}
+                <p>
+                    Í þessari viku ætlum við að reyna að greina {{config.ECONOMY.weekly_challenge.goal}} upptökur.
+                    <br>
+                    Verðlaun eru gefin út á þriðjudögum.
+                    <span class=float-right>
+                        <span class='mr-2'><i class='fa fa-circle text-warning'></i> : Aðrir</span>
+                        <span><i class='fa fa-circle text-success'></i> : Þú</span>
+                    </span>
+                </p>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{weekly_progress}}%;"></div>
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{user_weekly_progress}}%;"></div>
+                </div>
+                <p class='mt-2'>Verðlaun:
+                    <span class='text-warning'>
+                        {{config.ECONOMY.weekly_challenge.coin_reward}}
+                        <i class='fa fa-coins ml-1'></i>
+                    </span>
+                    <span style="color: {{config.COLORS.diamond}}">
+                        {{config.ECONOMY.weekly_challenge.experience_reward}}
+                        <i class='fa fa-gem ml-1'></i>
+                    </span>
+                    <span class='float-right'>{{weekly_verifies}}/{{config.ECONOMY.weekly_challenge.goal}}</span>
+                </p>
+            {% else %}
+                <p>
+                    Til hamingju, hópurinn hefur náð vikulega markmiðinu!
+                    <br>
+                    Fyrir hverjar {{config.ECONOMY.weekly_challenge.extra_interval}} aukagreiningar fær hópurinn aukaverðlaun.
+                </p>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{weekly_progress}}%;"></div>
+                </div>
+                <p class='mt-2'>Verðlaun:
+                    <span class='text-warning'>
+                        {{config.ECONOMY.weekly_challenge.extra_coin_reward}}
+                        <i class='fa fa-coins ml-1'></i>
+                    </span>
+                    <span style="color: {{config.COLORS.diamond}}">
+                        {{config.ECONOMY.weekly_challenge.extra_experience_reward}}
+                        <i class='fa fa-gem ml-1'></i>
+                    </span>
+                    <span class='float-right'>{{weekly_verifies}}</span>
+                </p>
+            {% endif %}
         </div>
 
         <div class='col-12 mt-3 mb-3'>
@@ -117,9 +159,10 @@
                 </div>
             </div>
         </div>
+{% endblock %}
 
+{% block modals %}
     {% for verifier in verifiers %}
-        <!-- userModal -->
         <div class="modal fade" id="userModal-{{verifier.id}}" tabindex="-1">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -138,7 +181,79 @@
                 </div>
             </div>
         </div>
-    {%endfor%}
+    {% endfor %}
+
+    {% if show_weekly_prices %}
+        <div class="modal fade"tabindex="-1" id='weeklyPriceModal'>
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Vikuleg verðlaun</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                     <div id='revealContent'>
+                        <div class='row'>
+                            <div class='col-12 px-5'>
+                                <h3 class='text-center font-weight-bold mt-4 mb-4'>
+                                    Vikuleg verðlaun
+                                </h3>
+                            </div>
+                            <div class='col-12 text-center'>
+                                <button id='revealButton' class='btn btn-lg btn-success btn-danger rounded-pill mb-5'>
+                                    Sýna
+                                    <i class='fa fa-heart'></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id='weeklyChallengeContent' class='d-none'>
+                        <h3 class='text-center font-weight-bold'>Í þessari viku fékkstu</h3>
+                        <h4 class='text-center font-weight-bold text-warning'>
+                            {{current_user.progression.weekly_coin_price}}
+                            <i class='fa fa-gem ml-2'></i>
+                        </h4>
+                        <h4 class='text-center font-weight-bold text-danger'>
+                            {{current_user.progression.weekly_experience_price}}
+                            <i class='fa fa-coins ml-2'></i>
+                        </h4>
+                    </div>
+                </div>
+                <div class="modal-footer d-none" id='weeklyChallengeFooter'>
+                    <button type="button" class="btn btn-secondary float-right" data-dismiss="modal">Loka</button>
+                </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    {% if show_weekly_prices %}
+        <script src='{{url_for("static", filename="js/confetti.min.js")}}'></script>
+        <script>
+            $('#weeklyPriceModal').modal('show');
+            $('#weeklyPriceModal').on('hide.bs.modal', function(e){
+                confetti.stop();
+            })
+            confetti.maxCount = 150;
+
+            $('#revealButton').click(function(){
+                $('#revealContent').addClass('d-none');
+                $('#weeklyChallengeContent').addClass('d-block');
+                $('#weeklyChallengeFooter').addClass('d-block');
+                confetti.start();
+                $('#confetti-canvas').css('z-index', 900);
+                var audio = new Audio('{{url_for("static", filename="audio/weekly_challenge.wav")}}');
+                audio.volume = 0.7;
+                audio.play();
+            });
+        </script>
+    {% endif %}
 {% endblock %}
 
 

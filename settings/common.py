@@ -57,7 +57,12 @@ ECONOMY = {
     'weekly_challenge': {
         'goal': 15000,
         'coin_reward': 100,
-        'experience_reward': 500
+        'experience_reward': 500,
+        'extra_interval': 2000,
+        'extra_coin_reward': 50,
+        'extra_experience_reward': 200,
+        'best_coin_reward': 50,
+        'best_experience_reward': 500,
     },
     'loot_boxes':{
         'prices':{

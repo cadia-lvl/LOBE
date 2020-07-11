@@ -512,6 +512,41 @@ def give_coins():
     progression.lobe_coins += coins
     db.session.commit()
 
+@manager.command
+def reset_weekly_challenge():
+    verifiers = get_verifiers()
+    best_verifier = sorted(verifiers, key=lambda v: -v.progression.weekly_verifies)[0]
+
+    # check for price and award
+    coin_price, experience_price = 0, 0
+    weekly_verifies = sum([v.progression.weekly_verifies for v in verifiers])
+    weekly_goal = app.config['ECONOMY']['weekly_challenge']['goal']
+    if weekly_verifies > weekly_goal:
+        coin_price = app.config['ECONOMY']['weekly_challenge']['coin_reward']
+        experience_price = app.config['ECONOMY']['weekly_challenge']['experience_reward']
+
+        extra = int((weekly_verifies-weekly_goal)/app.config['ECONOMY']['weekly_challenge']['extra_interval'])
+        coin_price += extra*app.config['ECONOMY']['weekly_challenge']['extra_coin_reward']
+        experience_price += extra*app.config['ECONOMY']['weekly_challenge']['extra_experience_reward']
+
+    # give prices and reset counters
+    for verifier in verifiers:
+        v_coin_price, v_experience_price = coin_price, experience_price
+        if verifier.id == best_verifier.id:
+            v_coin_price += app.config['ECONOMY']['weekly_challenge']['best_coin_reward']
+            v_experience_price += app.config['ECONOMY']['weekly_challenge']['best_experience_reward']
+
+        progression = verifier.progression
+        progression.weekly_verifies = 0
+        progression.lobe_coins += coin_price
+        progression.experience += experience_price
+        progression.weekly_coin_price = coin_price
+        progression.weekly_experience_price = experience_price
+        progression.has_seen_weekly_prices = False
+
+    db.session.commit()
+
+
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)
 manager.add_command('change_pass', changePass)

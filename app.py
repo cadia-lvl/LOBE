@@ -807,30 +807,34 @@ def create_verification():
             progression.lobe_coins += app.config['ECONOMY']['verification']['coin_reward']
             progression.experience += app.config['ECONOMY']['verification']['experience_reward']
             progression.num_verifies += 1
+            progression.weekly_verifies += 1
             if not verification.recording_is_good:
                 progression.num_invalid += 1
 
             # check for achivement updates:
             # 1. verification:
+            achievements = []
             verification_info = app.config['ECONOMY']['achievements']['verification'][str(progression.verification_level)]
             if progression.num_verifies >= verification_info['goal']:
                 progression.verifciation_level += 1
                 progression.lobe_coins += verification_info['coin_reward']
                 progression.experience += verification_info['experience_reward']
-
+                achievements.append('verification')
             # 2. bad verifications
             spy_info = app.config['ECONOMY']['achievements']['spy'][str(progression.spy_level)]
             if progression.num_invalid >= spy_info['goal']:
                 progression.spy_level += 1
                 progression.lobe_coins += spy_info['coin_reward']
                 progression.experience += spy_info['experience_reward']
+                achievements.append('spy')
 
             db.session.commit()
 
             response = {
                 'id':verification_id,
                 'coins': progression.lobe_coins,
-                'experience': progression.experience}
+                'experience': progression.experience,
+                'achievements': achievements}
 
             return Response(json.dumps(response), status=200)
         else:
@@ -862,17 +866,38 @@ def delete_verification():
                 progression.lobe_coins -= app.config['ECONOMY']['session']['coin_reward']
                 progression.experience -= app.config['ECONOMY']['session']['experience_reward']
 
-        db.session.delete(verification)
-        db.session.commit()
+        progression.num_verifies -= 1
+        progression.weekly_verifies -= 1
+        if not verification.recording_is_good:
+            progression.num_invalid -= 1
+
+        # check for achivement updates:
+        # 1. verification:
+        if progression.verification_level > 0:
+            verification_info = app.config['ECONOMY']['achievements']['verification'][str(progression.verification_level-1)]
+            if progression.num_verifies < verification_info['goal']:
+                progression.verifciation_level -= 1
+                progression.lobe_coins -= verification_info['coin_reward']
+                progression.experience -= verification_info['experience_reward']
+        # 2. bad verifications
+        if progression.spy_level > 0:
+            spy_info = app.config['ECONOMY']['achievements']['spy'][str(progression.spy_level - 1)]
+            if progression.num_invalid < spy_info['goal']:
+                progression.spy_level -= 1
+                progression.lobe_coins -= spy_info['coin_reward']
+                progression.experience -= spy_info['experience_reward']
 
         # update progression on user
         progression.lobe_coins = max(0, progression.lobe_coins - app.config['ECONOMY']['verification']['coin_reward'])
         progression.experience = max(0, progression.experience - app.config['ECONOMY']['verification']['experience_reward'])
+
+        db.session.delete(verification)
         db.session.commit()
 
         response = {
             'coins': progression.lobe_coins,
             'experience': progression.experience}
+
         return Response(json.dumps(response), status=200)
     else:
         errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
@@ -885,9 +910,17 @@ def verify_index():
     '''
     Home screen of the verifiers
     '''
-    verifiers = get_verifiers()
-    weekly_verifies = Verification.query.filter(Verification.created_at > last_day('tuesday')).count()
-    weekly_progress = 100*(weekly_verifies/app.config['ECONOMY']['weekly_challenge']['goal'])
+    verifiers = sorted(get_verifiers(), key=lambda v: -v.progression.weekly_verifies)
+    weekly_verifies = sum([v.progression.weekly_verifies for v in verifiers])
+    if weekly_verifies < app.config['ECONOMY']['weekly_challenge']['goal']:
+        weekly_progress = 100*((weekly_verifies-current_user.progression.weekly_verifies)/\
+            app.config['ECONOMY']['weekly_challenge']['goal'])
+    else:
+        weekly_progress = 100*((weekly_verifies - app.config['ECONOMY']['weekly_challenge']['goal'])%\
+            app.config['ECONOMY']['weekly_challenge']['extra_interval']/\
+            app.config['ECONOMY']['weekly_challenge']['extra_interval'])
+    user_weekly_progress = 100*(current_user.progression.weekly_verifies/app.config['ECONOMY']['weekly_challenge']['goal'])
+
 
     verification_progress = 100*(current_user.progression.num_verifies/\
         app.config['ECONOMY']['achievements']['verification'][str(current_user.progression.verification_level)]['goal'])
@@ -897,10 +930,19 @@ def verify_index():
 
     streak_progress = 0
 
+    show_weekly_prices = False
+    if not current_user.progression.has_seen_weekly_prices:
+        progression = current_user.progression
+        progression.has_seen_weekly_prices = True
+        db.session.commit()
+        show_weekly_prices = True
+
+
     # get the number of verifications per user
     return render_template('verify_index.jinja', verifiers=verifiers, weekly_verifies=weekly_verifies,
-        weekly_progress=weekly_progress, verification_progress=verification_progress, spy_progress=spy_progress,
-        streak_progress=streak_progress, progression_view=True)
+        weekly_progress=weekly_progress, user_weekly_progress=user_weekly_progress,
+        verification_progress=verification_progress, spy_progress=spy_progress,
+        streak_progress=streak_progress, progression_view=True, show_weekly_prices=show_weekly_prices)
 
 @app.route('/shop/', methods=['GET'])
 @login_required

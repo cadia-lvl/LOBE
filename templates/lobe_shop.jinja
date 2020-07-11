@@ -149,7 +149,7 @@
             $('#lootModal').modal('show');
             $('#lootModal').on('hide.bs.modal', function(e){
                 confetti.stop();
-            })
+            });
             confetti.maxCount = 150; // Maybe change based on rarity received?
 
             $('#revealButton').click(function(){

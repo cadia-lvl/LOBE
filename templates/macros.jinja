@@ -346,16 +346,10 @@
                 {% endif %}
             </div>
             <div>
-                {% if not current_user.progression.owns_lootbox(loot) %}
-                    <a href="{{url_for('loot_box', rarity=loot.rarity)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">{{loot.price}}</span>
-                        <i class="fas fa-coins mr-2"></i>
-                    </a>
-                {% else %}
-                    <div class=" text-success rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">Keyptur</span>
-                    </div>
-                {% endif %}
+                <a href="{{url_for('loot_box', rarity=loot.rarity)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
+                    <span class="mr-2 ml-2 font-weight-bold">{{loot.price}}</span>
+                    <i class="fas fa-coins mr-2"></i>
+                </a>
             </div>
         </div>
         <ul class="list-group list-group-flush">

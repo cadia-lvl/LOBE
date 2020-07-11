@@ -960,6 +960,10 @@ class VerifierIcon(BaseModel, db.Model):
             (3, 'Legendary')
         ]})
 
+    @property
+    def edit_url(self):
+        return url_for('icon_edit', id=self.id)
+
 class VerifierTitle(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     title = db.Column(db.String(64), info={
@@ -1061,6 +1065,3 @@ class Application(BaseModel, db.Model):
     @hybrid_property
     def user_url(self):
         return url_for("user", id=self.user_id)
-    @property
-    def edit_url(self):
-        return url_for('icon_edit', id=self.id)

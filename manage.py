@@ -513,6 +513,15 @@ def give_coins():
     db.session.commit()
 
 @manager.command
+def give_all_coins():
+    verifiers = get_verifiers()
+    coins = int(input('amount: '))
+    for verifier in verifiers:
+        progression = verifier.progression
+        progression.lobe_coins += coins
+        db.session.commit()
+
+@manager.command
 def give_experience():
     verifiers = get_verifiers()
     print("Select a verifier id from the ones below:")

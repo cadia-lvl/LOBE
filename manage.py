@@ -17,8 +17,10 @@ from termcolor import colored
 from collections import defaultdict
 
 from app import app, db, user_datastore
-from models import Recording, Token, User, Role, Collection, Configuration, Session
+from models import Recording, Token, User, Role, Collection, Configuration, Session, VerifierProgression, VerifierIcon, VerifierQuote, VerifierTitle
 from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
+from db import get_verifiers
+
 migrate = Migrate(app, db)
 manager = Manager(app)
 
@@ -447,6 +449,116 @@ def fix_verified_status():
             session = Session.query.get(rec.session_id)
             session.is_secondarily_verified = False
     db.session.commit()
+
+@manager.command
+def add_progression_to_verifiers():
+    verifiers = get_verifiers()
+    for verifier in verifiers:
+        if verifier.progression_id is None:
+            progression = VerifierProgression()
+            db.session.add(progression)
+            db.session.flush()
+            verifier.progression_id = progression.id
+        db.session.commit()
+
+@manager.command
+def set_rarity():
+    icons = VerifierIcon.query.all()
+    titles = VerifierTitle.query.all()
+    quotes = VerifierQuote.query.all()
+    items = icons + titles + quotes
+    for item in items:
+        if item.rarity is None:
+            item.rarity = 0
+    db.session.commit()
+
+@manager.command
+def initialize_verifiers():
+    add_progression_to_verifiers()
+    verifiers = get_verifiers()
+    for verifier in verifiers:
+        progression = verifier.progression
+        if progression.verification_level is None:
+            progression.verification_level = 0
+        if progression.spy_level is None:
+            progression.spy_level = 0
+        if progression.streak_level is None:
+            progression.streak_level = 0
+        if progression.num_verifies is None:
+            progression.num_verifies = 0
+        if progression.num_session_verifies is None:
+            progression.num_session_verifies = 0
+        if progression.num_invalid is None:
+            progression.num_invalid = 0
+        if progression.num_streak_days is None:
+            progression.num_streak_days = 0
+        if progression.lobe_coins is None:
+            progression.lobe_coins = 0
+        if progression.experience is None:
+            progression.experience = 0
+    db.session.commit()
+
+
+@manager.command
+def give_coins():
+    verifiers = get_verifiers()
+    print("Select a verifier id from the ones below:")
+    for verifier in verifiers:
+        print(f'{verifier.name} - [{verifier.id}]')
+    user_id = int(input('user id: '))
+    coins = int(input('amount: '))
+    user = User.query.get(user_id)
+    progression = user.progression
+    progression.lobe_coins += coins
+    db.session.commit()
+
+@manager.command
+def give_experience():
+    verifiers = get_verifiers()
+    print("Select a verifier id from the ones below:")
+    for verifier in verifiers:
+        print(f'{verifier.name} - [{verifier.id}]')
+    user_id = int(input('user id: '))
+    experience = int(input('amount: '))
+    user = User.query.get(user_id)
+    progression = user.progression
+    progression.experience += experience
+    db.session.commit()
+
+@manager.command
+def reset_weekly_challenge():
+    verifiers = get_verifiers()
+    best_verifier = sorted(verifiers, key=lambda v: -v.progression.weekly_verifies)[0]
+
+    # check for price and award
+    coin_price, experience_price = 0, 0
+    weekly_verifies = sum([v.progression.weekly_verifies for v in verifiers])
+    weekly_goal = app.config['ECONOMY']['weekly_challenge']['goal']
+    if weekly_verifies > weekly_goal:
+        coin_price = app.config['ECONOMY']['weekly_challenge']['coin_reward']
+        experience_price = app.config['ECONOMY']['weekly_challenge']['experience_reward']
+
+        extra = int((weekly_verifies-weekly_goal)/app.config['ECONOMY']['weekly_challenge']['extra_interval'])
+        coin_price += extra*app.config['ECONOMY']['weekly_challenge']['extra_coin_reward']
+        experience_price += extra*app.config['ECONOMY']['weekly_challenge']['extra_experience_reward']
+
+    # give prices and reset counters
+    for verifier in verifiers:
+        v_coin_price, v_experience_price = coin_price, experience_price
+        if verifier.id == best_verifier.id:
+            v_coin_price += app.config['ECONOMY']['weekly_challenge']['best_coin_reward']
+            v_experience_price += app.config['ECONOMY']['weekly_challenge']['best_experience_reward']
+
+        progression = verifier.progression
+        progression.weekly_verifies = 0
+        progression.lobe_coins += coin_price
+        progression.experience += experience_price
+        progression.weekly_coin_price = coin_price
+        progression.weekly_experience_price = experience_price
+        progression.has_seen_weekly_prices = False
+
+    db.session.commit()
+
 
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)

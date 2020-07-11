@@ -4,7 +4,11 @@ import traceback
 import shutil
 import logging
 from functools import wraps
+import random
+import datetime
 from logging.handlers import RotatingFileHandler
+
+import numpy as np
 
 from flask import (Flask, Response, redirect, render_template, request,
                    send_from_directory, url_for, flash, jsonify)
@@ -22,14 +26,15 @@ from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
-                   ApplicationForm, PostingForm)
-from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, db, Application, \
-    Posting
+                   ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm)
+from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
+    VerifierIcon, VerifierTitle, VerifierQuote, Application, Posting, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
 from managers import create_collection_zip, trim_collection_handler
 from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low, find_segment
+from tools.date import last_day
 
 # TODO: Move this to a sensible location
 DEFAULT_CONFIGURATION_ID = 1
@@ -652,7 +657,7 @@ def create_conf():
 @roles_accepted('admin')
 def delete_conf(id):
     conf = Configuration.query.get(id)
-    name = conf.printable_name
+    name = conf.printlable_name
     if conf.is_default:
         flash("Ekki er hægt að eyða aðalstillingum", category='warning')
         return redirect(conf.url)
@@ -783,7 +788,7 @@ def verify_session(id):
 
     return render_template('verify_session.jinja', session=session, form=form,
         delete_form=DeleteVerificationForm(), json_session=json.dumps(session_dict),
-        is_secondary=is_secondary)
+        is_secondary=is_secondary, progression_view=True)
 
 @app.route('/verifications', methods=['GET'])
 @login_required
@@ -802,8 +807,9 @@ def verification_list():
 @login_required
 def verification(id):
     verification = Verification.query.get(id)
+    delete_form=DeleteVerificationForm()
     return render_template('verification.jinja', verification=verification,
-        section='verification')
+        delete_form=delete_form, section='verification',)
 
 
 
@@ -832,19 +838,68 @@ def create_verification():
             db.session.commit()
 
             insert_trims(form.data['cut'], verification_id)
+            progression = User.query.get(form.data['verified_by']).progression
 
             # check if this was the final recording to be verified and update
             session = Session.query.get(int(form.data['session']))
             recordings = Recording.query.filter(Recording.session_id==session.id)
             num_recordings = recordings.count()
+            achievements = []
             if is_secondary and num_recordings ==\
                 recordings.filter(Recording.is_secondarily_verified==True).count():
                 session.is_secondarily_verified = True
                 db.session.commit()
             elif num_recordings == recordings.filter(Recording.is_verified==True).count():
                 session.is_verified = True
+                progression.num_session_verifies += 1
+                progression.lobe_coins += app.config['ECONOMY']['session']['coin_reward']
+                progression.experience += app.config['ECONOMY']['session']['experience_reward']
+
+                ## check for streak
+                #if not progression.has_streaked_today:
+                #    num_verifies_today = Verification.query.filter(Verification.verified_by==current_user.id,
+                #        (Verification.created_at+datetime.timedelta(days=1))>datetime.now())
+                #    if num_verifies_today >= app.config['ECONOMY']['achievement']['streak_minimum']:
+                #        progression.num_streak_days += 1
+                #        if progression.num_streak_days >= app.config['ECONOMY']['achievement']['streak'][str(progression.streak_level)]:
+                #            progression.streak_level += 1
+                #            progression.has_streaked_today = True
+                #            achievements.append('streak')
                 db.session.commit()
-            return Response(str(verification_id), status=200)
+
+            # update progression on user
+            progression.lobe_coins += app.config['ECONOMY']['verification']['coin_reward']
+            progression.experience += app.config['ECONOMY']['verification']['experience_reward']
+            progression.num_verifies += 1
+            progression.weekly_verifies += 1
+            if not verification.recording_is_good:
+                progression.num_invalid += 1
+
+            # check for achivement updates:
+            # 1. verification:
+            verification_info = app.config['ECONOMY']['achievements']['verification'][str(progression.verification_level)]
+            if progression.num_verifies >= verification_info['goal']:
+                progression.verification_level += 1
+                progression.lobe_coins += verification_info['coin_reward']
+                progression.experience += verification_info['experience_reward']
+                achievements.append('verification')
+            # 2. bad verifications
+            spy_info = app.config['ECONOMY']['achievements']['spy'][str(progression.spy_level)]
+            if progression.num_invalid >= spy_info['goal']:
+                progression.spy_level += 1
+                progression.lobe_coins += spy_info['coin_reward']
+                progression.experience += spy_info['experience_reward']
+                achievements.append('spy')
+
+            db.session.commit()
+
+            response = {
+                'id':verification_id,
+                'coins': progression.lobe_coins,
+                'experience': progression.experience,
+                'achievements': achievements}
+
+            return Response(json.dumps(response), status=200)
         else:
             errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
             return Response(errorMessage, status=500)
@@ -857,22 +912,60 @@ def delete_verification():
     form = DeleteVerificationForm(request.form)
     if form.validate():
         verification = Verification.query.get(int(form.data['verification_id']))
+        verified_by = verification.verified_by
         is_secondary = verification.is_secondary
         recording = Recording.query.get(verification.recording_id)
         session = Session.query.get(recording.session_id)
+        session_was_verified = session.is_verified
+        progression = User.query.get(verified_by).progression
+
         if is_secondary:
             recording.is_secondarily_verified = False
             session.is_secondarily_verified = False
         else:
             recording.is_verified = False
             session.is_verified = False
+            if session_was_verified:
+                progression.lobe_coins -= app.config['ECONOMY']['session']['coin_reward']
+                progression.experience -= app.config['ECONOMY']['session']['experience_reward']
+
+        progression.num_verifies -= 1
+        progression.weekly_verifies -= 1
+        if not verification.recording_is_good:
+            progression.num_invalid -= 1
+
+        # check for achivement updates:
+        # 1. verification:
+        if progression.verification_level > 0:
+            verification_info = app.config['ECONOMY']['achievements']['verification'][str(progression.verification_level-1)]
+            if progression.num_verifies < verification_info['goal']:
+                progression.verification_level -= 1
+                progression.lobe_coins -= verification_info['coin_reward']
+                progression.experience -= verification_info['experience_reward']
+        # 2. bad verifications
+        if progression.spy_level > 0:
+            spy_info = app.config['ECONOMY']['achievements']['spy'][str(progression.spy_level - 1)]
+            if progression.num_invalid < spy_info['goal']:
+                progression.spy_level -= 1
+                progression.lobe_coins -= spy_info['coin_reward']
+                progression.experience -= spy_info['experience_reward']
+
+        # update progression on user
+        progression.lobe_coins = max(0, progression.lobe_coins - app.config['ECONOMY']['verification']['coin_reward'])
+        progression.experience = max(0, progression.experience - app.config['ECONOMY']['verification']['experience_reward'])
 
         db.session.delete(verification)
         db.session.commit()
-        return Response(status=200)
+
+        response = {
+            'coins': progression.lobe_coins,
+            'experience': progression.experience}
+
+        return Response(json.dumps(response), status=200)
     else:
         errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
         return Response(errorMessage, status=500)
+
 
 @app.route('/verification', methods=['GET'])
 @login_required
@@ -880,19 +973,370 @@ def verify_index():
     '''
     Home screen of the verifiers
     '''
-    verifiers = get_verifiers()
+    verifiers = sorted(get_verifiers(), key=lambda v: -v.progression.weekly_verifies)
+    weekly_verifies = sum([v.progression.weekly_verifies for v in verifiers])
+    if weekly_verifies < app.config['ECONOMY']['weekly_challenge']['goal']:
+        weekly_progress = 100*((weekly_verifies-current_user.progression.weekly_verifies)/\
+            app.config['ECONOMY']['weekly_challenge']['goal'])
+    else:
+        weekly_progress = 100*((weekly_verifies - app.config['ECONOMY']['weekly_challenge']['goal'])%\
+            app.config['ECONOMY']['weekly_challenge']['extra_interval']/\
+            app.config['ECONOMY']['weekly_challenge']['extra_interval'])
+    user_weekly_progress = 100*(current_user.progression.weekly_verifies/app.config['ECONOMY']['weekly_challenge']['goal'])
+
+    verification_progress = 0
+    if current_user.progression.verification_level < len(app.config['ECONOMY']['achievements']['verification'].keys()):
+        verification_progress = 100*(current_user.progression.num_verifies/\
+            app.config['ECONOMY']['achievements']['verification'][str(current_user.progression.verification_level)]['goal'])
+
+    spy_progress = 0
+    if current_user.progression.spy_level < len(app.config['ECONOMY']['achievements']['spy'].keys()):
+        spy_progress = 100*(current_user.progression.num_invalid/\
+            app.config['ECONOMY']['achievements']['spy'][str(current_user.progression.spy_level)]['goal'])
+
+    streak_progress = 0
+
+    show_weekly_prices = False
+    if not current_user.progression.has_seen_weekly_prices:
+        progression = current_user.progression
+        progression.has_seen_weekly_prices = True
+        db.session.commit()
+        show_weekly_prices = True
+
+
     # get the number of verifications per user
-    for verifier in verifiers:
-        verifies = Verification.query.filter(
-            Verification.verified_by==verifier.id)
-        verifier.num_verifies = verifies.filter(
-            Verification.is_secondary==False).count()
-        verifier.num_secondary_verifies = verifies.filter(
-            Verification.is_secondary==True).count()
-    # order by combined score
-    verifiers = sorted(list(verifiers), key=lambda v: \
-        -(v.num_verifies + v.num_secondary_verifies))
-    return render_template('verify_index.jinja', verifiers=verifiers)
+    return render_template('verify_index.jinja', verifiers=verifiers, weekly_verifies=weekly_verifies,
+        weekly_progress=weekly_progress, user_weekly_progress=user_weekly_progress,
+        verification_progress=verification_progress, spy_progress=spy_progress,
+        streak_progress=streak_progress, progression_view=True, show_weekly_prices=show_weekly_prices)
+
+@app.route('/shop/', methods=['GET'])
+@login_required
+@roles_accepted('Greinir', 'admin')
+def lobe_shop():
+    icons = VerifierIcon.query.order_by(VerifierIcon.price).all()
+    titles = VerifierTitle.query.order_by(VerifierTitle.price).all()
+    quotes = VerifierQuote.query.order_by(VerifierQuote.price).all()
+    loot_boxes = app.config['LOOT_BOXES']
+
+    loot_box_message = request.args.get('messages', None)
+    loot_box_items = []
+    if loot_box_message is not None:
+        for _, item in json.loads(loot_box_message).items():
+            if item['type'] == 'icon':
+                loot_box_items.append(VerifierIcon.query.get(item['id']))
+            if item['type'] == 'title':
+                loot_box_items.append(VerifierTitle.query.get(item['id']))
+            if item['type'] == 'quote':
+                loot_box_items.append(VerifierQuote.query.get(item['id']))
+
+    return render_template('lobe_shop.jinja',
+        icons=icons,titles=titles, quotes=quotes, loot_boxes=loot_boxes,
+        progression_view=True, full_width=True, loot_box_items=loot_box_items)
+
+@app.route('/shop/random_equip', methods=['GET'])
+@login_required
+@roles_accepted('Greinir', 'admin')
+def random_equip():
+    progression = current_user.progression
+    if all(len(o) > 1 for o in [progression.owned_icons,
+        progression.owned_titles, progression.owned_quotes]):
+        progression.equip_random_icon()
+        progression.equip_random_title()
+        progression.equip_random_quote()
+        db.session.commit()
+        flash("Stíl var breytt", category="success")
+    else:
+        flash('Þú verður að eiga a.m.k. tvö stykki af hverri tegund',
+            category='warning')
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/loot_box/<int:rarity>', methods=['GET'])
+@login_required
+@roles_accepted('Greinir', 'admin')
+def loot_box(rarity):
+    set_price = app.config['ECONOMY']['loot_boxes']['prices'][str(rarity)]
+
+    if set_price <= current_user.progression.lobe_coins:
+        icons = VerifierIcon.query.all()
+        titles = VerifierTitle.query.all()
+        quotes = VerifierQuote.query.all()
+
+        common_items = [icon for icon in icons if icon.rarity == 0] + \
+            [title for title in titles if title.rarity == 0] + \
+            [quote for quote in quotes if quote.rarity == 0]
+
+        rare_items = [icon for icon in icons if icon.rarity == 1] + \
+            [title for title in titles if title.rarity == 1] + \
+            [quote for quote in quotes if quote.rarity == 1]
+
+        epic_items = [icon for icon in icons if icon.rarity == 2] + \
+            [title for title in titles if title.rarity == 2] + \
+            [quote for quote in quotes if quote.rarity == 2]
+
+        legendary_items = [icon for icon in icons if icon.rarity == 3] + \
+            [title for title in titles if title.rarity == 3] + \
+            [quote for quote in quotes if quote.rarity == 3]
+
+        if rarity == 1:
+            # we guarantee one rare item
+            guaranteed_item = random.choice(rare_items)
+        elif rarity == 2:
+            # we guarantee one epic item
+            guaranteed_item = random.choice(epic_items)
+        elif rarity == 3:
+            # we guarantee one legendary item
+            guaranteed_item = random.choice(legendary_items)
+        else:
+            # we guarantee one common item
+            guaranteed_item = random.choice(common_items)
+
+        all_items = common_items + rare_items + epic_items + legendary_items
+        probabilities = [app.config['ECONOMY']['loot_boxes']['rarity_weights'][str(item.rarity)] for item in all_items]
+        norm_probabilities = [p_val/np.sum(probabilities) for p_val in probabilities]
+        selected_items = list(np.random.choice(all_items, app.config['ECONOMY']['loot_boxes']['num_items']-1,
+            p=norm_probabilities))
+        selected_items.append(guaranteed_item)
+
+        progression = current_user.progression
+        progression.lobe_coins -= set_price
+        types = []
+        for item in selected_items:
+            if type(item) == VerifierQuote:
+                progression.owned_quotes.append(item)
+                types.append('quote')
+            if type(item) == VerifierTitle:
+                progression.owned_titles.append(item)
+                types.append('title')
+            if type(item) == VerifierIcon:
+                progression.owned_icons.append(item)
+                types.append('icon')
+        db.session.commit()
+
+        loot_box_message = json.dumps({str(i):{'type': types[i], 'id': item.id} for i,item in enumerate(selected_items)})
+        print(loot_box_message)
+        flash("Kaup samþykkt", category='success')
+        return redirect(url_for('lobe_shop', messages=loot_box_message))
+
+    flash("Þú átt ekki nóg fyrir þessum lukkukassa", category='warning')
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/icons/<int:icon_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def icon_buy(icon_id, user_id):
+    user = User.query.get(user_id)
+    icon = VerifierIcon.query.get(icon_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if progression.lobe_coins >= icon.price and icon not in progression.owned_icons:
+        progression.owned_icons.append(icon)
+        progression.equipped_icon_id = icon.id
+        progression.lobe_coins -= icon.price
+        db.session.commit()
+        flash("Kaup samþykkt.", category="success")
+    else:
+        flash("Kaup ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/icons/<int:icon_id>/equip/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def icon_equip(icon_id, user_id):
+    user = User.query.get(user_id)
+    icon = VerifierIcon.query.get(icon_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if icon in progression.owned_icons:
+        progression.equipped_icon_id = icon.id
+        db.session.commit()
+        flash("Merki valið", category="success")
+    else:
+        flash("Val ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/icons/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def icon_create():
+    form = VerifierIconForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            form['color'].data = str(form['color'].data)
+            icon = VerifierIcon()
+            form.populate_obj(icon)
+            db.session.add(icon)
+            db.session.commit()
+            flash("Nýju merki bætt við", category="success")
+            return redirect(url_for('lobe_shop'))
+        except Exception as error:
+            flash("Error creating verifier icon.", category="danger")
+            app.logger.error("Error creating verifier icon {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('icon_create'), section='verification', type='create')
+
+@app.route('/shop/icons/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def icon_edit(id):
+    icon = VerifierIcon.query.get(id)
+    form = VerifierIconForm(obj=icon)
+    try:
+        if request.method == 'POST' and form.validate():
+            form = VerifierIconForm(request.form, obj=icon)
+            form['color'].data = str(form['color'].data)
+            form.populate_obj(icon)
+            db.session.commit()
+            flash("Merki var breytt", category="success")
+            return redirect(url_for('lobe_shop'))
+    except Exception as error:
+        flash("Error updating icon.", category="danger")
+        app.logger.error("Error updating icon {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('icon_edit', id=id), section='verification', type='edit')
+
+
+@app.route('/shop/titles/<int:title_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def title_buy(title_id, user_id):
+    user = User.query.get(user_id)
+    title = VerifierTitle.query.get(title_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if progression.lobe_coins >= title.price and title not in progression.owned_titles:
+        progression.owned_titles.append(title)
+        progression.equipped_title_id = title.id
+        progression.lobe_coins -= title.price
+        db.session.commit()
+        flash("Kaup samþykkt.", category="success")
+    else:
+        flash("Kaup ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/titles/<int:title_id>/equip/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def title_equip(title_id, user_id):
+    user = User.query.get(user_id)
+    title = VerifierTitle.query.get(title_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if title in progression.owned_titles:
+        progression.equipped_title_id = title.id
+        db.session.commit()
+        flash("Merki valið", category="success")
+    else:
+        flash("Val ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/titles/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def title_create():
+    form = VerifierTitleForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            title = VerifierTitle()
+            form.populate_obj(title)
+            db.session.add(title)
+            db.session.commit()
+            flash("Nýjum titli bætt við", category="success")
+            return redirect(url_for('lobe_shop'))
+        except Exception as error:
+            flash("Error creating verifier title.", category="danger")
+            app.logger.error("Error creating title {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('title_create'), section='verification', type='create')
+
+@app.route('/shop/titles/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def title_edit(id):
+    title = VerifierTitle.query.get(id)
+    form = VerifierTitleForm(obj=title)
+    try:
+        if request.method == 'POST' and form.validate():
+            form = VerifierTitleForm(request.form, obj=title)
+            form.populate_obj(title)
+            db.session.commit()
+            flash("Titli var breytt", category="success")
+            return redirect(url_for('lobe_shop'))
+    except Exception as error:
+        flash("Error updating title.", category="danger")
+        app.logger.error("Error updating title {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('title_edit', id=id), section='verification', type='edit')
+
+
+@app.route('/shop/quotes/<int:quote_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def quote_buy(quote_id, user_id):
+    user = User.query.get(user_id)
+    quote = VerifierQuote.query.get(quote_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if progression.lobe_coins >= quote.price and quote not in progression.owned_quotes:
+        progression.owned_quotes.append(quote)
+        progression.equipped_quote_id = quote.id
+        progression.lobe_coins -= quote.price
+        db.session.commit()
+        flash("Kaup samþykkt.", category="success")
+    else:
+        flash("Kaup ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
+
+@app.route('/shop/quotes/<int:quote_id>/equip/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def quote_equip(quote_id, user_id):
+    user = User.query.get(user_id)
+    quote = VerifierQuote.query.get(quote_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if quote in progression.owned_quotes:
+        progression.equipped_quote_id = quote.id
+        db.session.commit()
+        flash("Merki valið", category="success")
+    else:
+        flash("Val ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
+
+@app.route('/shop/quotes/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def quote_create():
+    form = VerifierQuoteForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            quote = VerifierQuote()
+            form.populate_obj(quote)
+            db.session.add(quote)
+            db.session.commit()
+            flash("Nýjum titli bætt við", category="success")
+            return redirect(url_for('lobe_shop'))
+        except Exception as error:
+            flash("Error creating verifier quote.", category="danger")
+            app.logger.error("Error creating quote {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('quote_create'), section='verification', type='create')
+
+
+@app.route('/shop/quotes/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def quote_edit(id):
+    quote = VerifierQuote.query.get(id)
+    form = VerifierQuoteForm(obj=quote)
+    try:
+        if request.method == 'POST' and form.validate():
+            form = VerifierQuoteForm(request.form, obj=quote)
+            form.populate_obj(quote)
+            db.session.commit()
+            flash("Titli var breytt", category="success")
+            return redirect(url_for('lobe_shop'))
+    except Exception as error:
+        flash("Error updating quote.", category="danger")
+        app.logger.error("Error updating quote {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('quote_edit', id=id), section='verification', type='edit')
 
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])

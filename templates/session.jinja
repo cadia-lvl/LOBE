@@ -18,10 +18,12 @@
                 {{macros.btn_icon('microphone', 'r')}}
                 Taka upp fleiri
             </a>
-            <a href='{{url_for("verify_session", id=session.id)}}' class='btn btn-sm btn-secondary float-right mb-2 ml-2'>
-                {{macros.btn_icon('headphones', 'r')}}
-                hlusta
-            </a>
+            {% if not session.is_verified %}
+                <a href='{{url_for("verify_session", id=session.id)}}' class='btn btn-sm btn-secondary text-warning float-right mb-2 ml-2'>
+                    {{macros.btn_icon('headphones', 'r')}}
+                    greina
+                </a>
+            {% endif %}
             {% if current_user.is_admin() %}
                 <a href='{{url_for("session_edit", id=session.id)}}' class='btn btn-sm btn-secondary text-warning float-right mb-2 ml-2'>
                     {{macros.btn_icon('edit', 'r')}}

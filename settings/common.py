@@ -5,6 +5,7 @@ APP_ROOT = os.path.abspath(os.path.join(
 
 # these should all have a trailing slash
 DATA_BASE_DIR = os.path.join(APP_ROOT, 'data/')
+
 TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'tokens/')
 RECORD_DIR = os.path.join(DATA_BASE_DIR, 'records/')
 VIDEO_DIR = os.path.join(DATA_BASE_DIR, 'videos/')
@@ -36,3 +37,17 @@ AUDIO_CODEC = 'pcm'
 VIDEO_W = 1280
 VIDEO_H = 720
 VIDEO_CODEC = 'vp8'
+
+COLORS = {
+    'common': "#bdbdbd",
+    'rare': "#42a5f5",
+    'epic': "#7e57c2",
+    'legendary': "#ffc107",
+    'danger': "#ff4444",
+    'primary': "#0275d8",
+    'sucsess': "#5cb85c",
+    'info': "#5bc0de",
+    'warning': "#f0ad4e",
+    'lootarrows': "#ffee58",
+    'diamond': "#ff4444",
+}

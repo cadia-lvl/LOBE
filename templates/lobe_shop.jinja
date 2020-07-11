@@ -1,0 +1,168 @@
+{% extends "__base.jinja" %}
+{% block body %}
+<div class='row'>
+<div class='col-lg-10 offset-lg-1 col-12'>
+    <div class='row mb-5'>
+        <div class="col-md-6 d-flex flex-column justify-content-between">
+            <h1 class='font-weight-bold display-1 d-xl-block d-none'>Búðin</h1>
+            <h1 class='font-weight-bold d-xl-none'>Búðin</h1>
+            <div>
+                <p>
+                    Notaðu LOBE auranna sem þú hefur unnið hörðum höndum að safna. Veldu þér merki, titil og slagorð til að sýna hinum
+                    að þú ert flottasti greinandinn.
+                </p>
+                <p>
+                    Þú vinnur þér inn aura og stig með því að klára að greina lotur og gera ýmis afrek. Prófíllinn þinn er hér til hliðar
+                    og sýnir núverandi merki, titil og slagorð. Prófíllinn þinn sýnir líka hversu marga aura og hversu mörg stig þú hefur
+                    unnið þér inn.
+                </p>
+
+                <a href="{{url_for('verify_index')}}" class='btn btn-secondary rounded-pill text-success float-right px-3 mb-2'>
+                    Heimaskjár
+                    {{macros.btn_icon('home', 'l')}}
+                </a>
+                <a href="{{url_for('random_equip')}}" class='btn btn-secondary rounded-pill text-warning float-right px-3 mb-2 mr-2'>
+                    Slembival
+                    {{macros.btn_icon('dice-five', 'l')}}
+                </a>
+            </div>
+        </div>
+        <div class='col-md-6 offset-xl-3 col-xl-3'>
+            {{macros.verifier_card(current_user)}}
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Merki</h3>
+            <p class='mb-0'>Merki birtast alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
+            <p>Þú átt {{current_user.progression.owned_icons|length}} af {{icons|length}} merkjum.</p>
+
+            {% if current_user.is_admin() %}
+                <a href="{{url_for('icon_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                    Búa til
+                    {{macros.btn_icon('plus', 'l')}}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% with items=icons, type="Icons"%}
+        {% include 'carousel_item.jinja'%}
+    {% endwith %}
+
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Titill</h3>
+            <p class='mb-0'>Titlar birtast fyrir framan nafnið þitt alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
+            <p>Þú átt {{current_user.progression.owned_titles|length}} af {{titles|length}} titlum.</p>
+
+            {% if current_user.is_admin() %}
+                <a href="{{url_for('title_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                    Búa til
+                    {{macros.btn_icon('plus', 'l')}}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% with items=titles, type="Titles"%}
+        {% include 'carousel_item.jinja'%}
+    {% endwith %}
+
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Slagorð</h3>
+            <p class='mb-0'>Slagorð birtast alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
+            <p>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} titlum.</p>
+
+            {% if current_user.is_admin() %}
+                <a href="{{url_for('quote_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                    Búa til
+                    {{macros.btn_icon('plus', 'l')}}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% with items=quotes, type="Slogans"%}
+        {% include 'carousel_item.jinja'%}
+    {% endwith %}
+
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Slembikassar</h3>
+            <p>Snúðu hjólinu eins og þú sért á English.</p>
+        </div>
+    </div>
+    {% with items=loot_boxes, type="Lootbox"%}
+        {% include 'carousel_item.jinja'%}
+    {% endwith %}
+</div>
+</div>
+{% endblock %}
+{% block modals %}
+    {% if loot_box_items %}
+        <div class="modal fade bd-example-modal-lg"  id='lootModal' tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style='background-color:#131313; z-index:1000'>
+                    <div class='container-fluid'>
+                        <div id='revealContent'>
+                            <div class='row'>
+                                <div class='col-12 px-5'>
+                                    <h3 class='text-center font-weight-bold mt-4 mb-4'>
+                                        Opnaðu kassann til að komast að því hvaða glaðninga þú fékkst!
+                                    </h3>
+                                </div>
+                                <div class='col-12 text-center'>
+                                    <button id='revealButton' class='btn btn-lg btn-success rounded-pill  mb-5' style='animation-name: stretch;
+                                        animation-duration: 0.7s;
+                                        animation-timing-function: ease-out;
+                                        animation-delay: 0;
+                                        animation-direction: alternate;
+                                        animation-iteration-count: infinite;
+                                        animation-fill-mode: none;
+                                        animation-play-state: running;'>
+                                        Opna Kassa
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id='lootBoxContent' class='d-none'>
+                            <h3 class="text-center font-weight-bold mt-4 mb-4">
+                                Og upp úr kassanum kom...
+                            </h3>
+                            {% with items=loot_box_items, type="Winnings"%}
+                                {% include 'lootbox_carousel.jinja'%}
+                            {% endwith %}
+                        </div>
+                    </div>
+                    <div class="modal-footer d-none" id='lootBoxFooter'>
+                        <button type="button" class="btn btn-secondary text-success float-right" data-dismiss='modal'>Loka glugga</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+    {% if loot_box_items %}
+        <script src='{{url_for("static", filename="js/confetti.min.js")}}'></script>
+        <script>
+            $('#lootModal').modal('show');
+            $('#lootModal').on('hide.bs.modal', function(e){
+                confetti.stop();
+            });
+            confetti.maxCount = 150; // Maybe change based on rarity received?
+
+            $('#revealButton').click(function(){
+                $('#revealContent').addClass('d-none');
+                $('#lootBoxContent').addClass('d-block');
+                $('#lootBoxFooter').addClass('d-block');
+                confetti.start();
+                $('#confetti-canvas').css('z-index', 900);
+                var audio = new Audio('{{url_for("static", filename="audio/loot_box.wav")}}');
+                audio.volume = 0.7;
+                audio.play();
+            });
+
+        </script>
+    {% endif %}
+{% endblock %}

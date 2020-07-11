@@ -129,3 +129,328 @@
         {% endif %}
     </div>
 {% endmacro %}
+
+
+{% macro verifier_icon(classes, color, size) %}
+    <i class='{{classes}} fa-{{size}}' style='color: {{color}}'></i>
+{% endmacro %}
+
+{% macro icon_card(icon, loot_display, current_user)%}
+    <div class="card" style='width: 100%'>
+        {% if current_user.progression.is_icon_equipped(icon) and not loot_display%}
+            <div class="card-header bg-success">
+                Valinn
+            </div>
+        {% endif %}
+        <div class="card-body d-flex justify-content-between flex-column">
+            <div>
+                <p class="card-title text-center font-weight-bold">{{icon.title}}</p>
+                <p class='text-center'>{{verifier_icon(icon.fa_id, icon.color, '3x')}}</p>
+                <p class='text-center'>{{icon.description}}</p>
+            </div>
+            <div>
+                {% if not current_user.progression.owns_icon(icon) and not loot_display %}
+                    <a href="{{url_for('icon_buy', icon_id=icon.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">{{icon.price}}</span>
+                        <i class="fas fa-coins mr-2"></i>
+                    </a>
+                {% else %}
+                    {% if not current_user.progression.is_icon_equipped(icon) %}
+                        <a href="{{url_for('icon_equip', icon_id=icon.id, user_id=current_user.id)}}" class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
+                            <span class="mr-2 ml-2 font-weight-bold">Velja</span>
+                            <i class="fas fa-check mr-2"></i>
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                {% if current_user.is_admin() %}
+                    <a href="{{icon.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">
+                            <i class='fa fa-edit'></i>
+                        </span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item" style="{% if icon.rarity == 1 %}background-color: {{config.COLORS.rare}}{% elif icon.rarity==2 %}background-color: {{config.COLORS.epic}}{% elif icon.rarity==3%}background-color: {{config.COLORS.legendary}}{% else %}background-color: {{config.COLORS.common}}{% endif %}">
+                <span>
+                    {% if icon.rarity == 1 %}
+                        Sjaldgæft
+                    {% elif icon.rarity==2 %}
+                        Epískt
+                    {% elif icon.rarity==3%}
+                        Goðsagnakennt
+                    {% else %}
+                        Algengt
+                    {% endif %}
+                </span>
+                    <span class='float-right'>
+                    {% for i in range(4) %}
+                        {% if i < icon.rarity + 1 %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+        </ul>
+    </div>
+{% endmacro %}
+
+{% macro title_card(title, loot_display, current_user)%}
+    <div class="card" style='width: 100%'>
+        {% if current_user.progression.is_title_equipped(title) and not loot_display%}
+            <div class="card-header bg-success">
+                Valinn
+            </div>
+        {% endif %}
+        <div class="card-body d-flex justify-content-between flex-column">
+            <div>
+                <p class="card-title text-center font-weight-bold h4">{{title.title}}</p>
+                <p class='text-center'><i class="fas {{fa_id}} fa-3x text-success"></i></p>
+                <p class='text-center'>{{title.description}}</p>
+            </div>
+            <div>
+                {% if not current_user.progression.owns_title(title) and not loot_display%}
+                    <a href="{{url_for('title_buy', title_id=title.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">{{title.price}}</span>
+                        <i class="fas fa-coins mr-2"></i>
+                    </a>
+                {% else %}
+                    {% if not current_user.progression.is_title_equipped(title) %}
+                        <a href="{{url_for('title_equip', title_id=title.id, user_id=current_user.id)}}" class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
+                            <span class="mr-2 ml-2 font-weight-bold">Velja</span>
+                            <i class="fas fa-check mr-2"></i>
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+
+                {% if current_user.is_admin() %}
+                    <a href="{{title.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">
+                            <i class='fa fa-edit'></i>
+                        </span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item" style="{% if title.rarity == 1 %}background-color: {{config.COLORS.rare}}{% elif title.rarity==2 %}background-color: {{config.COLORS.epic}}{% elif title.rarity==3%}background-color: {{config.COLORS.legendary}}{% else %}background-color: {{config.COLORS.common}}{% endif %}">
+                <span>
+                    {% if title.rarity == 1 %}
+                        Sjaldgæft
+                    {% elif title.rarity==2 %}
+                        Epískt
+                    {% elif title.rarity==3%}
+                        Goðsagnakennt
+                    {% else %}
+                        Algengt
+                    {% endif %}
+                </span>
+                    <span class='float-right'>
+                    {% for i in range(4) %}
+                        {% if i < title.rarity + 1 %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+        </ul>
+    </div>
+{% endmacro %}
+
+{% macro slogan_card(quote, loot_display, current_user)%}
+    <div class="card" style="width:100%">
+        {% if current_user.progression.is_quote_equipped(quote) and not loot_display%}
+            <div class="card-header bg-success">
+                Valið
+            </div>
+        {% endif %}
+        <div class="card-body d-flex justify-content-between flex-column">
+            <div>
+                <p class="card-title text-center font-italic">{{quote.quote}}</p>
+            </div>
+            <div>
+                {% if not current_user.progression.owns_quote(quote) and not loot_display%}
+                    <a href="{{url_for('quote_buy', quote_id=quote.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">{{quote.price}}</span>
+                        <i class="fas fa-coins mr-2"></i>
+                    </a>
+                {% else %}
+                    {% if not current_user.progression.is_quote_equipped(quote) %}
+                        <a href="{{url_for('quote_equip', quote_id=quote.id, user_id=current_user.id)}}" class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
+                            <span class="mr-2 ml-2 font-weight-bold">Velja</span>
+                            <i class="fas fa-check mr-2"></i>
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                {% if current_user.is_admin() %}
+                    <a href="{{quote.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">
+                            <i class='fa fa-edit'></i>
+                        </span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item" style="{% if quote.rarity == 1 %}background-color: {{config.COLORS.rare}}{% elif quote.rarity==2 %}background-color: {{config.COLORS.epic}}{% elif quote.rarity==3%}background-color: {{config.COLORS.legendary}}{% else %}background-color: {{config.COLORS.common}}{% endif %}">
+                <span>
+                    {% if quote.rarity == 1 %}
+                        Sjaldgæft
+                    {% elif quote.rarity==2 %}
+                        Epískt
+                    {% elif quote.rarity==3%}
+                        Goðsagnakennt
+                    {% else %}
+                        Algengt
+                    {% endif %}
+                </span>
+                    <span class='float-right'>
+                    {% for i in range(4) %}
+                        {% if i < quote.rarity + 1 %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+        </ul>
+    </div>
+{% endmacro %}
+
+{% macro loot_card(loot, current_user)%}
+    <div class="card" style='width: 100%;'>
+        <div class="card-body d-flex justify-content-between flex-column">
+            <div class="" style="margin-bottom:20px">
+                <p class="card-title text-center font-weight-bold">{{loot.title}}</p>
+                {% if loot.rarity == 1 %}
+                    <p class='text-center'>{{verifier_icon('fas fa-question', config.COLORS.rare, '5x')}}</p>
+                    <p class='text-center mb-0'>Þessi kassi tryggir að minnsta kosti einn sjaldgæfan hlut.</p>
+                {% elif loot.rarity==2 %}
+                    <p class='text-center'>{{verifier_icon('fas fa-question', config.COLORS.epic, '5x')}}</p>
+                    <p class='text-center mb-0'>Þessi kassi tryggir að minnsta kosti einn epískan hlut.</p>
+                {% elif loot.rarity==3%}
+                    <p class='text-center'>{{verifier_icon('fas fa-question', config.COLORS.legendary, '5x')}}</p>
+                    <p class='text-center mb-0'>Þessi kassi tryggir að minnsta kosti einn goðsagnakenndan hlut.</p>
+                {% else %}
+                    <p class='text-center'>{{verifier_icon('fas fa-question', config.COLORS.common, '5x')}}</p>
+                    <p class='text-center mb-0'>Ódýr kassi tryggir ekki neitt en hver veit hvort þú dettir í lukkupottinn!</p>
+                {% endif %}
+            </div>
+            <div>
+                {% if not current_user.progression.owns_lootbox(loot) %}
+                    <a href="{{url_for('loot_box', rarity=loot.rarity)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">{{loot.price}}</span>
+                        <i class="fas fa-coins mr-2"></i>
+                    </a>
+                {% else %}
+                    <div class=" text-success rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">Keyptur</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item" style="{% if loot.rarity == 1 %}background-color: {{config.COLORS.rare}}{% elif loot.rarity==2 %}background-color: {{config.COLORS.epic}}{% elif loot.rarity==3%}background-color: {{config.COLORS.legendary}}{% else %}background-color: {{config.COLORS.common}}{% endif %}">
+                <span>
+                    {% if loot.rarity == 1 %}
+                        Sjaldgæft
+                    {% elif loot.rarity==2 %}
+                        Epískt
+                    {% elif loot.rarity==3%}
+                        Goðsagnakennt
+                    {% else %}
+                        Algengt
+                    {% endif %}
+                </span>
+                <span class='float-right'>
+                    {% for i in range(4) %}
+                        {% if i < loot.rarity + 1 %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+        </ul>
+    </div>
+{% endmacro %}
+
+{% macro verifier_card(current_user) %}
+    <div class='card'>
+        <div class='card-body'>
+            <p class='text-center'>
+                {% if current_user.progression.equipped_icon.title %}
+                    {{verifier_icon(current_user.progression.equipped_icon.fa_id, current_user.progression.equipped_icon.color, '4x')}}
+                {% else %}
+                    {{verifier_icon('fa fa-user', '#fff', '4x')}}
+                {% endif %}
+            </p>
+            <p class='font-weight-bold text-center'>{{current_user.progression.equipped_title.title}} {{current_user.name}}</p>
+            <p class='font-italic text-center'>
+                {% if current_user.progression.equipped_quote.quote %}
+                    {{current_user.progression.equipped_quote.quote}}
+                {% else %}
+                    Ég var að byrja að greina!
+                {% endif %}
+            </p>
+            <p class='text-center mb-0'>
+                <span class='text-warning mr-4'>
+                    {{current_user.progression.lobe_coins}}
+                    <i class='fa fa-coins ml-1'></i>
+                </span>
+                <span style="color: {{config.COLORS.diamond}}">
+                    {{current_user.progression.experience}}
+                    <i class='fa fa-gem ml-1'></i>
+                </span>
+            </p>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+                <span>Greinandi</span>
+                <span class='text-warning float-right'>
+                    {% for key, _ in config.ECONOMY.achievements.verification.items() %}
+                        {% if current_user.progression.verification_level > key|int %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+            <li class="list-group-item">
+                <span>Spæjari</span>
+                <span class='text-warning float-right'>
+                    {% for key, _ in config.ECONOMY.achievements.spy.items() %}
+                        {% if current_user.progression.spy_level > key|int %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+            <li class="list-group-item">
+                <span>Garpur</span>
+                <span class='text-warning float-right'>
+                    {% for key, _ in config.ECONOMY.achievements.streak.items() %}
+                        {% if current_user.progression.streak_level > key|int %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+        </ul>
+    </div>
+{% endmacro %}

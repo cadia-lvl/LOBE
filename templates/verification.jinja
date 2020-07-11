@@ -13,15 +13,13 @@
                 Texti
                 {{macros.btn_icon('arrow-right', 'l')}}
             </a>
-            <a class='btn btn-sm btn-secondary text-warning float-right mr-2'>
-                Breyta
-                {{macros.btn_icon('edit', 'l')}}
-            </a>
-            <a class='btn btn-sm btn-secondary text-danger float-right mr-2'>
-                Eyða
-                {{macros.btn_icon('trash', 'l')}}
-            </a>
-
+            <form id='deleteVerificationForm' action="{{url_for('delete_verification')}}">
+                {{ delete_form.verification_id }}
+                <button type='button' id='deleteVerification' class='btn btn-danger btn-sm float-right mr-2'>
+                    <span class='ml-1 font-weight-bold'>Eyða greiningu</span>
+                    <i class='fa fa-trash ml-1 mr-1'></i>
+                </button>
+            </form>
         </div>
     </div>
     <div class='row'>
@@ -119,6 +117,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/3.3.3/wavesurfer.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.regions.min.js"></script>
     <script src='{{url_for("static", filename="js/surf.js")}}'></script>
+    <script src='{{url_for("static", filename="js/error.js")}}'></script>
     <script>
         const playButtonIcon = document.querySelector('#playButtonIcon');
         let wavesurfer = createSimpleWaveSurfer('#waveform', false, playButtonIcon);
@@ -151,6 +150,32 @@
             const playlist = Object.values(wavesurfer.regions.list)
             playlist.sort((a, b) => (a.start > b.start) ? 1 : -1)
             return playlist;
+        }
+
+        document.querySelector('button#deleteVerification').addEventListener('click', function(e){
+            e.preventDefault();
+            document.querySelector('button#deleteVerification').disabled = true;
+            postDeleteForm();
+        })
+
+        function postDeleteForm() {
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function(e) {
+                if(this.readyState === XMLHttpRequest.DONE) {
+                    if(xhr.status == '200'){
+                        window.location.href = "{{url_for('verification_list')}}";
+                    } else{
+                        promptError("Villa koma upp:", xhr.responseText, "");
+                    }
+                }
+            };
+
+            let form = document.querySelector("#deleteVerificationForm");
+            form.querySelector("input[name=verification_id]").value = {{verification.id}};
+            let formData = new FormData(form);
+            xhr.open("POST", form.action, true);
+            xhr.send(formData);
+
         }
 
     </script>

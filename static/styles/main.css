@@ -61,6 +61,10 @@ video{
 }
 
 
+.carousel-indicators {
+    position: unset !important;
+}
+
 .custom-file-input:lang(en) ~ .custom-file-label::after {
     content: "Velja" !important;
 }
@@ -115,4 +119,23 @@ textarea#comment, textarea#comment:focus {
 textarea#comment:disabled {
     background-color:#444;
     color:#ccc;
+}
+
+@keyframes color-change {
+    0% { color: #E74C3C; }
+    50% { color: #F39C12; }
+    100% { color: #E74C3C; }
+}
+
+@keyframes stretch {
+    0% {
+      transform: scale(.5);
+    }
+    100% {
+      transform: scale(1.2);
+    }
+  }
+
+.color-change{
+    animation: color-change 1s infinite;
 }

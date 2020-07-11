@@ -218,34 +218,7 @@
     </div>
 {% endblock %}
 {% block modals %}
-    <div class="modal fade" id='errorModal' tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Villa!</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p class='font-weight-bold' id='errorTitleElement'></p>
-                    <p><code class='font-weight-bold' id='errorMsgElement'></code></p>
-                    <p><code id='errorStackElement'></code></p>
-                    <p>Hafið samband við vefstjóra eða reynið aftur.</p>
-
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
-                    <a href="{{request.path}}" class='btn btn-primary'>
-                        Reyna aftur
-                        {{macros.btn_icon('redo', 'l')}}
-                    </a>
-                </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    {{super() }}
     <div class="modal fade" id='continueModal' tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -272,11 +245,22 @@
             </div>
         </div>
     </div>
+    {% with category=config.ECONOMY.achievements.verification, level=current_user.progression.verification_level, progress=0, type='verification', color='success' %}
+        {% include 'achievement_modal.jinja' %}
+    {% endwith %}
+    {% with category=config.ECONOMY.achievements.spy, level=current_user.progression.spy_level, progress=0, type='spy', color='warning' %}
+        {% include 'achievement_modal.jinja' %}
+    {% endwith %}
+    {% with category=config.ECONOMY.achievements.streak, level=current_user.progression.streak_level, progress=0, type='streak', color='danger' %}
+        {% include 'achievement_modal.jinja' %}
+    {% endwith %}
+
 {% endblock %}
 {% block scripts %}
     {{super()}}
     <script src='{{url_for("static", filename="js/error.js")}}'></script>
     <script src='{{url_for("static", filename="js/surf.js")}}'></script>
+    <script src='{{url_for("static", filename="js/confetti.min.js")}}'></script>
     <script>
         let wavesurfer;
 
@@ -482,13 +466,32 @@
                 if(this.readyState === XMLHttpRequest.DONE) {
                     if(xhr.status == '200'){
                         // if we finish we go straight to the next recording
-                        recordings[recIndex].verificationId = xhr.responseText;
+                        var response = JSON.parse(xhr.responseText);
+                        recordings[recIndex].verificationId = response.id;
                         recordings[recIndex].verdict = {};
                         document.querySelectorAll("#quality input").forEach(
                             function(input){
                                 recordings[recIndex].verdict[input.value] = input.checked;
                             }
                         )
+                        updateExperienceVal(response.experience);
+                        updateCoinVal(response.coins);
+
+                        if(response.achievements.length > 0){
+                            for(var i=0; i<response.achievements.length; i++){
+                                $("#"+response.achievements[i]+"AchievementModal").modal('show');
+                                $("#"+response.achievements[i]+"AchievementModal").on('hide.bs.modal', function(e){
+                                    confetti.stop();
+                                });
+                            }
+                            confetti.maxCount = 150;
+                            confetti.start();
+                            $('#confetti-canvas').css('z-index', 900);
+                            var audio = new Audio('{{url_for("static", filename="audio/achievement.wav")}}');
+                            audio.volume = 0.7;
+                            audio.play();
+
+                        }
                         recordings[recIndex].verdictComment = commentField.value;
                         recordings[recIndex].hasSent = true;
                         nextAction();
@@ -526,6 +529,10 @@
                 if(this.readyState === XMLHttpRequest.DONE) {
                     if(xhr.status == '200'){
                         // if we finish we go straight to the next recording
+                        var response = JSON.parse(xhr.responseText);
+                        console.log(response);
+                        updateExperienceVal(response.experience);
+                        updateCoinVal(response.coins);
                         recordings[recIndex] = JSON.parse(JSON.stringify(originalRecordings[recIndex]));
                         updateUI();
                     } else{
@@ -591,6 +598,26 @@
 
         function updateTokenUI(){
             tokenText.innerHTML = recordings[recIndex]['text'];
+        }
+
+        function updateCoinVal(value){
+            if(value !== document.querySelector('#coinValue').innerHTML){
+                document.querySelector('#coinValue').innerHTML = value;
+                document.querySelector('#coinValue').classList.add('color-change');
+                setTimeout(function() {
+                    document.querySelector('#coinValue').classList.remove('color-change')
+                }, 3000);
+            }
+        }
+
+        function updateExperienceVal(value){
+            if(value !== document.querySelector('#experienceValue').innerHTML){
+                document.querySelector('#experienceValue').innerHTML = value;
+                document.querySelector('#experienceValue').classList.add('color-change');
+                setTimeout(function() {
+                    document.querySelector('#experienceValue').classList.remove('color-change')
+                }, 3000);
+            }
         }
 
         function updateProgressUI(){

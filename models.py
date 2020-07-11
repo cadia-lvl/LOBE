@@ -4,6 +4,7 @@ import uuid
 import wave
 import json
 import subprocess
+import random
 from datetime import datetime, timedelta
 
 from flask import current_app as app
@@ -14,6 +15,8 @@ from sqlalchemy import func, select, MetaData
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug import secure_filename
+from wtforms_components import ColorField, SelectField
+from wtforms import validators
 
 '''
 convention = {
@@ -777,7 +780,6 @@ roles_users = db.Table('roles_users',
         db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
         db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
-
 class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
@@ -802,6 +804,13 @@ class User(db.Model, UserMixin):
     assigned_collections = db.relationship("Collection",
         cascade='all, delete, delete-orphan')
     recordings = db.relationship("Recording")
+
+    progression_id = db.Column(db.Integer, db.ForeignKey('verifier_progression.id'))
+
+    @property
+    def progression(self):
+        if self.progression_id is not None:
+            return VerifierProgression.query.get(self.progression_id)
 
     def get_url(self):
         return url_for('user', id=self.id)
@@ -835,6 +844,172 @@ class User(db.Model, UserMixin):
             'sex': self.sex,
             'age': self.age,
             'dialect': self.dialect}
+
+progression_icon = db.Table('progression_icon',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('icon_id', db.Integer(), db.ForeignKey('verifier_icon.id')))
+
+progression_title = db.Table('progression_title',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('title_id', db.Integer(), db.ForeignKey('verifier_title.id')))
+
+progression_quote = db.Table('progression_quote',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('quote_id', db.Integer(), db.ForeignKey('verifier_quote.id')))
+
+progression_lootbox = db.Table('progression_lootbox',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('lootbox_id', db.Integer(), db.ForeignKey('verifier_lootbox.id')))
+
+class VerifierProgression(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+
+    num_verifies = db.Column(db.Integer(), default=0)
+    num_session_verifies = db.Column(db.Integer(), default=0)
+    num_invalid = db.Column(db.Integer(), default=0)
+    num_streak_days = db.Column(db.Integer(), default=0)
+
+    weekly_verifies = db.Column(db.Integer(), default=0)
+    weekly_coin_price = db.Column(db.Integer(), default=0)
+    weekly_experience_price = db.Column(db.Integer(), default=0)
+    has_seen_weekly_prices = db.Column(db.Boolean(), default=False)
+
+
+    lobe_coins = db.Column(db.Integer(), default=0)
+    experience = db.Column(db.Integer(), default=0)
+
+    verification_level = db.Column(db.Integer(), default=0)
+    spy_level = db.Column(db.Integer(), default=0)
+    streak_level = db.Column(db.Integer(), default=0)
+
+    equipped_icon_id = db.Column(db.Integer, db.ForeignKey('verifier_icon.id'))
+    equipped_title_id = db.Column(db.Integer, db.ForeignKey('verifier_title.id'))
+    equipped_quote_id = db.Column(db.Integer, db.ForeignKey('verifier_quote.id'))
+
+    owned_icons = db.relationship("VerifierIcon",
+        secondary=progression_icon)
+    owned_titles = db.relationship("VerifierTitle",
+        secondary=progression_title)
+    owned_quotes = db.relationship("VerifierQuote",
+        secondary=progression_quote)
+
+    def owns_icon(self, icon):
+        return any([i.id == icon.id for i in self.owned_icons])
+
+    def is_icon_equipped(self, icon):
+        return self.equipped_icon_id == icon.id
+
+    def owns_title(self, title):
+        return any([t.id == title.id for t in self.owned_titles])
+
+    def is_title_equipped(self, title):
+        return self.equipped_title_id == title.id
+
+    def owns_quote(self, quote):
+        return any([q.id == quote.id for q in self.owned_quotes])
+
+    def is_quote_equipped(self, quote):
+        return self.equipped_quote_id == quote.id
+
+    def owns_lootbox(self, lootbox):
+        return False
+        #return any([q.id == lootbox.id for q in self.owned_lootboxes])
+
+    @property
+    def equipped_icon(self):
+        if self.equipped_icon_id is not None:
+            return VerifierIcon.query.get(self.equipped_icon_id)
+
+    @property
+    def equipped_title(self):
+        if self.equipped_title_id is not None:
+            return VerifierTitle.query.get(self.equipped_title_id)
+
+    @property
+    def equipped_quote(self):
+        if self.equipped_quote_id is not None:
+            return VerifierQuote.query.get(self.equipped_quote_id)
+
+    def equip_random_icon(self):
+        self.equipped_icon_id = random.choice([i.id for i in self.owned_icons])
+
+    def equip_random_title(self):
+        self.equipped_title_id = random.choice([t.id for t in self.owned_titles])
+
+    def equip_random_quote(self):
+        self.equipped_quote_id = random.choice([q.id for q in self.owned_quotes])
+
+
+class VerifierIcon(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    fa_id = db.Column(db.String(), info={
+        'validators': [validators.InputRequired()],
+        'label': 'Merkisklassar',
+        'description': 'Til dæmis: fab fa-apple'})
+    title = db.Column(db.String(64), info={
+        'validators': [validators.InputRequired()],
+        'label': 'Titill'})
+    description = db.Column(db.String(255), info={
+        'validators': [validators.InputRequired()],
+        'label': 'Stutt lýsing'})
+    price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð'})
+    color = db.Column(db.String(), info={
+        'label': 'Litur á merki',
+        'form_field_class': ColorField,
+        'validators': [validators.InputRequired()]})
+    rarity = db.Column(db.Integer(), info={
+        'validators': [validators.InputRequired()],
+        'label': 'Tegund',
+        'choices': [
+            (0, 'Basic'),
+            (1, 'Rare'),
+            (2, 'Epic'),
+            (3, 'Legendary')
+        ]})
+
+class VerifierTitle(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    title = db.Column(db.String(64), info={
+        'label': 'Titillinn'})
+    description = db.Column(db.String(255), info={
+        'label': 'Stutt lýsing'})
+    price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð'})
+    rarity = db.Column(db.Integer(), info={
+        'validators': [validators.InputRequired()],
+        'label': 'Tegund',
+        'choices': [
+            (0, 'Basic'),
+            (1, 'Rare'),
+            (2, 'Epic'),
+            (3, 'Legendary')
+        ]})
+
+    @property
+    def edit_url(self):
+        return url_for('title_edit', id=self.id)
+
+
+class VerifierQuote(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    quote = db.Column(db.String(255), info={
+        'label': 'Slagorðið'})
+    price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð'})
+    rarity = db.Column(db.Integer(), info={
+        'validators': [validators.InputRequired()],
+        'label': 'Tegund',
+        'choices': [
+            (0, 'Basic'),
+            (1, 'Rare'),
+            (2, 'Epic'),
+            (3, 'Legendary')
+        ]})
+
+    @property
+    def edit_url(self):
+        return url_for('quote_edit', id=self.id)
 
 
 class Posting(BaseModel, db.Model):
@@ -894,3 +1069,6 @@ class Application(BaseModel, db.Model):
     @hybrid_property
     def user_url(self):
         return url_for("user", id=self.user_id)
+    @property
+    def edit_url(self):
+        return url_for('icon_edit', id=self.id)

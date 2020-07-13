@@ -710,6 +710,26 @@ def mos_create():
     return render_template('forms/model.jinja', form=form,
         action=url_for('mos_create'), section='mos', type='create')
 
+
+@app.route('/mos/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def mos_edit(id):
+    mos = Mos.query.get(id)
+    form = MosForm(obj=mos)
+    try:
+        if request.method == 'POST' and form.validate():
+            form = MosForm(request.form, obj=mos)
+            form.populate_obj(mos)
+            db.session.commit()
+            flash("MOS var breytt", category="success")
+            return redirect(url_for('mos', id=mos.id))
+    except Exception as error:
+        flash("Error updating MOS.", category="danger")
+        app.logger.error("Error updating MOS {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('mos_edit', id=id), section='mos', type='edit')
+
 # SESSION ROUTES
 @app.route('/sessions/')
 @login_required

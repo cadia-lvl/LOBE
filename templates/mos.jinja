@@ -14,6 +14,20 @@
                     <p>{{mos.created_at | datetime(format='low')}}</p>
                 </div>
             </div>
+            <div class='row'>
+                <div class='col-7'>
+                    <p>Fjöldi setninga:</p>
+                </div>
+                <div class='col-5 text-right'>
+                    <p>{{mos.num_samples}}</p>
+                </div>
+            </div>
+        </div>
+        <div class='col-12'>
+            <a href='{{mos.edit_url}}' class='btn btn-sm text-warning btn-secondary float-right'>
+                {{macros.btn_icon('edit', 'r')}}
+                Breyta
+            </a>
         </div>
     </div>
 {% endblock %}

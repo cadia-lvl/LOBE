@@ -1076,6 +1076,8 @@ class Mos(BaseModel, db.Model):
     })
     num_samples = db.Column(db.Integer, default=0, info={
         'label': 'Fjöldi setninga',
+        'min': 0,
+        'max': 500,
         'validators': [validators.required()]
     })
 
@@ -1086,3 +1088,7 @@ class Mos(BaseModel, db.Model):
     @property
     def printable_id(self):
         return "MOS-{:04d}".format(self.id)
+
+    @property
+    def edit_url(self):
+        return url_for('mos_edit', id=self.id)

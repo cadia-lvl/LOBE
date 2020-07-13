@@ -15,7 +15,7 @@ from sqlalchemy import func, select, MetaData
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug import secure_filename
-from wtforms_components import ColorField, SelectField
+from wtforms_components import ColorField, SelectField, IntegerField
 from wtforms import validators
 
 '''
@@ -753,7 +753,6 @@ class Verification(BaseModel, db.Model):
             elif data == 'glitch-outside':
                 self.recording_has_glitch_outside_trimming = True
 
-
     @hybrid_property
     def dict(self):
         return {
@@ -1066,3 +1065,24 @@ class Application(BaseModel, db.Model):
     @hybrid_property
     def user_url(self):
         return url_for("user", id=self.user_id)
+
+
+class Mos(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
+    collection = db.relationship(Collection, info={
+        'label': 'Söfnun',
+    })
+    num_samples = db.Column(db.Integer, default=0, info={
+        'label': 'Fjöldi setninga',
+        'validators': [validators.required()]
+    })
+
+    @property
+    def url(self):
+        return url_for('mos', id=self.id)
+
+    @property
+    def printable_id(self):
+        return "MOS-{:04d}".format(self.id)

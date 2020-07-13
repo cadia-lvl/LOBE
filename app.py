@@ -26,9 +26,9 @@ from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
-                   ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm)
+                   ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm, MosForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
-    VerifierIcon, VerifierTitle, VerifierQuote, Application, Posting, db
+    VerifierIcon, VerifierTitle, VerifierQuote, Application, Posting, Mos, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
@@ -669,6 +669,46 @@ def delete_conf(id):
         app.logger.error('Error deleting a configuration : {}\n{}'.format(error, traceback.format_exc()))
     return redirect(url_for('rec_session_list'))
 
+
+# MOS ROUTES
+@app.route('/mos/')
+@login_required
+@roles_accepted('admin')
+def mos_list():
+    page = int(request.args.get('page', 1))
+    mos_list = Mos.query.order_by(resolve_order(Mos,
+        request.args.get('sort_by', default='created_at'),
+        order=request.args.get('order', default='desc'))).paginate(page,
+        per_page=app.config['MOS_PAGINATION'])
+    return render_template('lists/mos.jinja', mos_list=mos_list,
+        section='mos')
+
+@app.route('/mos/<int:id>')
+@login_required
+@roles_accepted('admin')
+def mos(id):
+    mos = Mos.query.get(id)
+    return render_template('mos.jinja', mos=mos,
+        section='mos')
+
+@app.route('/mos/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def mos_create():
+    form = MosForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            mos = Mos()
+            form.populate_obj(mos)
+            db.session.add(mos)
+            db.session.commit()
+            flash("Nýrri MOS prufu bætt við", category="success")
+            return redirect(url_for('mos_list'))
+        except Exception as error:
+            flash("Error creating MOS.", category="danger")
+            app.logger.error("Error creating MOS {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('mos_create'), section='mos', type='create')
 
 # SESSION ROUTES
 @app.route('/sessions/')

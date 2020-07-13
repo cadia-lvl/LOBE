@@ -870,6 +870,7 @@ class VerifierProgression(BaseModel, db.Model):
     weekly_experience_price = db.Column(db.Integer(), default=0)
     has_seen_weekly_prices = db.Column(db.Boolean(), default=False)
 
+    last_spin = db.Column(db.Boolean())
 
     lobe_coins = db.Column(db.Integer(), default=0)
     experience = db.Column(db.Integer(), default=0)

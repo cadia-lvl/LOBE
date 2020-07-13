@@ -144,6 +144,13 @@ ECONOMY = {
                 'coin_reward': 50,
                 'experience_reward': 100,
                 'fa_id': 'fa fa-search'
+            },
+            '2':{
+                'title': 'Spæjaraskólinn',
+                'goal': 50,
+                'coin_reward': 50,
+                'experience_reward': 100,
+                'fa_id': 'fa fa-search'
             }
         },
         'streak_minimum': 500,

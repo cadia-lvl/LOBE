@@ -187,7 +187,7 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Vikuleg verðlaun</h5>
+                    <h5 class="modal-title">Vikuleg verðlaun</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -227,6 +227,37 @@
             </div>
         </div>
     {% endif %}
+    {% if show_daily_spin %}
+        <div class="modal fade"tabindex="-1" id='wheelModal'>
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Snúðu daglega lukkuhjólinu!</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <div class='d-flex justify-content-center' style='width: 100%;'>
+                        <canvas id='canvas' width='300' height='300'>
+                            Opnaðu þennan glugga í Google Chrome til að sjá lukkuhjólið.
+                        </canvas>
+                    </div>
+                    <p id='prizeText' class='text-center d-none mt-2 mb-0'></p>
+                </div>
+                <div class="modal-footer" id='weeklyChallengeFooter'>
+                <form id="dailySpinForm" action="{{url_for('claim_daily_prize')}}" method="POST">
+                    {{ daily_spin_form.prize_type }}
+                    {{ daily_spin_form.prize_value }}
+                    <button id='claimPrizeButton' type='submit' class='btn btn-success float-right d-none'>Sækja verðlaun!</button>
+                </form>
+                <button id='spinWheelButton' type="button" class="btn btn-success float-right" onClick='startSpin()'>Snúa</button>
+                <button type="button" class="btn btn-secondary float-right" data-dismiss="modal">Loka</button>
+                </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 
 {% endblock %}
 
@@ -252,6 +283,74 @@
                 audio.play();
             });
         </script>
+    {% endif %}
+    {% if show_daily_spin %}
+        <script src='{{url_for("static", filename="js/TweenMax.min.js")}}'></script>
+        <script src='{{url_for("static", filename="js/Winwheel.min.js")}}'></script>
+        <script>
+            let wheel = new Winwheel({
+                'numSegments': 9,
+                'textFontSize': 15,
+                'lineWidth': 0,
+                'strokeStyle': null,
+                'outerRadius': 150,
+                'segments':
+                [
+                    {'type': 'experience', 'value': 30, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '30 demantar'},
+                    {'type': 'coin', 'value': 6, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '6 aurar',},
+                    {'type': 'experience', 'value': 500, 'textFillStyle': '{{config.COLORS.legendary}}', 'fillStyle': '{{config.COLORS.epic}}', 'text' : '500 demantar'},
+                    {'type': 'experience', 'value': 60, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '60 demantar'},
+                    {'type': 'coin', 'value': 4, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '4 aurar'},
+                    {'type': 'lootbox', 'value': null, 'textFillStyle': '{{config.COLORS.diamond}}', 'fillStyle': '{{config.COLORS.legendary}}', 'text' : 'Epískur\nslembikassi'},
+                    {'type': 'experience', 'value': 50, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '50 demantar'},
+                    {'type': 'coin', 'value': 2, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '2 aurar'},
+                    {'type': 'coin', 'value': 40, 'textFillStyle': '{{config.COLORS.legendary}}', 'fillStyle': '{{config.COLORS.epic}}', 'text' : '40 aurar'},
+                ],
+                'animation' :
+                {
+                    'type'     : 'spinToStop',
+                    'duration' : 5,
+                    'spins'    : 8,
+                    'callbackFinished': givePrize
+                },
+                'pointerGuide' :        // Specify pointer guide properties.
+                {
+                    'display'     : true,
+                    'strokeStyle' : '{{config.COLORS.success}}',
+                    'lineWidth'   : 2
+                }
+            });
+
+            function startSpin(){
+                var audio = new Audio('{{url_for("static", filename="audio/wheel.wav")}}');
+                audio.volume = 0.7;
+                audio.play();
+                wheel.startAnimation();
+                document.querySelector('#spinWheelButton').classList.add('d-none');
+            }
+
+            function givePrize(segment){
+                setPrizeText(segment);
+                document.querySelector('#claimPrizeButton').classList.remove('d-none');
+                document.querySelector('#prize_type').value = segment.type;
+                document.querySelector('#prize_value').value = segment.value;
+            }
+
+            function setPrizeText(segment){
+                let text = document.querySelector('#prizeText');
+                if(segment.type == 'lootbox'){
+                    text.innerHTML = 'Þú vannst slembikassa!';
+                } else if(segment.type == 'coin'){
+                    text.innerHTML = 'Þú vannst ' + segment.value + ' aura!';
+                } else if(segment.type == 'experience'){
+                    text.innerHTML = 'Þú vannst ' + segment.value + ' demanta!';
+                }
+                text.classList.remove('d-none');
+            }
+
+            $('#wheelModal').modal('show');
+        </script>
+
     {% endif %}
 {% endblock %}
 

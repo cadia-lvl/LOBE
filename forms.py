@@ -14,7 +14,7 @@ from wtforms_alchemy import ModelForm
 from wtforms_components import ColorField
 
 from models import (Collection, Configuration, Role, User, VerifierIcon,
-                    VerifierQuote, VerifierTitle, db, Posting, Application)
+                    VerifierQuote, VerifierTitle, VerifierFont, db, Posting, Application)
 
 # TODO: move to app configuration
 sex_choices = [('Kona','Kona'), ('Karl','Karl'), ('Annað','Annað')]
@@ -36,6 +36,7 @@ voice_choices = [
     ("bassi", "Bassi"),
 ]
 
+
 class MultiCheckboxField(SelectMultipleField):
     """
     A multiple-select, except displays a list of checkboxes.
@@ -46,6 +47,9 @@ class MultiCheckboxField(SelectMultipleField):
     widget = widgets.ListWidget(prefix_label=False)
     option_widget = widgets.CheckboxInput()
 
+class DailySpinForm(Form):
+    prize_type = HiddenField('type', validators=[validators.required()])
+    prize_value = HiddenField('value')
 
 class VerifierIconForm(ModelForm):
     class Meta:
@@ -60,6 +64,10 @@ class VerifierTitleForm(ModelForm):
 class VerifierQuoteForm(ModelForm):
     class Meta:
         model = VerifierQuote
+
+class VerifierFontForm(ModelForm):
+    class Meta:
+        model = VerifierFont
 
 
 class CollectionForm(Form):

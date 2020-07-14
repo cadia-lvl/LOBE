@@ -857,6 +857,10 @@ progression_quote = db.Table('progression_quote',
     db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
     db.Column('quote_id', db.Integer(), db.ForeignKey('verifier_quote.id')))
 
+progression_font = db.Table('progression_font',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('font_id', db.Integer(), db.ForeignKey('verifier_font.id')))
+
 class VerifierProgression(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
 
@@ -882,6 +886,7 @@ class VerifierProgression(BaseModel, db.Model):
     equipped_icon_id = db.Column(db.Integer, db.ForeignKey('verifier_icon.id'))
     equipped_title_id = db.Column(db.Integer, db.ForeignKey('verifier_title.id'))
     equipped_quote_id = db.Column(db.Integer, db.ForeignKey('verifier_quote.id'))
+    equipped_font_id = db.Column(db.Integer, db.ForeignKey('verifier_font.id'))
 
     owned_icons = db.relationship("VerifierIcon",
         secondary=progression_icon)
@@ -889,6 +894,8 @@ class VerifierProgression(BaseModel, db.Model):
         secondary=progression_title)
     owned_quotes = db.relationship("VerifierQuote",
         secondary=progression_quote)
+    owned_fonts = db.relationship("VerifierFont",
+        secondary=progression_font)
 
     def owns_icon(self, icon):
         return any([i.id == icon.id for i in self.owned_icons])
@@ -908,6 +915,12 @@ class VerifierProgression(BaseModel, db.Model):
     def is_quote_equipped(self, quote):
         return self.equipped_quote_id == quote.id
 
+    def owns_font(self, font):
+        return any([f.id == font.id for f in self.owned_fonts])
+
+    def is_font_equipped(self, font):
+        return self.equipped_font_id == font.id
+
     @property
     def equipped_icon(self):
         if self.equipped_icon_id is not None:
@@ -922,6 +935,11 @@ class VerifierProgression(BaseModel, db.Model):
     def equipped_quote(self):
         if self.equipped_quote_id is not None:
             return VerifierQuote.query.get(self.equipped_quote_id)
+
+    @property
+    def equipped_font(self):
+        if self.equipped_font_id is not None:
+            return VerifierFont.query.get(self.equipped_font_id)
 
     def equip_random_icon(self):
         self.equipped_icon_id = random.choice([i.id for i in self.owned_icons])
@@ -1007,6 +1025,40 @@ class VerifierQuote(BaseModel, db.Model):
     @property
     def edit_url(self):
         return url_for('quote_edit', id=self.id)
+
+
+class VerifierFont(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    font_family = db.Column(db.String(), info={
+        'label': 'Font fjölskylda',
+        'description': "Til dæmis Megrim"
+    })
+    font_type = db.Column(db.String(), info={
+        'label': 'Font týpa',
+        'description': "Til dæmis cursive"
+    })
+
+    href = db.Column(db.String(), info={
+        'label': 'Linkur á font CSS'})
+    title = db.Column(db.String(255), info={
+        'label': 'Titill'})
+    description = db.Column(db.String(255), info={
+        'label': 'Lýsing'})
+    price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð (gimsteinar)'})
+    rarity = db.Column(db.Integer(), info={
+        'validators': [validators.InputRequired()],
+        'label': 'Tegund',
+        'choices': [
+            (0, 'Basic'),
+            (1, 'Rare'),
+            (2, 'Epic'),
+            (3, 'Legendary')
+        ]})
+
+    @property
+    def edit_url(self):
+        return url_for('font_edit', id=self.id)
 
 
 class Posting(BaseModel, db.Model):

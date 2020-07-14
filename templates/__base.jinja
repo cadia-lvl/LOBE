@@ -16,7 +16,10 @@
     {% endblock %}
     <title>LOBE</title>
   </head>
-  <body>
+  {% if current_user.progression %}
+    {{macros.font_link(current_user.progression.equipped_font)}}
+  {% endif %}
+  <body {% if current_user.progression %}style="{{macros.font_css(current_user.progression.equipped_font)}}"{% endif %}>
     {% include '_header.jinja' %}
     {% if progression_view %}
       <div class='container-fluid' style='background-color:#131313;'>

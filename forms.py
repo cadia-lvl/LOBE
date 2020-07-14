@@ -14,7 +14,7 @@ from wtforms_alchemy import ModelForm
 from wtforms_components import ColorField
 
 from models import (Collection, Configuration, Role, User, VerifierIcon,
-                    VerifierQuote, VerifierTitle, db, Posting, Application)
+                    VerifierQuote, VerifierTitle, VerifierFont, db, Posting, Application)
 
 # TODO: move to app configuration
 sex_choices = [('Kona','Kona'), ('Karl','Karl'), ('Annað','Annað')]
@@ -60,6 +60,10 @@ class VerifierTitleForm(ModelForm):
 class VerifierQuoteForm(ModelForm):
     class Meta:
         model = VerifierQuote
+
+class VerifierFontForm(ModelForm):
+    class Meta:
+        model = VerifierFont
 
 
 class CollectionForm(Form):

@@ -26,9 +26,10 @@ from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
-                   ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm)
+                   ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm,
+                   VerifierFontForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
-    VerifierIcon, VerifierTitle, VerifierQuote, Application, Posting, db
+    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
@@ -1017,6 +1018,7 @@ def lobe_shop():
     icons = VerifierIcon.query.order_by(VerifierIcon.price).all()
     titles = VerifierTitle.query.order_by(VerifierTitle.price).all()
     quotes = VerifierQuote.query.order_by(VerifierQuote.price).all()
+    fonts = VerifierFont.query.order_by(VerifierFont.price).all()
     loot_boxes = app.config['LOOT_BOXES']
 
     loot_box_message = request.args.get('messages', None)
@@ -1032,7 +1034,8 @@ def lobe_shop():
 
     return render_template('lobe_shop.jinja',
         icons=icons,titles=titles, quotes=quotes, loot_boxes=loot_boxes,
-        progression_view=True, full_width=True, loot_box_items=loot_box_items)
+        fonts=fonts, loot_box_items=loot_box_items, progression_view=True,
+        full_width=True,)
 
 @app.route('/shop/random_equip', methods=['GET'])
 @login_required
@@ -1138,6 +1141,17 @@ def icon_buy(icon_id, user_id):
         flash("Kaup ekki samþykkt", category="warning")
     return redirect(url_for('lobe_shop'))
 
+@app.route('/shop/icons/disable/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def icon_disable(user_id):
+    user = User.query.get(user_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    progression.equipped_icon_id = None
+    db.session.commit()
+    flash("Kveikt á venjulegu merki.", category="success")
+    return redirect(url_for('lobe_shop'))
+
 @app.route('/shop/icons/<int:icon_id>/equip/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
@@ -1211,6 +1225,17 @@ def title_buy(title_id, user_id):
         flash("Kaup ekki samþykkt", category="warning")
     return redirect(url_for('lobe_shop'))
 
+@app.route('/shop/titles/disable/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def title_disable(user_id):
+    user = User.query.get(user_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    progression.equipped_title_id = None
+    db.session.commit()
+    flash("Kveikt á venjulegum titil.", category="success")
+    return redirect(url_for('lobe_shop'))
+
 @app.route('/shop/titles/<int:title_id>/equip/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
@@ -1282,6 +1307,16 @@ def quote_buy(quote_id, user_id):
         flash("Kaup ekki samþykkt", category="warning")
     return redirect(url_for('lobe_shop'))
 
+@app.route('/shop/quotes/disable/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def quote_disable(user_id):
+    user = User.query.get(user_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    progression.equipped_quote_id = None
+    db.session.commit()
+    flash("Kveikt á venjulegu slagorði.", category="success")
+    return redirect(url_for('lobe_shop'))
 
 @app.route('/shop/quotes/<int:quote_id>/equip/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -1337,6 +1372,88 @@ def quote_edit(id):
         app.logger.error("Error updating quote {}\n{}".format(error,traceback.format_exc()))
     return render_template('forms/model.jinja', form=form,
         action=url_for('quote_edit', id=id), section='verification', type='edit')
+
+
+@app.route('/shop/fonts/<int:font_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def font_buy(font_id, user_id):
+    user = User.query.get(user_id)
+    font = VerifierFont.query.get(font_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if progression.experience >= font.price and font not in progression.owned_fonts:
+        progression.owned_fonts.append(font)
+        progression.equipped_font_id = font.id
+        progression.experience -= font.price
+        db.session.commit()
+        flash("Kaup samþykkt.", category="success")
+    else:
+        flash("Kaup ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/fonts/disable/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def font_disable(user_id):
+    user = User.query.get(user_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    progression.equipped_font_id = None
+    db.session.commit()
+    flash("Kveikt á venjulegum font.", category="success")
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/fonts/<int:font_id>/equip/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def font_equip(font_id, user_id):
+    user = User.query.get(user_id)
+    font = VerifierFont.query.get(font_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+    if font in progression.owned_fonts:
+        progression.equipped_font_id = font.id
+        db.session.commit()
+        flash("Merki valið", category="success")
+    else:
+        flash("Val ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/fonts/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def font_create():
+    form = VerifierFontForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            font = VerifierFont()
+            form.populate_obj(font)
+            db.session.add(font)
+            db.session.commit()
+            flash("Nýjum font bætt við", category="success")
+            return redirect(url_for('lobe_shop'))
+        except Exception as error:
+            flash("Error creating verifier font.", category="danger")
+            app.logger.error("Error creating verifier font {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('font_create'), section='verification', type='create')
+
+@app.route('/shop/fonts/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def font_edit(id):
+    font = VerifierFont.query.get(id)
+    form = VerifierFontForm(obj=font)
+    try:
+        if request.method == 'POST' and form.validate():
+            form = VerifierFontForm(request.form, obj=font)
+            form.populate_obj(font)
+            db.session.commit()
+            flash("Font var breytt", category="success")
+            return redirect(url_for('lobe_shop'))
+    except Exception as error:
+        flash("Error updating font.", category="danger")
+        app.logger.error("Error updating font {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('font_edit', id=id), section='verification', type='edit')
 
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])

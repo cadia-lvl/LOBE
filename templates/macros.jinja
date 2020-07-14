@@ -140,6 +140,7 @@
         {% if current_user.progression.is_icon_equipped(icon) and not loot_display%}
             <div class="card-header bg-success">
                 Valinn
+                <a href="{{url_for('icon_disable', user_id=current_user.id)}}" class='btn btn-secondary btn-sm float-right'>Taka af</a>
             </div>
         {% endif %}
         <div class="card-body d-flex justify-content-between flex-column">
@@ -204,6 +205,7 @@
         {% if current_user.progression.is_title_equipped(title) and not loot_display%}
             <div class="card-header bg-success">
                 Valinn
+                <a href="{{url_for('title_disable', user_id=current_user.id)}}" class='btn btn-secondary btn-sm float-right'>Taka af</a>
             </div>
         {% endif %}
         <div class="card-body d-flex justify-content-between flex-column">
@@ -269,6 +271,7 @@
         {% if current_user.progression.is_quote_equipped(quote) and not loot_display%}
             <div class="card-header bg-success">
                 Valið
+                <a href="{{url_for('quote_disable', user_id=current_user.id)}}" class='btn btn-secondary btn-sm float-right'>Taka af</a>
             </div>
         {% endif %}
         <div class="card-body d-flex justify-content-between flex-column">
@@ -377,6 +380,79 @@
             </li>
         </ul>
     </div>
+{% endmacro %}
+
+{% macro font_card(font, current_user)%}
+    {{font_link(font)}}
+    <div class="card" style="width: 100%; {{font_css(font)}}">
+        {% if current_user.progression.is_font_equipped(font) %}
+            <div class="card-header bg-success">
+                Valið
+                <a href="{{url_for('font_disable', user_id=current_user.id)}}" class='btn btn-secondary btn-sm float-right'>Taka af</a>
+            </div>
+        {% endif %}
+        <div class="card-body d-flex justify-content-between flex-column">
+            <div>
+                <p class="card-title text-center font-weight-bold">{{font.title}}</p>
+                <p class="card-title text-center">{{font.description}}</p>
+            </div>
+            <div>
+                {% if not current_user.progression.owns_font(font) %}
+                    <a href="{{url_for('font_buy', font_id=font.id, user_id=current_user.id)}}" class="btn btn-danger btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">{{font.price}}</span>
+                        <i class="fas fa-gem mr-2"></i>
+                    </a>
+                {% else %}
+                    {% if not current_user.progression.is_font_equipped(font) %}
+                        <a href="{{url_for('font_equip', font_id=font.id, user_id=current_user.id)}}" class="btn btn-secondary text-success btn-sm rounded-pill text-center float-right">
+                            <span class="mr-2 ml-2 font-weight-bold">Velja</span>
+                            <i class="fas fa-check mr-2"></i>
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                {% if current_user.is_admin() %}
+                    <a href="{{font.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">
+                            <i class='fa fa-edit'></i>
+                        </span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item" style="{% if font.rarity == 1 %}background-color: {{config.COLORS.rare}}{% elif font.rarity==2 %}background-color: {{config.COLORS.epic}}{% elif font.rarity==3%}background-color: {{config.COLORS.legendary}}{% else %}background-color: {{config.COLORS.common}}{% endif %}">
+                <span>
+                    {% if font.rarity == 1 %}
+                        Sjaldgæft
+                    {% elif font.rarity==2 %}
+                        Epískt
+                    {% elif font.rarity==3%}
+                        Goðsagnakennt
+                    {% else %}
+                        Algengt
+                    {% endif %}
+                </span>
+                    <span class='float-right'>
+                    {% for i in range(4) %}
+                        {% if i < font.rarity + 1 %}
+                            <i class='fa fa-xs fa-circle'></i>
+                        {% else %}
+                            <i class='far fa-xs fa-circle'></i>
+                        {% endif %}
+                    {% endfor %}
+                </span>
+            </li>
+        </ul>
+    </div>
+{% endmacro %}
+
+{% macro font_link(font) %}
+    <link href="{{font.href}}" rel="stylesheet">
+{% endmacro %}
+
+{% macro font_css(font) %}
+    font-family: '{{font.font_family}}', {{font.font_type}};
 {% endmacro %}
 
 {% macro verifier_card(current_user) %}

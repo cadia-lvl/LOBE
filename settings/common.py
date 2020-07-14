@@ -45,7 +45,7 @@ COLORS = {
     'legendary': "#ffc107",
     'danger': "#ff4444",
     'primary': "#0275d8",
-    'sucsess': "#5cb85c",
+    'success': "#5cb85c",
     'info': "#5bc0de",
     'warning': "#f0ad4e",
     'lootarrows': "#ffee58",
@@ -68,7 +68,7 @@ ECONOMY = {
             '0': 100,
             '1': 200,
             '2': 300,
-            '3': 200
+            '3': 400
         },
         'rarity_weights':{
             '0': 1,

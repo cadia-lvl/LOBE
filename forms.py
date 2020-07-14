@@ -36,6 +36,7 @@ voice_choices = [
     ("bassi", "Bassi"),
 ]
 
+
 class MultiCheckboxField(SelectMultipleField):
     """
     A multiple-select, except displays a list of checkboxes.
@@ -46,6 +47,9 @@ class MultiCheckboxField(SelectMultipleField):
     widget = widgets.ListWidget(prefix_label=False)
     option_widget = widgets.CheckboxInput()
 
+class DailySpinForm(Form):
+    prize_type = HiddenField('type', validators=[validators.required()])
+    prize_value = HiddenField('value')
 
 class VerifierIconForm(ModelForm):
     class Meta:

@@ -5,7 +5,7 @@ import shutil
 import logging
 from functools import wraps
 import random
-import datetime
+from datetime import date, datetime
 from logging.handlers import RotatingFileHandler
 
 import numpy as np
@@ -27,7 +27,7 @@ from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
                    ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm,
-                   VerifierFontForm)
+                   VerifierFontForm, DailySpinForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
     VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
@@ -997,19 +997,50 @@ def verify_index():
 
     streak_progress = 0
 
-    show_weekly_prices = False
+
+    show_weekly_prices, show_daily_spin = False, False
+    daily_spin_form = DailySpinForm()
     if not current_user.progression.has_seen_weekly_prices:
         progression = current_user.progression
         progression.has_seen_weekly_prices = True
         db.session.commit()
         show_weekly_prices = True
-
+    elif current_user.progression.last_spin < datetime.combine(date.today(), datetime.min.time()):
+        # we dont want to show weekly prizes and spins at the same time
+        # last spin was not today
+        progression = current_user.progression
+        progression.last_spin = datetime.now()
+        db.session.commit()
+        show_daily_spin = True
 
     # get the number of verifications per user
     return render_template('verify_index.jinja', verifiers=verifiers, weekly_verifies=weekly_verifies,
         weekly_progress=weekly_progress, user_weekly_progress=user_weekly_progress,
         verification_progress=verification_progress, spy_progress=spy_progress,
-        streak_progress=streak_progress, progression_view=True, show_weekly_prices=show_weekly_prices)
+        streak_progress=streak_progress, daily_spin_form=daily_spin_form,
+        progression_view=True, show_weekly_prices=show_weekly_prices, show_daily_spin=show_daily_spin)
+
+
+@app.route('/shop/claim_daily_prize', methods=['POST'])
+@login_required
+@roles_accepted('Greinir', 'admin')
+def claim_daily_prize():
+    form = DailySpinForm(request.form)
+    progression = current_user.progression
+
+    if form.prize_type.data == 'coin':
+        progression.lobe_coins += int(form.prize_value.data)
+        flash(f"Þú fékkst {form.prize_value.data} aura", category='success')
+    elif form.prize_type.data == 'experience':
+        progression.experience += int(form.prize_value.data)
+        flash(f"Þú fékkst {form.prize_value.data} demanta", category='success')
+    elif form.prize_type.data == 'lootbox':
+        # add the prize of epic loot box to user's lobe coins which is then
+        # withdrawn in the loot box view
+        progression.lobe_coins += app.config['ECONOMY']['loot_boxes']['prices']['2']
+        return redirect(url_for('loot_box', rarity=2))
+    db.session.commit()
+    return redirect(url_for('verify_index'))
 
 @app.route('/shop/', methods=['GET'])
 @login_required

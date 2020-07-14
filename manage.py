@@ -496,6 +496,9 @@ def initialize_verifiers():
             progression.lobe_coins = 0
         if progression.experience is None:
             progression.experience = 0
+        if progression.last_spin is None:
+            progression.last_spin = db.func.current_timestamp()
+
     db.session.commit()
 
 

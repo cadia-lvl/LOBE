@@ -21,6 +21,8 @@
                                             {{macros.slogan_card(item, false, current_user)}}
                                         {% elif type == "Lootbox" %}
                                             {{macros.loot_card(item, current_user)}}
+                                        {% elif type == "Font" %}
+                                            {{macros.font_card(item, current_user)}}
                                         {%endif%}
                                     </div>
                                 {% endif %}
@@ -64,7 +66,9 @@
                                     {{macros.slogan_card(item, false, current_user)}}
                                 {% elif type == "Lootbox" %}
                                     {{macros.loot_card(item, current_user)}}
-                                {%endif%}
+                                {% elif type == 'Font' %}
+                                    {{macros.font_card(item, current_user)}}
+                                {% endif %}
                             </div>
                         {% endfor %}
                     </div>

@@ -498,8 +498,9 @@ def initialize_verifiers():
             progression.experience = 0
         if progression.weekly_verifies is None:
             progression.weekly_verifies = 0
+        if progression.last_spin is None:
+            progression.last_spin = db.func.current_timestamp()
     db.session.commit()
-
 
 @manager.command
 def give_coins():

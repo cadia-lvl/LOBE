@@ -36,9 +36,11 @@
             <h3 class='font-weight-bold'>Merki</h3>
             <p class='mb-0'>Merki birtast alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
             <p>Þú átt {{current_user.progression.owned_icons|length}} af {{icons|length}} merkjum.</p>
-
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: {{100 * (current_user.progression.owned_icons|length/icons|length)}}%;"></div>
+            </div>
             {% if current_user.is_admin() %}
-                <a href="{{url_for('icon_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                <a href="{{url_for('icon_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3 mt-2'>
                     Búa til
                     {{macros.btn_icon('plus', 'l')}}
                 </a>
@@ -54,9 +56,11 @@
             <h3 class='font-weight-bold'>Titill</h3>
             <p class='mb-0'>Titlar birtast fyrir framan nafnið þitt alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
             <p>Þú átt {{current_user.progression.owned_titles|length}} af {{titles|length}} titlum.</p>
-
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: {{100 * (current_user.progression.owned_titles|length/titles|length)}}%;"></div>
+            </div>
             {% if current_user.is_admin() %}
-                <a href="{{url_for('title_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                <a href="{{url_for('title_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3 mt-2'>
                     Búa til
                     {{macros.btn_icon('plus', 'l')}}
                 </a>
@@ -72,9 +76,11 @@
             <h3 class='font-weight-bold'>Slagorð</h3>
             <p class='mb-0'>Slagorð birtast alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
             <p>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} titlum.</p>
-
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: {{100 * (current_user.progression.owned_quotes|length/quotes|length)}}%;"></div>
+            </div>
             {% if current_user.is_admin() %}
-                <a href="{{url_for('quote_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                <a href="{{url_for('quote_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3 mt-2'>
                     Búa til
                     {{macros.btn_icon('plus', 'l')}}
                 </a>
@@ -88,10 +94,28 @@
     <div class='row'>
         <div class='col-12'>
             <h3 class='font-weight-bold'>Slembikassar</h3>
-            <p>Snúðu hjólinu eins og þú sért á English.</p>
+            <p>Snúðu hjólinu eins og þú sért á English. Upp úr hverjum slembikassa koma 3 hlutir úr merkjum, titlum og slagorðum.</p>
         </div>
     </div>
     {% with items=loot_boxes, type="Lootbox"%}
+        {% include 'carousel_item.jinja'%}
+    {% endwith %}
+
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Fontar</h3>
+            <p>Breyttu útlitinu á allri síðunni með þínum persónulega font!</p>
+            <p>Þú átt {{current_user.progression.owned_fonts|length}} af {{fonts|length}} titlum.</p>
+
+            {% if current_user.is_admin() %}
+                <a href="{{url_for('font_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3'>
+                    Búa til
+                    {{macros.btn_icon('plus', 'l')}}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% with items=fonts, type="Font"%}
         {% include 'carousel_item.jinja'%}
     {% endwith %}
 </div>

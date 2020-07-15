@@ -496,6 +496,8 @@ def initialize_verifiers():
             progression.lobe_coins = 0
         if progression.experience is None:
             progression.experience = 0
+        if progression.weekly_verifies is None:
+            progression.weekly_verifies = 0
     db.session.commit()
 
 

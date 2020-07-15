@@ -23,6 +23,9 @@
                 <button class='btn btn-secondary text-danger float-right' data-toggle='modal', data-target='#deletePostingModal'>
                     {{macros.btn_icon('trash', 'r')}} Eyða
                 </button>
+                <a class='btn btn-secondary text-warning float-right mr-2' href='{{url_for('edit_posting', id=posting.id)}}'>
+                    {{macros.btn_icon('edit', 'r')}} Breyta
+                </a>
             {% endif %}
             <a class='btn btn-secondary float-right mr-2' href='{{posting.get_apply_url()}}'>
                 Hlekkur á umsókn

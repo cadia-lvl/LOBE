@@ -1766,6 +1766,31 @@ def posting(id):
         section='posting')
 
 
+@app.route('/postings/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def edit_posting(id):
+    posting = Posting.query.get(id)
+    form = PostingForm(obj=posting)
+
+    # Hack to make utterance field readonly
+    if form.utterances.render_kw:
+        form.utterances.render_kw["readonly"] = "readonly"
+    else:
+        form.utterances.render_kw = {"readonly": "readonly"}
+
+    if request.method == "POST":
+        form = PostingForm(request.form)
+        if form.validate():
+            form.populate_obj(posting)
+            db.session.add(posting)
+            db.session.commit()
+            return redirect(url_for("posting", id=posting.id))
+
+    return render_template('forms/model.jinja', form=form, type='edit',
+                           action=url_for('edit_posting', id=id))
+
+
 @app.route('/posting/<int:id>/delete/', methods=['GET'])
 @login_required
 @roles_accepted('admin')

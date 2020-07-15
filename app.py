@@ -197,6 +197,7 @@ def record_session(collection_id):
         collection=collection, token=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         user=user, manager=current_user,
+        application=request.args.get('application', 0),
         tal_api_token=app.config['TAL_API_TOKEN'])
 
 
@@ -1831,7 +1832,7 @@ def new_application(posting_uuid):
             application.user_id = new_user.id
             db.session.add(application)
             db.session.commit()
-            return redirect(url_for("record_session", collection_id=posting.collection) + f"?user_id={new_user.id}")
+            return redirect(url_for("record_session", collection_id=posting.collection) + f"?user_id={new_user.id}&application=1")
 
     return render_template('apply.jinja', form=form, type='create', posting=posting,
                            action=url_for('new_application', posting_uuid=posting_uuid))

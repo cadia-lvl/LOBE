@@ -1,6 +1,14 @@
 {% extends "lists/_list.jinja" %}
 {% block title %}MOS prufur{% endblock %}
 {% block total %}{{mos_list.total}}{% endblock %}
+{% block buttons %}
+    {% if current_user.is_admin() %}
+        <a class='btn btn-secondary text-success float-right' href='{{url_for("mos_create")}}'>
+            {{macros.btn_icon('plus', 'r')}}
+            Búa til MOS prufu
+        </a>
+    {% endif %}
+{% endblock %}
 {% block table %}
     {% if mos_list.total > 0 %}
         {% with mos_list=mos_list.items %}

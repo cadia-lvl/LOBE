@@ -688,6 +688,8 @@ def mos_list():
 @roles_accepted('admin')
 def mos(id):
     mos = Mos.query.get(id)
+    collection=Collection.query.get(mos.collection_id)
+    print(collection)
     return render_template('mos.jinja', mos=mos,
         section='mos')
 

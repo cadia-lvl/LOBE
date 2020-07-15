@@ -1038,7 +1038,9 @@ def claim_daily_prize():
         # add the prize of epic loot box to user's lobe coins which is then
         # withdrawn in the loot box view
         progression.lobe_coins += app.config['ECONOMY']['loot_boxes']['prices']['2']
+        db.session.commit()
         return redirect(url_for('loot_box', rarity=2))
+
     db.session.commit()
     return redirect(url_for('verify_index'))
 

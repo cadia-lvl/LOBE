@@ -21,7 +21,7 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
                 delete_session_db, delete_token_db, save_recording_session, resolve_order,
-                get_verifiers, insert_trims)
+                get_verifiers, insert_trims, activity)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
@@ -1014,12 +1014,15 @@ def verify_index():
         db.session.commit()
         show_daily_spin = True
 
+    activity_days, activity_counts = activity(Verification)
+
     # get the number of verifications per user
     return render_template('verify_index.jinja', verifiers=verifiers, weekly_verifies=weekly_verifies,
         weekly_progress=weekly_progress, user_weekly_progress=user_weekly_progress,
         verification_progress=verification_progress, spy_progress=spy_progress,
         streak_progress=streak_progress, daily_spin_form=daily_spin_form,
-        progression_view=True, show_weekly_prices=show_weekly_prices, show_daily_spin=show_daily_spin)
+        progression_view=True, show_weekly_prices=show_weekly_prices, show_daily_spin=show_daily_spin,
+        activity_days=activity_days, activity_counts=activity_counts)
 
 
 @app.route('/shop/claim_daily_prize', methods=['POST'])
@@ -1153,7 +1156,6 @@ def loot_box(rarity):
         db.session.commit()
 
         loot_box_message = json.dumps({str(i):{'type': types[i], 'id': item.id} for i,item in enumerate(selected_items)})
-        print(loot_box_message)
         flash("Kaup samþykkt", category='success')
         return redirect(url_for('lobe_shop', messages=loot_box_message))
 

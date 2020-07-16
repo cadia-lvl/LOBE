@@ -1133,7 +1133,7 @@ class Mos(BaseModel, db.Model):
         'max': 500,
         'validators': [validators.required()]
     })
-    #mos_objects = db.relationship("MosInstance", lazy='joined', backref="mos")
+    mos_objects = db.relationship("MosInstance", lazy='joined', backref="mos")
 
     @property
     def url(self):
@@ -1153,8 +1153,7 @@ class MosInstance(BaseModel, db.Model):
     mos_id = db.Column(db.Integer, db.ForeignKey('Mos.id'))
     recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
     synthesized_audio_path = db.Column(db.String)
-    ratings = db.relationship("MosRating", lazy="select", backref='instance',
-            cascade='all, delete, delete-orphan')    
+    ratings = db.relationship("MosRating", lazy="joined", backref='instance')    
     mos_instance_type = db.Column(db.String)
     mos_selected = db.Column(db.Boolean)
 
@@ -1167,6 +1166,6 @@ class MosRating(BaseModel, db.Model):
         'max': 5,
     })
     user_id = db.Column(db.Integer, db.ForeignKey('User.id'))
-    MosInastance_id = db.Column(db.Integer, db.ForeignKey('User.id'))
+    MosInastance_id = db.Column(db.Integer, db.ForeignKey('MosInstance.id'))
     number = db.Column(db.Integer)
 

@@ -197,6 +197,7 @@ def record_session(collection_id):
         collection=collection, token=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         user=user, manager=current_user,
+        application=request.args.get('application', 0),
         tal_api_token=app.config['TAL_API_TOKEN'])
 
 
@@ -1792,6 +1793,31 @@ def posting(id):
         section='posting')
 
 
+@app.route('/postings/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def edit_posting(id):
+    posting = Posting.query.get(id)
+    form = PostingForm(obj=posting)
+
+    # Hack to make utterance field readonly
+    if form.utterances.render_kw:
+        form.utterances.render_kw["readonly"] = "readonly"
+    else:
+        form.utterances.render_kw = {"readonly": "readonly"}
+
+    if request.method == "POST":
+        form = PostingForm(request.form)
+        if form.validate():
+            form.populate_obj(posting)
+            db.session.add(posting)
+            db.session.commit()
+            return redirect(url_for("posting", id=posting.id))
+
+    return render_template('forms/model.jinja', form=form, type='edit',
+                           action=url_for('edit_posting', id=id))
+
+
 @app.route('/posting/<int:id>/delete/', methods=['GET'])
 @login_required
 @roles_accepted('admin')
@@ -1832,7 +1858,7 @@ def new_application(posting_uuid):
             application.user_id = new_user.id
             db.session.add(application)
             db.session.commit()
-            return redirect(url_for("record_session", collection_id=posting.collection) + f"?user_id={new_user.id}")
+            return redirect(url_for("record_session", collection_id=posting.collection) + f"?user_id={new_user.id}&application=1")
 
     return render_template('apply.jinja', form=form, type='create', posting=posting,
                            action=url_for('new_application', posting_uuid=posting_uuid))

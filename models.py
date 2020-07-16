@@ -1120,7 +1120,8 @@ class Application(BaseModel, db.Model):
 
 
 class Mos(BaseModel, db.Model):
-    id = db.Column(db.Integer(), primary_key=True)
+    __tablename__ = 'Mos'
+    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
     collection = db.relationship(Collection, info={
@@ -1132,6 +1133,7 @@ class Mos(BaseModel, db.Model):
         'max': 500,
         'validators': [validators.required()]
     })
+    #mos_objects = db.relationship("MosInstance", lazy='joined', backref="mos")
 
     @property
     def url(self):
@@ -1144,3 +1146,27 @@ class Mos(BaseModel, db.Model):
     @property
     def edit_url(self):
         return url_for('mos_edit', id=self.id)
+
+class MosInstance(BaseModel, db.Model):
+    __tablename__ = 'MosInstance'
+    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    mos_id = db.Column(db.Integer, db.ForeignKey('Mos.id'))
+    recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
+    synthesized_audio_path = db.Column(db.String)
+    ratings = db.relationship("MosRating", lazy="select", backref='instance',
+            cascade='all, delete, delete-orphan')    
+    mos_instance_type = db.Column(db.String)
+    mos_selected = db.Column(db.Boolean)
+
+class MosRating(BaseModel, db.Model):
+    __tablename__ = 'MosRating'
+    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    rating = db.Column(db.Integer, default=0, info={
+        'label': 'Einkunn',
+        'min': 0,
+        'max': 5,
+    })
+    user_id = db.Column(db.Integer, db.ForeignKey('User.id'))
+    MosInastance_id = db.Column(db.Integer, db.ForeignKey('User.id'))
+    number = db.Column(db.Integer)
+

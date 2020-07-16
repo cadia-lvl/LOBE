@@ -76,7 +76,8 @@ class MosForm(ModelForm):
     collection = QuerySelectField('Söfnun',
         query_factory=lambda: Collection.query, get_label='name',
         validators=[validators.required()])
-        
+    
+
 
 class CollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])

@@ -592,7 +592,18 @@ def set_firesale():
 
     db.session.commit()
 
+@manager.command
+def accurate_time():
+    collections = Collection.query.all()
+    print('Select a collection id')
+    for collection in collections:
+        print(f'{collection.name} [{collection.id}]')
+    collection = Collection.query.get(int(input('Selection: ')))
+    out = os.popen(f'soxi -D {collection.get_wav_audio_dir()}/* | paste -sd+ | bc').read()
 
+    out = float(out.strip('\n')) - collection.num_recorded_tokens*2
+    hours = out/3600
+    print(f'The collection has {hours:.3f} recorded hours')
 
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)

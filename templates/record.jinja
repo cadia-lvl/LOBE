@@ -34,11 +34,13 @@
                 </button>
             {% endif %}
             <div class='btn-group'>
-                <button id='record' class='btn btn-sm btn-secondary text-success rounded-pill-left' type='button'>
+                <button id='record' class='btn btn-sm btn-secondary text-success rounded-pill{% if not application %}-left{% endif %}' type='button'>
                     <i class='fa fa-microphone mr-2 ml-2'></i>
                     <span id='recordButtonText' class='font-weight-bold'>Byrja</span>
                 </button>
-                <button id='skipButton' class='btn btn-sm btn-secondary text-danger rounded-pill-right' type='button'>
+                <button id='skipButton'
+                        class='btn btn-sm btn-secondary text-danger rounded-pill-right{% if application %} d-none{% endif %}'
+                        type='button'>
                     <span class='font-weight-bold'>Sleppa</span>
                     <i class='fa fa-times mr-2 ml-2'></i>
                 </button>
@@ -99,7 +101,7 @@
                     Til að taka upp setningu er smellt á <i class='text-success'>byrja</i> takkann fyrir ofan setninguna sem skal lesin.
                     Ramminn um setninguna verður gulur í eina sekúndu og breytist í grænan þegar byrja á að tala.
                     Til að klára upptöku er smellt á sama takka. Miða skal við að smella á <i class='text-success'>stoppa</i> takkann um
-                    leið og hætt er að tala. Kefið bíður svo í eina sekúndu þangað til hætt er að taka upp.
+                    leið og hætt er að tala. Kerfið bíður svo í eina sekúndu þangað til hætt er að taka upp.
                 </p>
                 <p>
                     Þegar búið er að taka upp setningu er hægt að hlusta á hana með því að

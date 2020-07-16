@@ -1028,20 +1028,22 @@ def claim_daily_prize():
     form = DailySpinForm(request.form)
     progression = current_user.progression
 
-    if form.prize_type.data == 'coin':
-        progression.lobe_coins += int(form.prize_value.data)
-        flash(f"Þú fékkst {form.prize_value.data} aura", category='success')
-    elif form.prize_type.data == 'experience':
-        progression.experience += int(form.prize_value.data)
-        flash(f"Þú fékkst {form.prize_value.data} demanta", category='success')
-    elif form.prize_type.data == 'lootbox':
-        # add the prize of epic loot box to user's lobe coins which is then
-        # withdrawn in the loot box view
-        progression.lobe_coins += app.config['ECONOMY']['loot_boxes']['prices']['2']
+    if current_user.progression.last_spin < datetime.combine(date.today(), datetime.min.time()):
+        if form.prize_type.data == 'coin':
+            progression.lobe_coins += int(form.prize_value.data)
+            flash(f"Þú fékkst {form.prize_value.data} aura", category='success')
+        elif form.prize_type.data == 'experience':
+            progression.experience += int(form.prize_value.data)
+            flash(f"Þú fékkst {form.prize_value.data} demanta", category='success')
+        elif form.prize_type.data == 'lootbox':
+            # add the prize of epic loot box to user's lobe coins which is then
+            # withdrawn in the loot box view
+            progression.lobe_coins += app.config['ECONOMY']['loot_boxes']['prices']['2']
+            db.session.commit()
+            return redirect(url_for('loot_box', rarity=2))
         db.session.commit()
-        return redirect(url_for('loot_box', rarity=2))
-
-    db.session.commit()
+    else:
+        flash("Þú ert búinn að snúa í dag", category='danger')
     return redirect(url_for('verify_index'))
 
 @app.route('/shop/', methods=['GET'])
@@ -1164,10 +1166,16 @@ def icon_buy(icon_id, user_id):
     user = User.query.get(user_id)
     icon = VerifierIcon.query.get(icon_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.lobe_coins >= icon.price and icon not in progression.owned_icons:
+
+    if progression.fire_sale:
+        price = int(icon.price*(1-progression.fire_sale_discount))
+    else:
+        price = icon.price
+
+    if progression.lobe_coins >= price and icon not in progression.owned_icons:
         progression.owned_icons.append(icon)
         progression.equipped_icon_id = icon.id
-        progression.lobe_coins -= icon.price
+        progression.lobe_coins -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:
@@ -1248,10 +1256,16 @@ def title_buy(title_id, user_id):
     user = User.query.get(user_id)
     title = VerifierTitle.query.get(title_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.lobe_coins >= title.price and title not in progression.owned_titles:
+
+    if progression.fire_sale:
+        price = int(title.price*(1-progression.fire_sale_discount))
+    else:
+        price = title.price
+
+    if progression.lobe_coins >= price and title not in progression.owned_titles:
         progression.owned_titles.append(title)
         progression.equipped_title_id = title.id
-        progression.lobe_coins -= title.price
+        progression.lobe_coins -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:
@@ -1330,10 +1344,16 @@ def quote_buy(quote_id, user_id):
     user = User.query.get(user_id)
     quote = VerifierQuote.query.get(quote_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.lobe_coins >= quote.price and quote not in progression.owned_quotes:
+
+    if progression.fire_sale:
+        price = int(quote.price*(1-progression.fire_sale_discount))
+    else:
+        price = quote.price
+
+    if progression.lobe_coins >= price and quote not in progression.owned_quotes:
         progression.owned_quotes.append(quote)
         progression.equipped_quote_id = quote.id
-        progression.lobe_coins -= quote.price
+        progression.lobe_coins -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:
@@ -1414,10 +1434,16 @@ def font_buy(font_id, user_id):
     user = User.query.get(user_id)
     font = VerifierFont.query.get(font_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.experience >= font.price and font not in progression.owned_fonts:
+
+    if progression.fire_sale:
+        price = int(font.price*(1-progression.fire_sale_discount))
+    else:
+        price = font.price
+
+    if progression.experience >= price and font not in progression.owned_fonts:
         progression.owned_fonts.append(font)
         progression.equipped_font_id = font.id
-        progression.experience -= font.price
+        progression.experience -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:

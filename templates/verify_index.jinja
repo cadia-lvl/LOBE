@@ -10,10 +10,25 @@
                 Greina
                 {{macros.btn_icon('arrow-right', 'l')}}
             </a>
-            <a href="{{url_for('lobe_shop')}}" class='btn btn-secondary text-warning float-right mr-2'>
-                Búðin
-                {{macros.btn_icon('coins', 'l')}}
-            </a>
+            {% if current_user.progression.fire_sale %}
+                <a href="{{url_for('lobe_shop')}}" class='btn btn-danger float-right mr-2'
+                    style='animation-name: small-stretch;
+                            animation-duration: 0.7s;
+                            animation-timing-function: ease-out;
+                            animation-delay: 0;
+                            animation-direction: alternate;
+                            animation-iteration-count: infinite;
+                            animation-fill-mode: none;
+                            animation-play-state: running;'>
+                    ÚTSALA
+                    {{(100*current_user.progression.fire_sale_discount)|int}} %
+                </a>
+            {% else %}
+                <a href="{{url_for('lobe_shop')}}" class='btn btn-secondary text-warning float-right mr-2'>
+                    Búðin
+                    {{macros.btn_icon('coins', 'l')}}
+                </a>
+            {% endif %}
         </div>
         <div class='col-12'>
             <h3 class='font-weight-bold'>Greinendur</h3>

@@ -897,6 +897,9 @@ class VerifierProgression(BaseModel, db.Model):
     owned_fonts = db.relationship("VerifierFont",
         secondary=progression_font)
 
+    fire_sale = db.Column(db.Boolean, default=False)
+    fire_sale_discount = db.Column(db.Float, default=0.0)
+
     def owns_icon(self, icon):
         return any([i.id == icon.id for i in self.owned_icons])
 

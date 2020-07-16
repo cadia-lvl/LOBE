@@ -500,6 +500,10 @@ def initialize_verifiers():
             progression.weekly_verifies = 0
         if progression.last_spin is None:
             progression.last_spin = db.func.current_timestamp()
+        if progression.fire_sale is None:
+            progression.fire_sale = False
+        if progression.fire_sale_discount is None:
+            progression.fire_sale_discount = 0.0
     db.session.commit()
 
 @manager.command
@@ -570,6 +574,24 @@ def reset_weekly_challenge():
         progression.has_seen_weekly_prices = False
 
     db.session.commit()
+
+
+@manager.command
+def set_firesale():
+    do_fire_sale = bool(int(input('Do 1 for firesale, 0 to deactivate: ')))
+    if do_fire_sale:
+        fire_sale_discount = float(input('Select discount, e.g. 0.3 for 30 percent off: '))
+    else:
+        fire_sale_discount = 0.0
+
+    verifiers = get_verifiers()
+    for verifier in verifiers:
+        progression = verifier.progression
+        progression.fire_sale = do_fire_sale
+        progression.fire_sale_discount = fire_sale_discount
+
+    db.session.commit()
+
 
 
 manager.add_command('db', MigrateCommand)

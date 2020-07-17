@@ -22,3 +22,14 @@
         </div>
     </div>
 {% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script>
+        var isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+        var secondTry = /not-in-chrome/.test(document.referrer);
+        if (!isChrome && !secondTry) {
+            window.location = "/not-in-chrome/?previous=" + window.location;
+        }
+        </script>
+{% endblock %}

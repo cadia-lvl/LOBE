@@ -9,7 +9,7 @@
         var talAPIToken = "{{tal_api_token}}";
         var postRecordingRoute = "{{url_for('post_recording')}}";
         var user_id = {{user.id}};
-        var is_application = {{application}} === 1;
+        var is_application = {{application|tojson }};
         var manager_id = {{manager.id|default(user.id)}};
         var collection_id = {{collection.id}};
         var conf = {{collection.configuration.json}};

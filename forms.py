@@ -295,3 +295,7 @@ class ApplicationForm(Form):
     voice = SelectField("Rödd", [validators.required()], choices=voice_choices)
     email = EmailField("Netfang", [validators.required()])
     phone = StringField("Sími")
+    terms_agreement = BooleanField(
+        'Ég samþykki <a href="/tos/" target="_blank">skilmála og gagnastefnu LVL</a>',
+        validators=[InputRequired()]
+    )

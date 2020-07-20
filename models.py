@@ -149,6 +149,17 @@ class Collection(BaseModel, db.Model):
             *ESTIMATED_AVERAGE_RECORD_LENGTH/3600, 1)
 
     @hybrid_property
+    def is_closed(self):
+        return self.posting is None
+
+    def open_for_applicant(self, user_id):
+        if not self.is_closed:
+            application = Application.query.filter(Application.user_id == user_id).first()
+            if application and application.posting_id == self.posting.id:
+                return True
+        return False
+
+    @hybrid_property
     def configuration(self):
         if self.configuration_id is not None:
             return Configuration.query.get(self.configuration_id)
@@ -1104,6 +1115,8 @@ class Application(BaseModel, db.Model):
 
     email = db.Column(db.String)
     phone = db.Column(db.String)
+
+    terms_agreement = db.Column(db.Boolean, default=False)
 
     uuid = db.Column(db.String, default=str(uuid.uuid4()))
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))

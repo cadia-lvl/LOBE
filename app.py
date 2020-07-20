@@ -117,16 +117,14 @@ def require_login_if_closed_collection(func):
         user_id = request.args.get('user_id') or request.form.get('user_id')
 
         collection = Collection.query.get(collection_id)
-        posting = collection.posting
-        if posting:
-            application = Application.query.filter(Application.user_id == user_id).first()
-            if application and application.posting_id == posting.id:
-                return func(*args, **kwargs)
+        if not collection.is_closed and collection.open_for_applicant(user_id):
+            return func(*args, **kwargs)
 
-        if not (current_user and (current_user.has_role("admin") or current_user.has_role("Notandi"))):
-            return app.login_manager.unauthorized()
+        if current_user and (current_user.has_role("admin") or current_user.has_role("Notandi")):
+            return func(*args, **kwargs)
 
-        return func(*args, **kwargs)
+        return app.login_manager.unauthorized()
+
     return wrapper
 
 
@@ -202,7 +200,7 @@ def record_session(collection_id):
         collection=collection, token=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         user=user, manager=current_user,
-        application=request.args.get('application', 0),
+        application=(not collection.is_closed),
         tal_api_token=app.config['TAL_API_TOKEN'])
 
 
@@ -1863,7 +1861,7 @@ def new_application(posting_uuid):
             application.user_id = new_user.id
             db.session.add(application)
             db.session.commit()
-            return redirect(url_for("record_session", collection_id=posting.collection) + f"?user_id={new_user.id}&application=1")
+            return redirect(url_for("record_session", collection_id=posting.collection) + f"?user_id={new_user.id}")
 
     return render_template('apply.jinja', form=form, type='create', posting=posting,
                            action=url_for('new_application', posting_uuid=posting_uuid))
@@ -1944,3 +1942,7 @@ def internal_server_error(error):
     flash("Alvarleg villa kom upp, vinsamlega reynið aftur", category="danger")
     app.logger.error('Server Error: %s', (error))
     return redirect(url_for('index'))
+
+@app.route('/not-in-chrome/')
+def not_in_chrome():
+    return render_template('not_in_chrome.jinja', previous=request.args.get('previous'))

@@ -1155,6 +1155,15 @@ def loot_box(rarity):
     flash("Þú átt ekki nóg fyrir þessum lukkukassa", category='warning')
     return redirect(url_for('lobe_shop'))
 
+@app.route('/shop/premium/<int:type_id>/buy', methods=['GET'])
+@login_required
+@roles_accepted('Greinir')
+def premium_buy(type_id):
+    premium_item = app.config['ECONOMY']['premium_items'][str(type_id)]
+    print(premium_item)
+    return redirect(url_for('lobe_shop'))
+
+
 @app.route('/shop/icons/<int:icon_id>/buy/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')

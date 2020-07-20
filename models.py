@@ -861,6 +861,11 @@ progression_font = db.Table('progression_font',
     db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
     db.Column('font_id', db.Integer(), db.ForeignKey('verifier_font.id')))
 
+progression_premium_item = db.Table('progression_premium_item',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('premium_item_id', db.Integer(), db.ForeignKey('premium_item.id')))
+
+
 class VerifierProgression(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
 
@@ -896,6 +901,8 @@ class VerifierProgression(BaseModel, db.Model):
         secondary=progression_quote)
     owned_fonts = db.relationship("VerifierFont",
         secondary=progression_font)
+    owned_premium_items = db.relationship("PremiumItem",
+        secondary=progression_premium_item)
 
     def owns_icon(self, icon):
         return any([i.id == icon.id for i in self.owned_icons])
@@ -1060,6 +1067,18 @@ class VerifierFont(BaseModel, db.Model):
     def edit_url(self):
         return url_for('font_edit', id=self.id)
 
+class PremiumItem(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    title = db.Column(db.String(255), info={
+        'label': 'Titill'})
+    description = db.Column(db.String(255), info={
+        'label': 'Lýsing'})
+    coin_price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð (aurar)'})
+    experience_price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð (demantar)'})
+    num_available = db.Column(db.Integer(), default=0, info={
+        'label': 'Fjöldi í boði'})
 
 class Posting(BaseModel, db.Model):
     __tablename__ = 'Posting'

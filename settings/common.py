@@ -55,13 +55,13 @@ COLORS = {
 ECONOMY = {
     'weekly_challenge': {
         'goal': 15000,
-        'coin_reward': 100,
-        'experience_reward': 500,
+        'coin_reward': 300,
+        'experience_reward': 3000,
         'extra_interval': 2000,
         'extra_coin_reward': 50,
         'extra_experience_reward': 200,
-        'best_coin_reward': 50,
-        'best_experience_reward': 500,
+        'best_coin_reward': 500,
+        'best_experience_reward': 5000,
     },
     'loot_boxes':{
         'prices':{
@@ -77,6 +77,29 @@ ECONOMY = {
             '3': 0.05,
         },
         'num_items': 3
+    },
+    'premium_items':{
+        '0':{
+            'title': 'LOBE derhúfa',
+            'description': 'Þessi sérlega vandaða og sérhannaða derhúfa er fáanleg í svörtum lit og skartar húfan LOBE laufinu. Húfan þykir einkar eftirsóknarverð og þurfum við því að biðja þig um að sýna einkar mikinn áhuga í formi aura og demanta.',
+            'coin_price': 500,
+            'experience_price': 5000,
+            'num_available': 3,
+        },
+        '1':{
+            'title': 'Klukkutími af sýndarveruleika',
+            'description': 'Háskólinn í Reykjavík býr yfir gríðarlega flottu sýndarveruleikaherbergi. Stígðu inn í framtíðina í boði LOBE fyrir nokkra aura og demanta.',
+            'coin_price': 800,
+            'experience_price': 10000,
+            'num_available': 2,
+        },
+        '2':{
+            'title': 'Lúxus lukkuhjól',
+            'description': 'Hvað er leiðinlegra en þegar lukkuhjólið svíkur mann? Örvæntu ekki því það er lausn á vandamálinu. Keyptu þér lúxus lukkuhjólið sem tífaldar allar aura- og demantagreiðslur og bætir við fleiri slembikössum.',
+            'coin_price': 400,
+            'experience_price': 8000,
+            'num_available': 5,
+        },
     },
     'verification':{
         'coin_reward': 0,

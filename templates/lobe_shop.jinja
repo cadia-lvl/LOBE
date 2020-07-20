@@ -31,6 +31,23 @@
             {{macros.verifier_card(current_user)}}
         </div>
     </div>
+
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+    <div class='row'>
+        <div class='col-12'>
+            <h2 class='font-weight-bold' style='font-family: "Dancing Script", cursive;'>Lúxusverðlaun</h2>
+            <p>Þessi verðlaun eru sérstaklega góð og kosta þar af leiðandi meira en önnur verðlaun. Drífðu þig að næla þér í lúxusverðlaun
+            því takmarkað magn er í boði!</p>
+        </div>
+    </div>
+    <div class='row mb-3'>
+        {% for type, item in config.ECONOMY.premium_items.items() %}
+            <div class='col-lg-4 col-md-6 col-12 d-flex align-items-stretch'>
+                {{macros.premium_item_card(type, item, current_user)}}
+            </div>
+        {% endfor %}
+    </div>
+
     <div class='row'>
         <div class='col-12'>
             <h3 class='font-weight-bold'>Merki</h3>

@@ -1,4 +1,8 @@
 {% extends "__base.jinja" %}
+{% block headscripts %}
+    {{super()}}
+    <script src='{{url_for("static", filename="js/plotly-latest.min.js")}}'></script>
+{% endblock %}
 {% block body %}
     <div class='row'>
         <div class='col-12'>
@@ -10,10 +14,25 @@
                 Greina
                 {{macros.btn_icon('arrow-right', 'l')}}
             </a>
-            <a href="{{url_for('lobe_shop')}}" class='btn btn-secondary text-warning float-right mr-2'>
-                Búðin
-                {{macros.btn_icon('coins', 'l')}}
-            </a>
+            {% if current_user.progression.fire_sale %}
+                <a href="{{url_for('lobe_shop')}}" class='btn btn-danger float-right mr-2'
+                    style='animation-name: small-stretch;
+                            animation-duration: 0.7s;
+                            animation-timing-function: ease-out;
+                            animation-delay: 0;
+                            animation-direction: alternate;
+                            animation-iteration-count: infinite;
+                            animation-fill-mode: none;
+                            animation-play-state: running;'>
+                    ÚTSALA
+                    {{(100*current_user.progression.fire_sale_discount)|int}} %
+                </a>
+            {% else %}
+                <a href="{{url_for('lobe_shop')}}" class='btn btn-secondary text-warning float-right mr-2'>
+                    Búðin
+                    {{macros.btn_icon('coins', 'l')}}
+                </a>
+            {% endif %}
         </div>
         <div class='col-12'>
             <h3 class='font-weight-bold'>Greinendur</h3>
@@ -158,6 +177,57 @@
                 </div>
             </div>
         </div>
+
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Yfirlit</h3>
+            <p>Svona hefur okkur gengið að greina upptökur.</p>
+            <div class='card'>
+                <div class='card-body'>
+                    <div id='tester'>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            var container = document.getElementById('tester');
+            var layout = {
+                plot_bgcolor: 'rgba(0, 0, 0, 0)',
+                paper_bgcolor: 'rgba(0, 0, 0, 0)',
+                margin: {
+                    'l': 30,
+                    'r': 30,
+                    't': 30,
+                    'b': 30
+                },
+                font: {
+                    color: 'white'
+                },
+                yaxis:{
+                    title:{
+                        text: 'Fjöldi greininga'
+                    }
+                }
+            };
+
+            var config = {
+                responsive: true
+            }
+
+            var trace = {
+                x: {{activity_days}},
+                y: {{activity_counts}},
+                fill: 'tonexty',
+                marker: {
+                }
+            };
+
+
+
+            var data = [trace];
+
+            Plotly.newPlot(container, data, layout, config);
+        </script>
+    </div>
 {% endblock %}
 
 {% block modals %}

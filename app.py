@@ -1,41 +1,46 @@
 import json
-import os
-import traceback
-import shutil
 import logging
-from functools import wraps
+import os
 import random
+import shutil
+import traceback
 from datetime import date, datetime
+from functools import wraps
 from logging.handlers import RotatingFileHandler
 
 import numpy as np
-
-from flask import (Flask, Response, redirect, render_template, request,
-                   send_from_directory, url_for, flash, jsonify)
-from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
-                            current_user, roles_accepted)
-from flask_security.utils import hash_password
+from flask import (Flask, Response, flash, jsonify, redirect, render_template,
+                   request, send_from_directory, url_for)
 from flask_executor import Executor
-from sqlalchemy import or_, and_
+from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
+from flask_security import (Security, SQLAlchemyUserDatastore, current_user,
+                            login_required, roles_accepted)
+from flask_security.utils import hash_password
+from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
-from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
-                delete_session_db, delete_token_db, save_recording_session, resolve_order,
-                get_verifiers, insert_trims)
+from db import (activity, create_tokens, delete_recording_db,
+                delete_session_db, delete_token_db, get_verifiers,
+                insert_collection, insert_trims, resolve_order,
+                save_recording_session, sessions_day_info)
 from filters import format_date
-from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
-                   ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
-                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
-                   ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm,
-                   VerifierFontForm, DailySpinForm)
-from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
-    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, db
-from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
+from forms import (ApplicationForm, BulkTokenForm, CollectionForm,
+                   ConfigurationForm, DailySpinForm, DeleteVerificationForm,
+                   ExtendedLoginForm, ExtendedRegisterForm, PostingForm,
+                   RoleForm, SessionEditForm, SessionVerifyForm, UserEditForm,
+                   VerifierFontForm, VerifierIconForm, VerifierQuoteForm,
+                   VerifierRegisterForm, VerifierTitleForm,
+                   collection_edit_form)
 from ListPagination import ListPagination
-
 from managers import create_collection_zip, trim_collection_handler
-from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low, find_segment
+from models import (Application, Collection, Configuration, Posting, Recording,
+                    Role, Session, Token, User, Verification, VerifierFont,
+                    VerifierIcon, VerifierProgression, VerifierQuote,
+                    VerifierTitle, db)
+from tools.analyze import (find_segment, load_sample, signal_is_too_high,
+                           signal_is_too_low)
 from tools.date import last_day
+
 
 # TODO: Move this to a sensible location
 DEFAULT_CONFIGURATION_ID = 1
@@ -112,16 +117,14 @@ def require_login_if_closed_collection(func):
         user_id = request.args.get('user_id') or request.form.get('user_id')
 
         collection = Collection.query.get(collection_id)
-        posting = collection.posting
-        if posting:
-            application = Application.query.filter(Application.user_id == user_id).first()
-            if application and application.posting_id == posting.id:
-                return func(*args, **kwargs)
+        if not collection.is_closed and collection.open_for_applicant(user_id):
+            return func(*args, **kwargs)
 
-        if not (current_user and (current_user.has_role("admin") or current_user.has_role("Notandi"))):
-            return app.login_manager.unauthorized()
+        if current_user and (current_user.has_role("admin") or current_user.has_role("Notandi")):
+            return func(*args, **kwargs)
 
-        return func(*args, **kwargs)
+        return app.login_manager.unauthorized()
+
     return wrapper
 
 
@@ -197,6 +200,7 @@ def record_session(collection_id):
         collection=collection, token=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         user=user, manager=current_user,
+        application=(not collection.is_closed),
         tal_api_token=app.config['TAL_API_TOKEN'])
 
 
@@ -1008,17 +1012,17 @@ def verify_index():
     elif current_user.progression.last_spin < datetime.combine(date.today(), datetime.min.time()):
         # we dont want to show weekly prizes and spins at the same time
         # last spin was not today
-        progression = current_user.progression
-        progression.last_spin = datetime.now()
-        db.session.commit()
         show_daily_spin = True
+
+    activity_days, activity_counts = activity(Verification)
 
     # get the number of verifications per user
     return render_template('verify_index.jinja', verifiers=verifiers, weekly_verifies=weekly_verifies,
         weekly_progress=weekly_progress, user_weekly_progress=user_weekly_progress,
         verification_progress=verification_progress, spy_progress=spy_progress,
         streak_progress=streak_progress, daily_spin_form=daily_spin_form,
-        progression_view=True, show_weekly_prices=show_weekly_prices, show_daily_spin=show_daily_spin)
+        progression_view=True, show_weekly_prices=show_weekly_prices, show_daily_spin=show_daily_spin,
+        activity_days=activity_days, activity_counts=activity_counts)
 
 
 @app.route('/shop/claim_daily_prize', methods=['POST'])
@@ -1028,18 +1032,23 @@ def claim_daily_prize():
     form = DailySpinForm(request.form)
     progression = current_user.progression
 
-    if form.prize_type.data == 'coin':
-        progression.lobe_coins += int(form.prize_value.data)
-        flash(f"Þú fékkst {form.prize_value.data} aura", category='success')
-    elif form.prize_type.data == 'experience':
-        progression.experience += int(form.prize_value.data)
-        flash(f"Þú fékkst {form.prize_value.data} demanta", category='success')
-    elif form.prize_type.data == 'lootbox':
-        # add the prize of epic loot box to user's lobe coins which is then
-        # withdrawn in the loot box view
-        progression.lobe_coins += app.config['ECONOMY']['loot_boxes']['prices']['2']
-        return redirect(url_for('loot_box', rarity=2))
-    db.session.commit()
+    if current_user.progression.last_spin < datetime.combine(date.today(), datetime.min.time()):
+        progression.last_spin = datetime.now()
+        if form.prize_type.data == 'coin':
+            progression.lobe_coins += int(form.prize_value.data)
+            flash(f"Þú fékkst {form.prize_value.data} aura", category='success')
+        elif form.prize_type.data == 'experience':
+            progression.experience += int(form.prize_value.data)
+            flash(f"Þú fékkst {form.prize_value.data} demanta", category='success')
+        elif form.prize_type.data == 'lootbox':
+            # add the prize of epic loot box to user's lobe coins which is then
+            # withdrawn in the loot box view
+            progression.lobe_coins += app.config['ECONOMY']['loot_boxes']['prices']['2']
+            db.session.commit()
+            return redirect(url_for('loot_box', rarity=2))
+        db.session.commit()
+    else:
+        flash("Þú ert búinn að snúa í dag", category='danger')
     return redirect(url_for('verify_index'))
 
 @app.route('/shop/', methods=['GET'])
@@ -1148,7 +1157,6 @@ def loot_box(rarity):
         db.session.commit()
 
         loot_box_message = json.dumps({str(i):{'type': types[i], 'id': item.id} for i,item in enumerate(selected_items)})
-        print(loot_box_message)
         flash("Kaup samþykkt", category='success')
         return redirect(url_for('lobe_shop', messages=loot_box_message))
 
@@ -1171,10 +1179,16 @@ def icon_buy(icon_id, user_id):
     user = User.query.get(user_id)
     icon = VerifierIcon.query.get(icon_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.lobe_coins >= icon.price and icon not in progression.owned_icons:
+
+    if progression.fire_sale:
+        price = int(icon.price*(1-progression.fire_sale_discount))
+    else:
+        price = icon.price
+
+    if progression.lobe_coins >= price and icon not in progression.owned_icons:
         progression.owned_icons.append(icon)
         progression.equipped_icon_id = icon.id
-        progression.lobe_coins -= icon.price
+        progression.lobe_coins -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:
@@ -1255,10 +1269,16 @@ def title_buy(title_id, user_id):
     user = User.query.get(user_id)
     title = VerifierTitle.query.get(title_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.lobe_coins >= title.price and title not in progression.owned_titles:
+
+    if progression.fire_sale:
+        price = int(title.price*(1-progression.fire_sale_discount))
+    else:
+        price = title.price
+
+    if progression.lobe_coins >= price and title not in progression.owned_titles:
         progression.owned_titles.append(title)
         progression.equipped_title_id = title.id
-        progression.lobe_coins -= title.price
+        progression.lobe_coins -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:
@@ -1337,10 +1357,16 @@ def quote_buy(quote_id, user_id):
     user = User.query.get(user_id)
     quote = VerifierQuote.query.get(quote_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.lobe_coins >= quote.price and quote not in progression.owned_quotes:
+
+    if progression.fire_sale:
+        price = int(quote.price*(1-progression.fire_sale_discount))
+    else:
+        price = quote.price
+
+    if progression.lobe_coins >= price and quote not in progression.owned_quotes:
         progression.owned_quotes.append(quote)
         progression.equipped_quote_id = quote.id
-        progression.lobe_coins -= quote.price
+        progression.lobe_coins -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:
@@ -1421,10 +1447,16 @@ def font_buy(font_id, user_id):
     user = User.query.get(user_id)
     font = VerifierFont.query.get(font_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.experience >= font.price and font not in progression.owned_fonts:
+
+    if progression.fire_sale:
+        price = int(font.price*(1-progression.fire_sale_discount))
+    else:
+        price = font.price
+
+    if progression.experience >= price and font not in progression.owned_fonts:
         progression.owned_fonts.append(font)
         progression.equipped_font_id = font.id
-        progression.experience -= font.price
+        progression.experience -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:
@@ -1773,6 +1805,31 @@ def posting(id):
         section='posting')
 
 
+@app.route('/postings/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def edit_posting(id):
+    posting = Posting.query.get(id)
+    form = PostingForm(obj=posting)
+
+    # Hack to make utterance field readonly
+    if form.utterances.render_kw:
+        form.utterances.render_kw["readonly"] = "readonly"
+    else:
+        form.utterances.render_kw = {"readonly": "readonly"}
+
+    if request.method == "POST":
+        form = PostingForm(request.form)
+        if form.validate():
+            form.populate_obj(posting)
+            db.session.add(posting)
+            db.session.commit()
+            return redirect(url_for("posting", id=posting.id))
+
+    return render_template('forms/model.jinja', form=form, type='edit',
+                           action=url_for('edit_posting', id=id))
+
+
 @app.route('/posting/<int:id>/delete/', methods=['GET'])
 @login_required
 @roles_accepted('admin')
@@ -1894,3 +1951,13 @@ def internal_server_error(error):
     flash("Alvarleg villa kom upp, vinsamlega reynið aftur", category="danger")
     app.logger.error('Server Error: %s', (error))
     return redirect(url_for('index'))
+
+
+@app.route('/not-in-chrome/')
+def not_in_chrome():
+    return render_template('not_in_chrome.jinja', previous=request.args.get('previous'))
+
+
+@app.route('/tos/')
+def tos():
+    return render_template('tos.jinja')

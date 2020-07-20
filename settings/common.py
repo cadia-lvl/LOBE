@@ -147,11 +147,11 @@ ECONOMY = {
                 'fa_id': 'fa fa-crown',
             },
             '5':{
-                'title': 'Mt. Fuji',
+                'title': 'Út í geim',
                 'goal': 15000,
-                'coin_reward': 1300,
-                'experience_reward': 1500,
-                'fa_id': 'fa fa-thumbs-up',
+                'coin_reward': 1000,
+                'experience_reward': 10000,
+                'fa_id': 'fa fa-user-astronaut',
             }
         }, 'spy':{
             '0':{
@@ -162,18 +162,25 @@ ECONOMY = {
                 'fa_id': 'fa fa-search'
             },
             '1':{
-                'title': 'Spæjaraskólinn',
+                'title': 'A+ í spæjarafræðum',
                 'goal': 50,
                 'coin_reward': 50,
                 'experience_reward': 100,
-                'fa_id': 'fa fa-search'
+                'fa_id': 'fa fa-binoculars'
             },
             '2':{
-                'title': 'Spæjaraskólinn',
-                'goal': 50,
-                'coin_reward': 50,
-                'experience_reward': 100,
-                'fa_id': 'fa fa-search'
+                'title': 'Fyrsta spæjaravinnan',
+                'goal': 100,
+                'coin_reward': 100,
+                'experience_reward': 500,
+                'fa_id': 'fa fa-user-tie'
+            },
+            '3':{
+                'title': 'Yfirmaður spæjaradeildarinnar',
+                'goal': 200,
+                'coin_reward': 500,
+                'experience_reward': 1500,
+                'fa_id': 'fa fa-user-secret'
             }
         },
         'streak_minimum': 500,

@@ -4,9 +4,14 @@
 <div class='col-lg-10 offset-lg-1 col-12'>
     <div class='row mb-5'>
         <div class="col-md-6 d-flex flex-column justify-content-between">
-            <h1 class='font-weight-bold display-1 d-xl-block d-none'>Búðin</h1>
-            <h1 class='font-weight-bold d-xl-none'>Búðin</h1>
+            <h1 class='font-weight-bold display-1 d-xl-block d-none'>{% if current_user.progression.fire_sale %}ÚTSALA{% else %}Búðin{%endif%}</h1>
+            <h1 class='font-weight-bold d-xl-none'>{% if current_user.progression.fire_sale %}ÚTSALA{% else %}Búðin{%endif%}</h1>
             <div>
+                {% if current_user.progression.fire_sale %}
+                    <p class='font-weight-bold'>
+                        Núna er {{(100*current_user.progression.fire_sale_discount)|int}}% afsláttur í búðinni!
+                    </p>
+                {% endif %}
                 <p>
                     Notaðu LOBE auranna sem þú hefur unnið hörðum höndum að safna. Veldu þér merki, titil og slagorð til að sýna hinum
                     að þú ert flottasti greinandinn.

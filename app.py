@@ -1943,6 +1943,12 @@ def internal_server_error(error):
     app.logger.error('Server Error: %s', (error))
     return redirect(url_for('index'))
 
+
 @app.route('/not-in-chrome/')
 def not_in_chrome():
     return render_template('not_in_chrome.jinja', previous=request.args.get('previous'))
+
+
+@app.route('/tos/')
+def tos():
+    return render_template('tos.jinja')

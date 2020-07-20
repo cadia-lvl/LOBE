@@ -1,41 +1,46 @@
 import json
-import os
-import traceback
-import shutil
 import logging
-from functools import wraps
+import os
 import random
+import shutil
+import traceback
 from datetime import date, datetime
+from functools import wraps
 from logging.handlers import RotatingFileHandler
 
 import numpy as np
-
-from flask import (Flask, Response, redirect, render_template, request,
-                   send_from_directory, url_for, flash, jsonify)
-from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
-                            current_user, roles_accepted)
-from flask_security.utils import hash_password
+from flask import (Flask, Response, flash, jsonify, redirect, render_template,
+                   request, send_from_directory, url_for)
 from flask_executor import Executor
-from sqlalchemy import or_, and_
+from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
+from flask_security import (Security, SQLAlchemyUserDatastore, current_user,
+                            login_required, roles_accepted)
+from flask_security.utils import hash_password
+from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
-from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
-                delete_session_db, delete_token_db, save_recording_session, resolve_order,
-                get_verifiers, insert_trims, activity)
+from db import (activity, create_tokens, delete_recording_db,
+                delete_session_db, delete_token_db, get_verifiers,
+                insert_collection, insert_trims, resolve_order,
+                save_recording_session, sessions_day_info)
 from filters import format_date
-from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
-                   ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
-                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
-                   ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm,
-                   VerifierFontForm, DailySpinForm)
-from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
-    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, db
-from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
+from forms import (ApplicationForm, BulkTokenForm, CollectionForm,
+                   ConfigurationForm, DailySpinForm, DeleteVerificationForm,
+                   ExtendedLoginForm, ExtendedRegisterForm, PostingForm,
+                   RoleForm, SessionEditForm, SessionVerifyForm, UserEditForm,
+                   VerifierFontForm, VerifierIconForm, VerifierQuoteForm,
+                   VerifierRegisterForm, VerifierTitleForm,
+                   collection_edit_form)
 from ListPagination import ListPagination
-
 from managers import create_collection_zip, trim_collection_handler
-from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low, find_segment
+from models import (Application, Collection, Configuration, Posting, Recording,
+                    Role, Session, Token, User, Verification, VerifierFont,
+                    VerifierIcon, VerifierProgression, VerifierQuote,
+                    VerifierTitle, db)
+from tools.analyze import (find_segment, load_sample, signal_is_too_high,
+                           signal_is_too_low)
 from tools.date import last_day
+
 
 # TODO: Move this to a sensible location
 DEFAULT_CONFIGURATION_ID = 1
@@ -1009,9 +1014,6 @@ def verify_index():
     elif current_user.progression.last_spin < datetime.combine(date.today(), datetime.min.time()):
         # we dont want to show weekly prizes and spins at the same time
         # last spin was not today
-        progression = current_user.progression
-        progression.last_spin = datetime.now()
-        db.session.commit()
         show_daily_spin = True
 
     activity_days, activity_counts = activity(Verification)
@@ -1033,6 +1035,7 @@ def claim_daily_prize():
     progression = current_user.progression
 
     if current_user.progression.last_spin < datetime.combine(date.today(), datetime.min.time()):
+        progression.last_spin = datetime.now()
         if form.prize_type.data == 'coin':
             progression.lobe_coins += int(form.prize_value.data)
             flash(f"Þú fékkst {form.prize_value.data} aura", category='success')

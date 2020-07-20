@@ -1217,6 +1217,8 @@ def icon_equip(icon_id, user_id):
 @roles_accepted('admin')
 def icon_create():
     form = VerifierIconForm(request.form)
+    for field in form:
+        print(field)
     if request.method == 'POST' and form.validate():
         try:
             form['color'].data = str(form['color'].data)

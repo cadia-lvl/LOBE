@@ -1,0 +1,151 @@
+.hover-row{
+    cursor: pointer;
+}
+
+#recordButton{
+    width: 100px;
+}
+
+#btn-th{
+    width: 50px;
+}
+
+.table-no-break{
+    white-space: nowrap;
+}
+
+.nowrap-td{
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 100px !important;
+    text-overflow: ellipsis;
+}
+
+.pending-button, .pending-button:hover{
+    border: 2px solid orange;
+}
+
+.recording-button, .recording-button:hover{
+    border: 2px solid red;
+}
+
+hr{
+    border-top: 1px solid white !important;
+}
+
+#notification{
+	position: fixed !important;
+	left: -350px;
+	bottom:20px;
+	z-index:3;
+}
+
+#oscilloscope{
+    width: 100%;
+    height: 50px;
+}
+
+video{
+    width: 100%;
+}
+
+#videoCard{
+    border-radius: 0.25rem;
+    background-color:#303030;
+    width: 100%;
+    overflow: hidden;
+}
+
+#tokenCard{
+    width: 100%;
+}
+
+
+.carousel-indicators {
+    position: unset !important;
+}
+
+.custom-file-input:lang(en) ~ .custom-file-label::after {
+    content: "Velja" !important;
+}
+
+.custom-file-label {
+    border-radius: 0.25rem 0.5rem 0.5rem 0.25rem;
+}
+
+.rounded-pill-right{
+    border-radius: 0 50rem 50rem 0 !important;
+}
+
+.rounded-pill-left{
+    border-radius: 50rem 0 0 50rem !important;
+}
+
+/* Verify form */
+ul#quality {
+    display: block;
+    padding: 0;
+    margin-bottom: 0;
+}
+ul#quality li {
+    display: inline;
+    margin-right: 10px;
+}
+ul#quality li:last-child {
+    float: right;
+    margin-right: 0;
+}
+ul#quality li label {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8203125rem;
+    line-height: 1.5;
+    background: #333;
+    border-radius: 50rem !important;
+    font-size: .8em;
+}
+ul#quality li input[type=checkbox] {
+    display: none;
+}
+ul#quality li input[type=checkbox]:checked + label {
+    background: #666;
+}
+
+textarea#comment, textarea#comment:focus {
+    background-color:#000 !important;
+    color:#999 !important;
+}
+
+textarea#comment:disabled {
+    background-color:#444;
+    color:#ccc;
+}
+
+@keyframes color-change {
+    0% { color: #E74C3C; }
+    50% { color: #F39C12; }
+    100% { color: #E74C3C; }
+}
+
+@keyframes stretch {
+    0% {
+      transform: scale(.5);
+    }
+    100% {
+      transform: scale(1.2);
+    }
+  }
+
+@keyframes small-stretch {
+    0% {
+        transform: scale(.5);
+    }
+    100% {
+        transform: scale(1);
+}
+}
+
+
+.color-change{
+    animation: color-change 1s infinite;
+}

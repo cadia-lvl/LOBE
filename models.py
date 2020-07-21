@@ -74,6 +74,8 @@ class Collection(BaseModel, db.Model):
         if as_percent: ratio = round(ratio*100, 3)
         return ratio
 
+
+    
     def get_url(self):
         return url_for('collection', id=self.id)
 
@@ -162,6 +164,9 @@ class Collection(BaseModel, db.Model):
     def printable_id(self):
         return "T-{:04d}".format(self.id)
 
+    @property
+    def mos_url(self):
+        return url_for('mos_collection', id=self.id)
 
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
@@ -1128,10 +1133,7 @@ class Mos(BaseModel, db.Model):
         'label': 'Söfnun',
     })
     num_samples = db.Column(db.Integer, default=0, info={
-        'label': 'Fjöldi setninga',
-        'min': 0,
-        'max': 500,
-        'validators': [validators.required()]
+        'label': 'Fjöldi setninga'
     })
     mos_objects = db.relationship("MosInstance", lazy='joined', backref="mos")
 
@@ -1165,7 +1167,7 @@ class MosRating(BaseModel, db.Model):
         'min': 0,
         'max': 5,
     })
-    user_id = db.Column(db.Integer, db.ForeignKey('User.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     MosInastance_id = db.Column(db.Integer, db.ForeignKey('MosInstance.id'))
     number = db.Column(db.Integer)
 

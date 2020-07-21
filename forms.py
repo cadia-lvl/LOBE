@@ -71,12 +71,18 @@ class VerifierFontForm(ModelForm):
 
 
 class MosForm(ModelForm):
+
     class Meta:
         model = Mos
-    collection = QuerySelectField('Söfnun',
-        query_factory=lambda: Collection.query, get_label='name',
-        validators=[validators.required()])
+        num_samples = IntegerField('Fjöldi setnimmnga', [validators.required()])
     
+    def __init__(self, max_available, *args, **kwargs):
+        super(MosForm, self).__init__(*args, **kwargs)
+        self.max_available = max_available
+    
+    def validate_num_samples(form, field):
+        if field.data >= form.max_available or field.data < 0:
+            raise ValidationError("Ekki nógu markar upptökur til í safni. Sláðu inn tölu á milli 0 og {}".format(form.max_available))
 
 
 class CollectionForm(Form):

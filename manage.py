@@ -4,6 +4,7 @@ import re
 import sys
 import json
 import traceback
+import datetime
 from shutil import copyfile
 from tqdm import tqdm
 
@@ -591,6 +592,17 @@ def set_firesale():
         progression.fire_sale_discount = fire_sale_discount
 
     db.session.commit()
+
+@manager.command
+def respin():
+    verifiers = get_verifiers()
+    yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
+    for verifier in verifiers:
+        progression = verifier.progression
+        progression.last_spin = yesterday
+    db.session.commit()
+
+
 
 @manager.command
 def accurate_time():

@@ -41,14 +41,20 @@
     <div class='row'>
         <div class='col-12'>
             <h2 class='font-weight-bold' style='font-family: "Dancing Script", cursive;'>Lúxusverðlaun</h2>
-            <p>Þessi verðlaun eru sérstaklega góð og kosta þar af leiðandi meira en önnur verðlaun. Drífðu þig að næla þér í lúxusverðlaun
-            því takmarkað magn er í boði!</p>
+            <p>Þessi verðlaun eru sérstaklega góð og kosta þar af leiðandi meira en önnur verðlaun. Athugið að lúxusverðlaun fara ekki á útsölu.
+                Drífðu þig að næla þér í lúxusverðlaun því takmarkað magn er í boði!</p>
+            {% if current_user.is_admin() %}
+                <a href="{{url_for('premium_item_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3 mt-2'>
+                    Búa til
+                    {{macros.btn_icon('plus', 'l')}}
+                </a>
+            {% endif %}
         </div>
     </div>
     <div class='row mb-3'>
-        {% for type, item in config.ECONOMY.premium_items.items() %}
+        {% for item in premium_items %}
             <div class='col-lg-4 col-md-6 col-12 d-flex align-items-stretch'>
-                {{macros.premium_item_card(type, item, current_user)}}
+                {{macros.premium_item_card(item, current_user)}}
             </div>
         {% endfor %}
     </div>

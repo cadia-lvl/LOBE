@@ -30,13 +30,13 @@ from forms import (ApplicationForm, BulkTokenForm, CollectionForm,
                    RoleForm, SessionEditForm, SessionVerifyForm, UserEditForm,
                    VerifierFontForm, VerifierIconForm, VerifierQuoteForm,
                    VerifierRegisterForm, VerifierTitleForm,
-                   collection_edit_form)
+                   collection_edit_form, PremiumItemForm)
 from ListPagination import ListPagination
 from managers import create_collection_zip, trim_collection_handler
 from models import (Application, Collection, Configuration, Posting, Recording,
                     Role, Session, Token, User, Verification, VerifierFont,
                     VerifierIcon, VerifierProgression, VerifierQuote,
-                    VerifierTitle, db)
+                    VerifierTitle, PremiumItem, db)
 from tools.analyze import (find_segment, load_sample, signal_is_too_high,
                            signal_is_too_low)
 from tools.date import last_day
@@ -1009,6 +1009,7 @@ def verify_index():
         progression.has_seen_weekly_prices = True
         db.session.commit()
         show_weekly_prices = True
+
     elif current_user.progression.last_spin < datetime.combine(date.today(), datetime.min.time()):
         # we dont want to show weekly prizes and spins at the same time
         # last spin was not today
@@ -1043,9 +1044,12 @@ def claim_daily_prize():
         elif form.prize_type.data == 'lootbox':
             # add the prize of epic loot box to user's lobe coins which is then
             # withdrawn in the loot box view
-            progression.lobe_coins += app.config['ECONOMY']['loot_boxes']['prices']['2']
+            rarity = 2
+            if current_user.progression.premium_wheel:
+                rarity = 3
+            progression.lobe_coins += app.config['ECONOMY']['loot_boxes']['prices'][str(rarity)]
             db.session.commit()
-            return redirect(url_for('loot_box', rarity=2))
+            return redirect(url_for('loot_box', rarity=rarity))
         db.session.commit()
     else:
         flash("Þú ert búinn að snúa í dag", category='danger')
@@ -1059,6 +1063,7 @@ def lobe_shop():
     titles = VerifierTitle.query.order_by(VerifierTitle.price).all()
     quotes = VerifierQuote.query.order_by(VerifierQuote.price).all()
     fonts = VerifierFont.query.order_by(VerifierFont.price).all()
+    premium_items = PremiumItem.query.order_by(PremiumItem.coin_price).all()
     loot_boxes = app.config['LOOT_BOXES']
 
     loot_box_message = request.args.get('messages', None)
@@ -1074,8 +1079,8 @@ def lobe_shop():
 
     return render_template('lobe_shop.jinja',
         icons=icons,titles=titles, quotes=quotes, loot_boxes=loot_boxes,
-        fonts=fonts, loot_box_items=loot_box_items, progression_view=True,
-        full_width=True,)
+        fonts=fonts, premium_items=premium_items, loot_box_items=loot_box_items,
+        progression_view=True, full_width=True)
 
 @app.route('/shop/random_equip', methods=['GET'])
 @login_required
@@ -1163,13 +1168,63 @@ def loot_box(rarity):
     flash("Þú átt ekki nóg fyrir þessum lukkukassa", category='warning')
     return redirect(url_for('lobe_shop'))
 
-@app.route('/shop/premium/<int:type_id>/buy', methods=['GET'])
+@app.route('/shop/premium/<int:premium_item_id>/buy/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
-def premium_buy(type_id):
-    premium_item = app.config['ECONOMY']['premium_items'][str(type_id)]
-    print(premium_item)
+def premium_item_buy(premium_item_id, user_id):
+    user = User.query.get(user_id)
+    item = PremiumItem.query.get(premium_item_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+
+    if progression.lobe_coins >= item.coin_price and progression.experience >= item.experience_price \
+        and item not in progression.owned_premium_items and item.num_available > 0:
+        progression.owned_premium_items.append(item)
+        progression.lobe_coins -= item.coin_price
+        progression.experience -= item.experience_price
+        item.num_available -= 1
+        db.session.commit()
+        flash("Kaup samþykkt. Lúxusverðlaun eru gefin út á þriðjudögum", category="success")
+    else:
+        flash("Kaup ekki samþykkt", category="warning")
     return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/premium/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def premium_item_create():
+    form = PremiumItemForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            item = PremiumItem()
+            form.populate_obj(item)
+            db.session.add(item)
+            db.session.commit()
+            flash("Nýjum lúxusverðlaunum bætt við", category="success")
+            return redirect(url_for('lobe_shop'))
+        except Exception as error:
+            flash("Error creating premium item.", category="danger")
+            app.logger.error("Error creating premium item {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('premium_item_create'), section='verification', type='create')
+
+@app.route('/shop/premium/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def premium_item_edit(id):
+    item = PremiumItem.query.get(id)
+    form = PremiumItemForm(obj=item)
+    try:
+        if request.method == 'POST' and form.validate():
+            form = PremiumItemForm(request.form, obj=item)
+            form.populate_obj(item)
+            db.session.commit()
+            flash("Lúxusverðlaunum var breytt", category="success")
+            return redirect(url_for('lobe_shop'))
+    except Exception as error:
+        flash("Error updating premium item.", category="danger")
+        app.logger.error("Error updating premium item {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('premium_item_edit', id=id), section='verification', type='edit')
 
 
 @app.route('/shop/icons/<int:icon_id>/buy/<int:user_id>', methods=['GET', 'POST'])

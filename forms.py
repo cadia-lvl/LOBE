@@ -13,7 +13,7 @@ from wtforms.validators import InputRequired
 from wtforms_alchemy import ModelForm
 from wtforms_components import ColorField
 
-from models import (Collection, Configuration, Role, User, VerifierIcon,
+from models import (Collection, Configuration, Role, User, PremiumItem, VerifierIcon,
                     VerifierQuote, VerifierTitle, VerifierFont, db, Posting, Application)
 
 # TODO: move to app configuration
@@ -68,6 +68,10 @@ class VerifierQuoteForm(ModelForm):
 class VerifierFontForm(ModelForm):
     class Meta:
         model = VerifierFont
+
+class PremiumItemForm(ModelForm):
+    class Meta:
+        model = PremiumItem
 
 
 class CollectionForm(Form):

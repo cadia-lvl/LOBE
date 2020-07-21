@@ -303,9 +303,6 @@
                 <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Snúðu daglega lukkuhjólinu!</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
                 </div>
                 <div class="modal-body" id="modal-body">
                     <div class='d-flex justify-content-center' style='width: 100%;'>
@@ -322,7 +319,6 @@
                     <button id='claimPrizeButton' type='submit' class='btn btn-success float-right d-none'>Sækja verðlaun!</button>
                 </form>
                 <button id='spinWheelButton' type="button" class="btn btn-success float-right" onClick='startSpin()'>Snúa</button>
-                <button type="button" class="btn btn-secondary float-right" data-dismiss="modal">Loka</button>
                 </div>
                 </div>
             </div>
@@ -358,39 +354,74 @@
         <script src='{{url_for("static", filename="js/TweenMax.min.js")}}'></script>
         <script src='{{url_for("static", filename="js/Winwheel.min.js")}}'></script>
         <script>
-            let wheel = new Winwheel({
-                'numSegments': 9,
-                'textFontSize': 15,
-                'lineWidth': 0,
-                'strokeStyle': null,
-                'outerRadius': 150,
-                'segments':
-                [
-                    {'type': 'experience', 'value': 30, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '30 demantar'},
-                    {'type': 'coin', 'value': 6, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '6 aurar',},
-                    {'type': 'experience', 'value': 500, 'textFillStyle': '{{config.COLORS.legendary}}', 'fillStyle': '{{config.COLORS.epic}}', 'text' : '500 demantar'},
-                    {'type': 'experience', 'value': 60, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '60 demantar'},
-                    {'type': 'coin', 'value': 4, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '4 aurar'},
-                    {'type': 'lootbox', 'value': null, 'textFillStyle': '{{config.COLORS.diamond}}', 'fillStyle': '{{config.COLORS.legendary}}', 'text' : 'Epískur\nslembikassi'},
-                    {'type': 'experience', 'value': 50, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '50 demantar'},
-                    {'type': 'coin', 'value': 2, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '2 aurar'},
-                    {'type': 'coin', 'value': 40, 'textFillStyle': '{{config.COLORS.legendary}}', 'fillStyle': '{{config.COLORS.epic}}', 'text' : '40 aurar'},
-                ],
-                'animation' :
-                {
-                    'type'     : 'spinToStop',
-                    'duration' : 5,
-                    'spins'    : 8,
-                    'callbackFinished': givePrize
-                },
-                'pointerGuide' :        // Specify pointer guide properties.
-                {
-                    'display'     : true,
-                    'strokeStyle' : '{{config.COLORS.success}}',
-                    'lineWidth'   : 2
-                }
-            });
-
+            let wheel =
+                {% if current_user.progression.premium_wheel %}
+                    new Winwheel({
+                        'numSegments': 9,
+                        'textFontSize': 12,
+                        'lineWidth': 0,
+                        'strokeStyle': null,
+                        'outerRadius': 150,
+                        'segments':
+                        [
+                            {'type': 'experience', 'value': 300, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '300 demantar'},
+                            {'type': 'coin', 'value': 60, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '60 aurar',},
+                            {'type': 'experience', 'value': 5000, 'textFillStyle': '{{config.COLORS.legendary}}', 'fillStyle': '{{config.COLORS.epic}}', 'text' : '5000 demantar'},
+                            {'type': 'experience', 'value': 600, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '600 demantar'},
+                            {'type': 'coin', 'value': 40, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '40 aurar'},
+                            {'type': 'lootbox', 'value': null, 'textFillStyle': '{{config.COLORS.diamond}}', 'fillStyle': '{{config.COLORS.legendary}}', 'text' : 'Goðsagnakenndur\nslembikassi'},
+                            {'type': 'experience', 'value': 500, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '500 demantar'},
+                            {'type': 'coin', 'value': 20, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '20 aurar'},
+                            {'type': 'coin', 'value': 400, 'textFillStyle': '{{config.COLORS.legendary}}', 'fillStyle': '{{config.COLORS.epic}}', 'text' : '400 aurar'},
+                        ],
+                        'animation' :
+                        {
+                            'type'     : 'spinToStop',
+                            'duration' : 5,
+                            'spins'    : 8,
+                            'callbackFinished': givePrize
+                        },
+                        'pointerGuide' :        // Specify pointer guide properties.
+                        {
+                            'display'     : true,
+                            'strokeStyle' : '{{config.COLORS.success}}',
+                            'lineWidth'   : 2
+                        }
+                    });
+                {% else %}
+                    new Winwheel({
+                        'numSegments': 9,
+                        'textFontSize': 15,
+                        'lineWidth': 0,
+                        'strokeStyle': null,
+                        'outerRadius': 150,
+                        'segments':
+                        [
+                            {'type': 'experience', 'value': 30, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '30 demantar'},
+                            {'type': 'coin', 'value': 6, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '6 aurar',},
+                            {'type': 'experience', 'value': 500, 'textFillStyle': '{{config.COLORS.legendary}}', 'fillStyle': '{{config.COLORS.epic}}', 'text' : '500 demantar'},
+                            {'type': 'experience', 'value': 60, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '60 demantar'},
+                            {'type': 'coin', 'value': 4, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '4 aurar'},
+                            {'type': 'lootbox', 'value': null, 'textFillStyle': '{{config.COLORS.diamond}}', 'fillStyle': '{{config.COLORS.legendary}}', 'text' : 'Epískur\nslembikassi'},
+                            {'type': 'experience', 'value': 50, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '50 demantar'},
+                            {'type': 'coin', 'value': 2, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '2 aurar'},
+                            {'type': 'coin', 'value': 40, 'textFillStyle': '{{config.COLORS.legendary}}', 'fillStyle': '{{config.COLORS.epic}}', 'text' : '40 aurar'},
+                        ],
+                        'animation' :
+                        {
+                            'type'     : 'spinToStop',
+                            'duration' : 5,
+                            'spins'    : 8,
+                            'callbackFinished': givePrize
+                        },
+                        'pointerGuide' :        // Specify pointer guide properties.
+                        {
+                            'display'     : true,
+                            'strokeStyle' : '{{config.COLORS.success}}',
+                            'lineWidth'   : 2
+                        }
+                    });
+                {% endif %}
             function startSpin(){
                 var audio = new Audio('{{url_for("static", filename="audio/wheel.wav")}}');
                 audio.volume = 0.7;
@@ -418,6 +449,7 @@
                 text.classList.remove('d-none');
             }
 
+            $('#wheelModal').modal({backdrop: 'static', keyboard: false});
             $('#wheelModal').modal('show');
         </script>
 

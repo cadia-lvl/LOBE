@@ -942,6 +942,9 @@ class VerifierProgression(BaseModel, db.Model):
     def is_font_equipped(self, font):
         return self.equipped_font_id == font.id
 
+    def owns_premium_item(self, item):
+        return any([i.id == item.id for i in self.owned_premium_items])
+
     @property
     def equipped_icon(self):
         if self.equipped_icon_id is not None:
@@ -961,6 +964,10 @@ class VerifierProgression(BaseModel, db.Model):
     def equipped_font(self):
         if self.equipped_font_id is not None:
             return VerifierFont.query.get(self.equipped_font_id)
+
+    @property
+    def premium_wheel(self):
+        return any([i.wheel_modifier for i in self.owned_premium_items])
 
     def equip_random_icon(self):
         self.equipped_icon_id = random.choice([i.id for i in self.owned_icons])
@@ -1093,6 +1100,12 @@ class PremiumItem(BaseModel, db.Model):
         'label': 'Verð (demantar)'})
     num_available = db.Column(db.Integer(), default=0, info={
         'label': 'Fjöldi í boði'})
+    wheel_modifier = db.Column(db.Boolean(), default=False, info={
+        'label': 'Breyta þessi verðlaun lukkuhjólinu?'})
+
+    @property
+    def edit_url(self):
+        return url_for('premium_item_edit', id=self.id)
 
 class Posting(BaseModel, db.Model):
     __tablename__ = 'Posting'

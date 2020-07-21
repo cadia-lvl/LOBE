@@ -18,7 +18,7 @@
 {% block table %}
     {% if mos_list.total > 0 %}
         {% with mos_list=mos_list.items %}
-            {% include 'tables/mos.jinja'%}
+            {% include 'tables/mos_all.jinja'%}
         {% endwith %}
     {% endif %}
 {% endblock %}

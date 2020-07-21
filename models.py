@@ -1135,7 +1135,7 @@ class Mos(BaseModel, db.Model):
     num_samples = db.Column(db.Integer, default=0, info={
         'label': 'Fjöldi setninga'
     })
-    mos_objects = db.relationship("MosInstance", lazy='joined', backref="mos")
+    mos_objects = db.relationship("MosInstance", lazy='joined')
 
     @property
     def url(self):
@@ -1153,9 +1153,10 @@ class MosInstance(BaseModel, db.Model):
     __tablename__ = 'MosInstance'
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     mos_id = db.Column(db.Integer, db.ForeignKey('Mos.id'))
+    token_id = db.Column(db.Integer, db.ForeignKey('Token.id'))
     recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
     synthesized_audio_path = db.Column(db.String)
-    ratings = db.relationship("MosRating", lazy="joined", backref='instance')    
+    ratings = db.relationship("MosRating", lazy="joined")    
     mos_instance_type = db.Column(db.String)
     mos_selected = db.Column(db.Boolean)
 

@@ -707,8 +707,12 @@ def mos_collection(id):
 @roles_accepted('admin')
 def mos(id):
     mos = Mos.query.get(id)
-    collection=Collection.query.get(mos.collection_id)
-    print(collection)
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(Mos,
+        request.args.get('sort_by', default='created_at'),
+        order=request.args.get('order', default='desc'))).paginate(page,
+        per_page=app.config['MOS_PAGINATION'])
+    #collection=Collection.query.get(mos.collection_id)
+
     return render_template('mos.jinja', mos=mos,
         section='mos')
 
@@ -716,19 +720,29 @@ def mos(id):
 @login_required
 @roles_accepted('admin')
 def mos_create(id):    
-    max_num_recordings = Collection.query.get(id).num_recorded_tokens
-    form = MosForm(max_num_recordings, request.form)
+    max_num_recorded = Collection.query.get(id).num_recorded_tokens
+    form = MosForm(max_num_recorded, request.form)
+    tokens = Token.query.filter(Token.num_recordings > 0).filter(Token.collection_id == id).all()
+
     if request.method == 'POST' and form.validate():
         try:
-            print(form.num_samples.data)
             mos = Mos()
-            #print(form)
             form.populate_obj(mos)
-            print(mos)
-            for i in range(max_num_recordings):
+            mos.collection = Collection.query.get(id)
+            tokens = Token.query.filter(Token.num_recordings > 0) \
+                                .filter(Token.collection_id == id).all()
+            random_tokens = random.sample(tokens, form.num_samples.data-1)
+            for i in random_tokens:
                 mos_instance = MosInstance()
-            #db.session.add(mos)
-            #db.session.commit()
+                mos_instance.mos_id = mos.id
+                rand_recording_num = random.randint(0, len(i.recordings)-1)
+                mos_instance.token_id = i.id
+                mos_instance.recording_id = i.recordings[0].id
+                mos_instance.mos_instance_type = "recording"
+                mos_instance.mos_selected = False
+                mos.mos_objects.append(mos_instance)            
+            db.session.add(mos)
+            db.session.commit()
             flash("Nýrri MOS prufu bætt við", category="success")
             return redirect(url_for('mos_collection', id=id))
         except Exception as error:
@@ -743,11 +757,26 @@ def mos_create(id):
 @roles_accepted('admin')
 def mos_edit(id):
     mos = Mos.query.get(id)
-    form = MosForm(obj=mos)
+    collection_id = mos.collection_id
+    max_num_recorded = Collection.query.get(collection_id).num_recorded_tokens
+    form = MosForm(max_num_recorded, obj=mos)
     try:
         if request.method == 'POST' and form.validate():
-            form = MosForm(request.form, obj=mos)
             form.populate_obj(mos)
+            mos.collection = Collection.query.get(collection_id)
+            tokens = Token.query.filter(Token.num_recordings > 0) \
+                                .filter(Token.collection_id == collection_id).all()
+            print(form.num_samples.data)
+            random_tokens = random.sample(tokens, form.num_samples.data-1)
+            for i in random_tokens:
+                mos_instance = MosInstance()
+                mos_instance.mos_id = mos.id
+                rand_recording_num = random.randint(0, len(i.recordings)-1)
+                mos_instance.recording_id = i.recordings[0].id
+                mos_instance.mos_instance_type = "recording"
+                mos_instance.mos_selected = False
+                mos.mos_objects.append(mos_instance)            
+            db.session.add(mos)
             db.session.commit()
             flash("MOS var breytt", category="success")
             return redirect(url_for('mos', id=mos.id))

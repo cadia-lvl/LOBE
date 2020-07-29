@@ -1157,8 +1157,22 @@ class MosInstance(BaseModel, db.Model):
     recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
     synthesized_audio_path = db.Column(db.String)
     ratings = db.relationship("MosRating", lazy="joined")    
-    mos_instance_type = db.Column(db.String)
-    mos_selected = db.Column(db.Boolean)
+    ground_truth_selected = db.Column(db.Boolean, default=False, info={
+        'label': 'Hafa upptoku'})
+    synth_selected = db.Column(db.Boolean, default=False, info={
+        'label': 'Hafa talgervingu'})
+
+    @property
+    def ajax_edit_action(self):
+        return url_for('mos_instance_edit', id=self.id)
+
+    @property
+    def token(self):
+        return Recording.query.get(self.recording_id).get_token()
+
+    @property
+    def recording(self):
+        return Recording.query.get(self.recording_id)
 
 class MosRating(BaseModel, db.Model):
     __tablename__ = 'MosRating'

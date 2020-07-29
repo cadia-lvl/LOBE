@@ -4,7 +4,7 @@ from flask_security.forms import LoginForm, RegisterForm
 from flask_wtf import RecaptchaField
 from wtforms import (Form, HiddenField, MultipleFileField, SelectMultipleField,
                      SelectField, TextField, IntegerField, BooleanField,
-                     validators, ValidationError, FloatField, widgets, StringField)
+                     validators, ValidationError, FloatField, widgets, StringField, RadioField)
 
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms.ext.sqlalchemy.orm import model_form
@@ -14,7 +14,7 @@ from wtforms_alchemy import ModelForm
 from wtforms_components import ColorField
 
 from models import (Collection, Configuration, Role, User, VerifierIcon,
-                    VerifierQuote, VerifierTitle, VerifierFont, db, Posting, Application, Mos)
+                    VerifierQuote, VerifierTitle, VerifierFont, db, Posting, Application, Mos, MosInstance, MosRating)
 
 # TODO: move to app configuration
 sex_choices = [('Kona','Kona'), ('Karl','Karl'), ('Annað','Annað')]
@@ -83,6 +83,13 @@ class MosForm(ModelForm):
     def validate_num_samples(form, field):
         if field.data >= form.max_available or field.data < 0:
             raise ValidationError("Ekki nógu markar upptökur til í safni. Sláðu inn tölu á milli 0 og {}".format(form.max_available))
+
+
+class MosItemSelectionForm(ModelForm):
+    
+    class Meta:
+        model = MosInstance
+        exclude = ['synthesized_audio_path']
 
 
 class CollectionForm(Form):

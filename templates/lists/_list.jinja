@@ -5,6 +5,9 @@
                 <h1 class='font-weight-bold'>{% block title %}{% endblock %}</h1>
                 <p>Fjöldi: {% block total %}{% endblock %}</p>
             </div>
+            <div class='col-12'>
+                {% block header_content %}{% endblock %}
+            </div>
             <div class='col-12 mb-3'>
                 {% block buttons %}{% endblock %}
             </div>
@@ -25,4 +28,8 @@
                 {% endblock %}
             </div>
         </div>
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
 {% endblock %}

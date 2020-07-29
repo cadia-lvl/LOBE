@@ -20,16 +20,16 @@ from sqlalchemy import or_, and_
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
-                delete_session_db, delete_token_db, save_recording_session, resolve_order,
+                delete_session_db, delete_token_db, save_recording_session, save_MOS_ratings, resolve_order,
                 get_verifiers, insert_trims)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
                    ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm,
-                   VerifierFontForm, DailySpinForm, MosForm)
+                   VerifierFontForm, DailySpinForm, MosForm, MosItemSelectionForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
-    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, Mos, MosInstance, MosRating, db
+    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, Mos, MosInstance, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
@@ -707,14 +707,122 @@ def mos_collection(id):
 @roles_accepted('admin')
 def mos(id):
     mos = Mos.query.get(id)
-    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(Mos,
-        request.args.get('sort_by', default='created_at'),
-        order=request.args.get('order', default='desc'))).paginate(page,
-        per_page=app.config['MOS_PAGINATION'])
-    #collection=Collection.query.get(mos.collection_id)
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
+        request.args.get('sort_by', default='id'),
+        order=request.args.get('order', default='desc'))).all()
+    isReady = True
+    for m in mos_list:
+        m.selection_form = MosItemSelectionForm(obj=m)
+        if not m.synthesized_audio_path and isReady:
+            isReady = False
+    collection=Collection.query.get(mos.collection_id)
+    return render_template('mos.jinja', mos=mos, mos_list=mos_list,
+        collection=collection, isReady=isReady, section='mos')
 
-    return render_template('mos.jinja', mos=mos,
+@app.route('/mos/<int:id>/mostest', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def mos_test(id):
+    user_id = 1#request.args.get('user_id')
+    user_id = int(user_id)
+    user = User.query.get(user_id)
+    mos = Mos.query.get(id)
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
+        request.args.get('sort_by', default='id'),
+        order=request.args.get('order', default='desc'))).all()
+    mos_list_to_use = []
+    for i in mos_list:
+        if (i.ground_truth_selected and i.recording_id) or (i.synth_selected and i.synthesized_audio_path):
+            mos_list_to_use.append(i)
+    random.shuffle(mos_list_to_use)
+    tokens=[]
+    recordings=[]
+    recordings_url=[]
+    for i in mos_list_to_use:
+        tokens.append(i.token)
+        recordings.append(i.recording)
+        recordings_url.append(i.recording.get_download_url())
+    collection = Collection.query.get(mos.collection_id)
+    recordings_json = json.dumps([r.get_dict() for r in recordings])
+
+    return render_template('mos_test.jinja', mos=mos, mos_list=mos_list_to_use,
+        collection=collection, user=user, token=tokens[0], recordings=recordings_json, 
+        recordings_url=recordings_url, json_tokens=json.dumps([t.get_dict() for t in tokens]),
         section='mos')
+
+
+@app.route('/mos/<int:id>/stream_zip')
+@login_required
+@roles_accepted('admin')
+def stream_MOS_zip(id):
+    mos = Mos.query.get(id)
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
+        request.args.get('sort_by', default='id'),
+        order=request.args.get('order', default='desc'))).all()
+
+    results =''
+    for i in mos_list:
+        results += "{}\t{}\n".format(str(i.id), i.token.text)
+
+    generator = (cell for row in results
+                    for cell in row)
+
+    return Response(generator,
+                       mimetype="text/plain",
+                       headers={"Content-Disposition":
+                                    "attachment;filename={}_tokens.txt".format(mos.printable_id)})
+    '''
+    collection = Collection.query.get(id)
+    zip_file = open(collection.zip_path, 'rb')
+    file_size = os.path.getsize(collection.zip_path)
+    return Response(
+        zip_file,
+        mimetype='application/octet-stream',
+        headers=[
+            ('Content-Length', str(file_size)),
+            ('Content-Disposition', "attachment; filename=\"%s\"" % '{}'.format(collection.zip_fname))
+        ],
+        direct_passthrough=True)
+    '''
+
+@app.route('/mos/post_mos_rating', methods=['POST'])
+@require_login_if_closed_collection
+def post_mos_rating():
+    collection = Collection.query.get(request.form.get("collection_id"))
+    try:
+        session_id = save_MOS_ratings(request.form, request.files)
+    except Exception as error:
+        flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
+        app.logger.error("Error posting recordings: {}\n{}".format(error,   traceback.format_exc()))
+        return Response(str(error), status=500)
+
+    if collection.posting:
+        return Response(url_for("application_success"))
+    elif session_id is None:
+        flash("Engar upptökur, bara setningar merktar.", category='success')
+        return Response(url_for('index'), status=200)
+    else:
+        return Response(url_for('rec_session', id=session_id), status=200)
+
+
+@app.route('/mos/instances/<int:id>/edit', methods=['POST'])
+@login_required
+@roles_accepted('admin')
+def mos_instance_edit(id):
+    try:
+        instance = MosInstance.query.get(id)
+        form = MosItemSelectionForm(request.form, obj=instance)
+        form.populate_obj(instance)
+        db.session.commit()
+        response = {}
+        return Response(json.dumps(response), status=200)
+    except Exception as error:
+        app.logger.error('Error creating a verification : {}\n{}'.format(error, traceback.format_exc()))
+        errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
+        return Response(errorMessage, status=500)
+
+
+
 
 @app.route('/mos/collection/<int:id>/create', methods=['GET', 'POST'])
 @login_required
@@ -772,6 +880,7 @@ def mos_edit(id):
                 mos_instance = MosInstance()
                 mos_instance.mos_id = mos.id
                 rand_recording_num = random.randint(0, len(i.recordings)-1)
+                mos_instance.token_id = i.id
                 mos_instance.recording_id = i.recordings[0].id
                 mos_instance.mos_instance_type = "recording"
                 mos_instance.mos_selected = False

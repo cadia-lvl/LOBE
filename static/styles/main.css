@@ -60,6 +60,9 @@ video{
     width: 100%;
 }
 
+.mosCheckboxLabel{
+    margin-bottom: 0;
+}
 
 .carousel-indicators {
     position: unset !important;
@@ -139,3 +142,4 @@ textarea#comment:disabled {
 .color-change{
     animation: color-change 1s infinite;
 }
+

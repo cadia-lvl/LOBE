@@ -2,24 +2,64 @@
     <table class='table'>
         <thead>
             <th>
-                Dagsetning
-                {{macros.sort_th_a('created_at')}}
+                Auðkenni setningar
             </th>
             <th>
-                Auðkenni
-                {{macros.sort_th_a('id')}}
+                Texti
             </th>
             <th>
-                Söfnun
-                {{macros.sort_th_a('duration')}}
+                MOS-Einkunn
+            </th>
+            <th>
+                Upptaka til staðar
+            </th>
+             <th>
+                Talgerving til staðar
+            </th>
+            <th>
             </th>
         </thead>
         <tbody>
             {% for mos in mos_list %}
                 <tr>
-                    <td>{{mos.created_at | datetime(format='low')}}</td>
-                    <td><a href={{mos.url}}>{{mos.printable_id}}</a></td>
-                    <td>{{mos.collection.printable_id}}</td>
+                    <td><a href={{mos.token.get_url()}} class='{% if mos.token.marked_as_bad %} text-warning {% endif %}'><code>{{mos.token.get_printable_id()}}</code></a></td>
+                    <td>{{mos.token.text}}</td>
+                    <td>{{mos.rating}}</td>
+                    {% if mos.token_id %}
+                        <td class="text-success">Já</td>
+                    {% else %}
+                        <td class="text-danger">Nei</td>
+                    {% endif %}
+                    {% if mos.synthesized_audio_path %}
+                        <td class="text-success">Já</td>
+                    {% else %}
+                        <td class="text-danger">Nei</td>
+                    {% endif %}
+                    <td>
+                        <form class="mos-check-button" id="verificationForm" name="mos-{{mos.id}}" action="{{mos.ajax_edit_action}}" method="POST">
+                            {% for field in mos.selection_form %}
+                                <div class="custom-control custom-switch">
+
+                                {% if field.name == "ground_truth_selected" %}
+                                    {% if mos.token_id%}
+                                        {{field(checked=field.data, id="check-field", class_="")}}
+                                    {% else %}
+                                        {{field(checked=field.data, id="check-field", class_="", disabled=true)}}
+                                    {% endif %}
+                                    {{field.label(class_="mosCheckboxLabel")}}
+                                {% elif field.name == "synth_selected" %}
+                                    {% if mos.synthesized_audio_path%}
+                                        {{field(checked=field.data, id="check-field", class_="")}}
+                                    {% else %}
+                                        {{field(checked=field.data, id="check-field", class_="", disabled=true)}}
+                                    {% endif %}
+                                    {{field.label(class_="mosCheckboxLabel")}}
+                                {% endif %}
+                                </div>
+                            {% endfor %}
+                            <!-- <button type='submit'>Sendinan</button> -->
+                        </form>
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

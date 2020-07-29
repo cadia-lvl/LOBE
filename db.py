@@ -87,6 +87,8 @@ def insert_collection(form):
     db.session.commit()
     return collection
 
+def save_MOS_ratings(files):
+    pass
 
 def save_recording_session(form, files):
     duration = float(form['duration'])

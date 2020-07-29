@@ -1,49 +1,40 @@
-{% extends "__base.jinja" %}
-{% block body %}
-    <div class='row'>
-        <div class='col-12'>
-            <h1 class='font-weight-bold'>{{mos.printable_id}}
-            </h1>
+{% extends "lists/_list.jinja" %}
+{% block title %}{{mos.printable_id}}{% endblock %}
+{% block total %}{{mos_list|length}}{% endblock %}
+
+{% block header_content %}
+    {%if not isReady%}
+        <div class="float-left text-warning">
+            <span>Þessi MOS prufa er ekki tilbúin. Það á eftir að hlaða upp 1 eða fleiri talgerfingum.</span>
         </div>
-        <div class='col-md-6 col-12'>
-            <div class='row'>
-                <div class='col-7'>
-                    <p>Stofnuð þann:</p>
-                </div>
-                <div class='col-5 text-right'>
-                    <p>{{mos.created_at | datetime(format='low')}}</p>
-                </div>
-            </div>
-            <div class='row'>
-                <div class='col-7'>
-                    <p>Fjöldi setninga:</p>
-                </div>
-                <div class='col-5 text-right'>
-                    <p>{{mos.num_samples}}</p>
-                </div>
-            </div>
-        </div>
-        <div class='col-12'>
-            <a href='{{mos.edit_url}}' class='btn btn-sm text-warning btn-secondary float-right'>
-                {{macros.btn_icon('edit', 'r')}}
-                Breyta
-            </a>
-        </div>
-    </div>
+    {% endif %}
+{% endblock %}
+
+{%block buttons %}
+    {% if current_user.is_admin() %}
+        <a href='{{url_for("stream_MOS_zip", id=mos.id)}}' class='float-right btn btn-primary'>
+            {{macros.btn_icon('download', 'r')}}
+            Sækja
+        </a>
+        <button class="btn btn-secondary btn-sm float-right mr-2" type="button" data-toggle='modal', data-target='#downloadMOSModal'>
+            {{macros.btn_icon('upload', 'r')}}
+            Hlaða upp talgerfingum
+        </button>
+        <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_edit", id=mos.id)}}'>
+            {{macros.btn_icon('plus', 'r')}}
+            Breyta
+        </a>
+        <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_test", id=mos.id)}}'>
+            {{macros.btn_icon('play', 'r')}}
+            Hefja MOS próf
+        </a>
+    {% endif %}
 {% endblock %}
 
 {% block table %}
-    {% if mos_list.total > 0 %}
-        {% with mos_list=mos_list.items %}
-            {% include 'tables/mos_all.jinja'%}
-        {% endwith %}
-    {% endif %}
-{% endblock %}
-
-{% block pagination %}
-    {% if mos_list.total > 0 %}
-        {{macros.pagination(mos_list, url_for('mos_list'))}}
-    {% endif %}
+    {% with mos_list=mos_list %}
+        {% include 'tables/mos.jinja'%}
+    {% endwith %}
 {% endblock %}
 
 {% block no_results %}
@@ -52,4 +43,84 @@
             "Til að sjá setningar þarf fyrst að bæta þeim við.",
             url_for('mos'), "Bæta við setningum")}}
     {% endif %}
+{% endblock %}
+
+{% block modals %}
+    <div class="modal fade" id='downloadMOSModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sækja söfnun</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                {% if collection.has_zip %}
+                    <p class='font-weight-bold'>
+                        Búið er að útbúa skjalasafn fyrir þessa söfnun
+                    </p>
+                    <p>
+                        Skjalasafnið var gert þegar búið var að lesa {{collection.zip_token_count}} setningar.
+                        Núna er búið að lesa {{collection.num_tokens - collection.num_nonrecorded_tokens}} setningar.
+                        Þú getur annað hvort búið til nýtt skjalasafn eða náð í það nýjasta.
+                    </p>
+                {% else %}
+                    <p class='font-weight-bold'>
+                        Ekki er búið að útbúa skjalasafn
+                    </p>
+                    <p>
+                        Til að ná í söfnun þarf fyrst að útbúa skjalasafn. Þegar skjalasafnið er tilbúið birtist
+                        það <a target="_blank" rel="noopener noreferrer" href='{{url_for("collection_zip_list")}}'>hér</a>.
+                        Athugið að það getur tekið allt að 10 mínútur að útbúa skjalasafnið.
+                    </p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                {% if collection.has_zip %}
+                    <a href='{{url_for("stream_collection_zip", id=collection.id)}}' class='btn btn-primary'>
+                        Sækja söfnun
+                        {{macros.btn_icon('download', 'r')}}
+                    </a>
+                {% endif %}
+                <a href='{{url_for("generate_zip", id=collection.id)}}' class='btn btn-secondary'>
+                    Gera skjalasafn
+                    {{macros.btn_icon('archive', 'r')}}
+                </a>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+            </div>
+            </div>
+        </div>
+    </div>
+    {% include 'modals/user_confirm.jinja' %}
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script>
+
+        $(".mos-check-button").on('change', function(){
+            var id = this.name.split('mos-')[1];
+            console.log(id)
+            updateMOS(this)
+        });
+
+
+        function updateMOS(form) {
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function(e) {
+                if(this.readyState === XMLHttpRequest.DONE) {
+                    if(xhr.status == '200'){
+                        var response = JSON.parse(xhr.responseText);
+                        //console.log(response);
+                    } else{
+                        promptError("Villa koma upp:", xhr.responseText, "");
+                    }
+                }
+            }
+            let formData = new FormData(form);
+            xhr.open("POST", form.action, true);
+            xhr.send(formData);
+        }
+    </script>
 {% endblock %}

@@ -7,7 +7,7 @@
     {% endif %}
 
     {% if field.type == 'BooleanField' %}
-        {{field(class_="custom-control-input")}}
+        {{field(checked=field.data, class_="custom-control-input")}}
         {{field.label(class_="custom-control-label")}}
         {% if field.flags.required %}*{% endif %}
     {% elif field.type == 'MultipleFileField' %}

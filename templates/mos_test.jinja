@@ -1,0 +1,338 @@
+{% extends "__base.jinja" %}
+{% block body %}
+
+    <div class='row mb-3 mt-md-0 mt-n4'>
+            <div class='col-12'>
+                <div class="progress">
+                    <div class="progress-bar bg-success" id='tokenProgress' role="progressbar"></div>
+                </div>
+            </div>
+    </div>
+    <div class='row'>
+        <div class='col-12 controls mb-3 d-flex justify-content-between'>
+            <button id='prev' class='btn btn-sm btn-secondary rounded-pill' type='button'>
+                <i class='fa fa-arrow-left mr-1 ml-1'></i>
+                <span class='font-weight-bold mr-1'>Fyrri</span>
+            </button>
+
+            <button id='next' class='btn btn-sm btn-secondary rounded-pill' type='button'>
+                <span class='font-weight-bold ml-1 mr-1'>Næsti</span>
+                <i class='fa fa-arrow-right mr-1'></i>
+            </button>
+        </div>
+    </div>
+
+    <div class='row'>
+        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
+            {% include 'recording/token_card.jinja' %}
+        </div>
+    </div>
+    <div class='row mt-2'>
+        <div class='col-12 text-center'>
+            <audio id="audio-recording" src={{recordings_url[0]}} type="audio/wav"></audio>
+            <button type='button' id="play" class='btn btn-success rounded-pill'>
+                <i id='playButtonIcon' class='fa fa-play'></i>
+            </button>
+        </div>
+    </div>
+  <div class='row mt-4'>
+        <div class='row col-12'>
+            <form class="mx-auto row" id="ratingButtons">
+                <div class="column">
+                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option1" value="0"></input>
+                    <p class="mx-3">0</p>
+                </div>
+                <div class="column">
+                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option2" value="1"></input>
+                    <p class="mx-3">1</p>
+                </div>
+                <div class="column">
+                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option3" value="2"></input>
+                    <p class="mx-3">2</p>
+                </div>
+                <div class="column">
+                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option4" value="3"></input>
+                    <p class="mx-3">3</p>
+                </div>
+                <div class="column">
+                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option5" value="4"></input>
+                    <p class="mx-3">4</p>
+                </div>
+                <div class="column">
+                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option6" value="5"></input>
+                    <p class="mx-3">5</p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class='row mt-2'>
+        <div class='col-12'>
+            <button type='submit' id='send' type='button' class='btn btn-success rounded-pill float-right'>
+                Klára
+                <i id='finishButtonIcon' class='ml-2 fa fa-arrow-right'></i>
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script src='{{url_for("static", filename="js/error.js")}}'></script>
+    <script src='{{url_for("static", filename="js/volume-meter.js")}}'></script>
+    <script src='{{url_for("static", filename="js/meter.js")}}'></script>
+    <script type='text/javascript'>
+        var tokens = {{json_tokens}};
+        var postRatingsRoute = "{{url_for('post_mos_rating')}}";
+        var user_id = {{user.id}};
+        var collection_id = {{collection.id}};
+        var conf = {{collection.configuration.json}};
+        var recordings = {{recordings}}
+        var recordings_url = {{recordings_url}}
+    </script>
+    <script>
+        'use strict';
+        window.onbeforeunload = function() {
+            return "Are you sure?";
+        };
+
+        let mediaRecorder;
+        let recorderSettings;
+        let audioCtx;
+        let recordedBlobs;
+        let streamProcessor;
+        let ws;
+        let micSurfer;
+        let stream;
+        let meter;
+
+        var tokenIndex = 0; // At what utterance are we now?
+        var numTokens = tokens.length;
+
+
+        //token stuff
+        const tokenText = document.querySelector("#tokenText");
+        const tokenIDSpan = document.querySelector("#tokenID");
+        const tokenHref= document.querySelector("#tokenHref");
+        const tokenfileIDSpan = document.querySelector("#tokenFileID");
+        const tokenProgress = document.querySelector('#tokenProgress');
+        const currentIndexSpan = document.querySelector('#currentIndexSpan');
+        const totalIndexSpan = document.querySelector('#totalIndexSpan');
+        const tokenCard = document.querySelector('#tokenCard');
+
+        //buttons
+        const nextButton = document.querySelector('button#next');
+        const prevButton = document.querySelector('button#prev');
+        const playButton = document.querySelector('button#play');
+        const finishButton = document.querySelector('button#send');
+        const finishButtonIcon = $('#finishButtonIcon');
+        //radio
+        const ratingButtons = document.getElementById('ratingButtons')
+
+        //audio 
+        let recordingAudio = document.querySelector('audio#audio-recording');
+        let playButtonIcon = $('#playButtonIcon');
+
+
+        const startTime = new Date();
+
+
+        // ------------- register listeners ------------
+        nextButton.addEventListener('click', nextAction);
+        prevButton.addEventListener('click', prevAction);
+        playButton.addEventListener('click', playAction);
+        finishButton.addEventListener('click', finishAction);
+        $(window).keyup(function (e) {
+            if (e.key === ' ' || e.key === 'Spacebar'  || e.keyCode === 38 || e.keyCode === 87) {
+                // spacebar, arrow-up or "w"
+                //e.preventDefault()
+                //recordAction();
+            } else if(e.keyCode === 37 || e.keyCode === 65){ // arrow-left or "a"
+                prevAction();
+            } else if(e.keyCode === 39 || e.keyCode === 68){ // arrow-right or "d"
+                nextAction();
+            } else if(e.keyCode === 40 || e.keyCode === 83){ // arrow-down or "s"
+                playAction();
+            }
+        });
+
+        // ---------------- Actions --------------------
+        function nextAction(){
+            // Increment the sentence index and update the UI
+            if(tokenIndex < numTokens - 1){
+                tokenIndex += 1; updateUI();
+            }
+
+        }
+
+        function prevAction(){
+            // Decrement the sentence index and update the UI
+            if(tokenIndex > 0){
+                tokenIndex -= 1; updateUI();
+            }
+        }
+
+
+        function playAction(){
+            // Play the recording for the sentence at the current index.
+            recordingAudio.src = recordings_url[tokenIndex]
+            play(recordings[tokenIndex].id)
+        }
+
+        var isPlaying = false;
+        var currentId;
+        var audio;
+
+        function getRating(value){
+            tokens[tokenIndex]['rating'] = value
+            setFinishButtonUI();
+        }
+
+        function play(id){
+            if(isPlaying){
+                //stop
+                isPlaying = false;
+                playButtonIcon.removeClass('fa-stop').addClass('fa-play');
+                audio.pause();
+                audio.currentTime = 0;
+                // play the other clip if another id was chosen
+                if(id !== currentId){
+                    play(id);
+                }
+            } else{
+                //start
+                //isPlaying = true;
+                currentId = id;
+                audio = recordingAudio;
+                // set listeners
+                audio.onplaying = function(){
+                    isPlaying = true;
+                }
+                audio.onpause = function(){
+                    isPlaying = false;
+                }
+                audio.onended = function(){
+                    playButtonIcon.removeClass('fa-stop').addClass('fa-play');
+                }
+                // play audio
+                playButtonIcon.removeClass('fa-play').addClass('fa-stop');
+                audio.play();
+            }
+        }
+        function finishAction(){
+            finishButtonIcon.removeClass('fa-arrow-right').addClass('fa-spinner').addClass('fa-spin');
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function(e) {
+                if(this.readyState === XMLHttpRequest.DONE) {
+                    finishButtonIcon.removeClass('fa-spinner').removeClass('fa-spin');
+                    if(xhr.status == '200'){
+                        // if we finish we go straight to the session
+                        var session_url = xhr.responseText;
+                        finishButtonIcon.addClass('fa-check');
+
+                        window.onbeforeunload = null;
+                        window.location = session_url;
+                    } else{
+                        finishButtonIcon.addClass('fa-times');
+                        finishButton.classList.add('btn-danger');
+                        promptError("Villa koma upp við að senda upptökur", xhr.responseText,"");
+                    }
+                }
+                finishButton.disabled = true;
+            };
+            var fd = new FormData();
+            var recordings = {};
+            var skipped = [];
+            fd.append('duration', JSON.stringify((new Date().getTime() - startTime.getTime())/1000));
+            fd.append('user_id', user_id);
+            fd.append('manager_id', manager_id);
+            fd.append('collection_id', collection_id);
+            for(var i=0; i<numTokens; i++){
+                if('recording' in tokens[i]){
+                    recordings[tokens[i].id] = tokens[i].recording;
+                    if('analysis' in tokens[i]){
+                        recordings[tokens[i].id].analysis = tokens[i].analysis;
+                    }
+                    if('cut' in tokens[i]){
+                        recordings[tokens[i].id].cut = {
+                            'start': tokens[i].cut.start,
+                            'end': tokens[i].cut.end
+                        }
+                    }
+                    fd.append("file_"+tokens[i].id, tokens[i].recording.blob,
+                        tokens[i].recording.fname);
+                } else if(tokens[i].skipped){
+                    // append as skipped
+                    skipped.push(tokens[i]['id']);
+                }
+            }
+            fd.append('recordings', JSON.stringify(recordings));
+            fd.append('skipped', JSON.stringify(skipped));
+            xhr.open("POST", postRatingsRoute, true);
+            xhr.send(fd);
+        }
+
+
+        // ---------------- UI configuration --------------------
+        async function updateUI(){
+            setTokenUI();
+            setProgressUI(tokenIndex + 1);
+            setFinishButtonUI();
+            setRadioUI();
+        }
+
+        function setProgressUI(i){
+            var ratio = (i / numTokens) * 100;
+            tokenProgress.style.width = `${ratio.toString()}%`;
+            currentIndexSpan.innerHTML = i;
+        }
+
+
+        function setTokenUI(){
+            tokenText.innerHTML = tokens[tokenIndex]['text'];
+            tokenfileIDSpan.innerHTML = tokens[tokenIndex]['file_id'];
+            tokenHref.href = tokens[tokenIndex]['url'];
+        };
+
+        function setRadioUI(){
+            if(tokens[tokenIndex]['rating']){
+                ratingButtons.options[tokens[tokenIndex]['rating']].checked=true;
+            }
+            else{
+                for(let i = 0; i < ratingButtons.options.length; i++){
+                    ratingButtons.options[i].checked = false;
+                }
+            }
+        }
+
+        function setFinishButtonUI(){
+            //only allow if at least one marked token or one recording
+            for(var i=0; i<numTokens; i++){
+                if('rating' in tokens[i]){
+                    finishButton.disabled = false;
+                    return true;
+                }
+            }
+            finishButton.disabled = true;
+        }
+
+
+
+        function setLiveUI(type){
+            switch(type){
+                case 'wait':
+                    tokenCard.style.borderWidth = '2px';
+                    tokenCard.classList.remove('border-success');
+                    tokenCard.classList.add('border-warning');
+                    skipButton.disabled = true;
+                    nextButton.disabled = true;
+                    prevButton.disabled = true;
+            }
+        }
+
+        // --------------------- Initialize UI --------------------------
+        totalIndexSpan.innerHTML = numTokens;
+        updateUI();
+
+    </script>
+{% endblock %}

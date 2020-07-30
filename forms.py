@@ -2,6 +2,7 @@ import os
 
 from flask_security.forms import LoginForm, RegisterForm
 from flask_wtf import RecaptchaField
+from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import (Form, HiddenField, MultipleFileField, SelectMultipleField,
                      SelectField, TextField, IntegerField, BooleanField,
                      validators, ValidationError, FloatField, widgets, StringField, RadioField)
@@ -143,6 +144,10 @@ class BulkTokenForm(Form):
         return
     '''
 
+class MosUploadForm(Form):
+    is_g2p = BooleanField('Staðlað form.', description='Hakið við ef uphleðslan er á stöðluðu formi samanber lýsingu hér að ofan',
+                          default=False)
+    files = FileField(validators=[FileAllowed(['zip']), FileRequired()])
 
 class RecordForm(Form):
     token = HiddenField('Texti')

@@ -9,6 +9,8 @@ from datetime import date, datetime
 from logging.handlers import RotatingFileHandler
 
 import numpy as np
+from zipfile import ZipFile
+import csv
 
 from flask import (Flask, Response, redirect, render_template, request,
                    send_from_directory, url_for, flash, jsonify)
@@ -27,7 +29,7 @@ from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
                    ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm,
-                   VerifierFontForm, DailySpinForm, MosForm, MosItemSelectionForm)
+                   VerifierFontForm, DailySpinForm, MosForm, MosItemSelectionForm, MosUploadForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
     VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, Mos, MosInstance, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
@@ -702,10 +704,45 @@ def mos_collection(id):
     return render_template('lists/mos_collection.jinja', mos_list=mos_list,
         collection=collection, section='mos')
 
-@app.route('/mos/<int:id>')
+
+@app.route('/mos/<int:id>', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
 def mos(id):
+    form = MosUploadForm(request.form)
+    #if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
+        try:
+            zip_file = request.files.get('files')
+            with ZipFile(zip_file, 'r') as zip: 
+                tsv_name = '{}/index.tsv'.format(zip_file.filename[:-4])
+                with zip.open(tsv_name) as tsvfile:
+                    print(tsvfile)
+                    mc = tsvfile.read()
+                    c = csv.StringIO(mc.decode())
+                    rd = csv.reader(c, delimiter="\t")
+                    for row in rd:
+                        print(row)
+                #data = StringIO.StringIO(zip.read(csv_file)) #don't forget this line!
+                #reader = csv.reader(data)
+#
+#
+                #for row in reader:
+                #    print(row)
+                
+                #print(zip.infolist())
+                #for key in collection_info:
+                #    text_name = collection_info[key]["text_info"]["fname"]
+                #    recording_name = collection_info[key]["recording_info"]["recording_fname"]
+                #    print(text_name)
+                #    print(recording_name)
+                #    token = zip.read(text_name)
+                #    recording = zip.read(recording_name)
+
+            return redirect(url_for('mos', id=id))                    
+        except Exception as e: 
+            print(e)
+            print("OH NO")
     mos = Mos.query.get(id)
     mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
         request.args.get('sort_by', default='id'),
@@ -717,7 +754,7 @@ def mos(id):
             isReady = False
     collection=Collection.query.get(mos.collection_id)
     return render_template('mos.jinja', mos=mos, mos_list=mos_list,
-        collection=collection, isReady=isReady, section='mos')
+        collection=collection, mos_form=form, isReady=isReady, section='mos')
 
 @app.route('/mos/<int:id>/mostest', methods=['GET', 'POST'])
 @login_required
@@ -771,19 +808,6 @@ def stream_MOS_zip(id):
                        mimetype="text/plain",
                        headers={"Content-Disposition":
                                     "attachment;filename={}_tokens.txt".format(mos.printable_id)})
-    '''
-    collection = Collection.query.get(id)
-    zip_file = open(collection.zip_path, 'rb')
-    file_size = os.path.getsize(collection.zip_path)
-    return Response(
-        zip_file,
-        mimetype='application/octet-stream',
-        headers=[
-            ('Content-Length', str(file_size)),
-            ('Content-Disposition', "attachment; filename=\"%s\"" % '{}'.format(collection.zip_fname))
-        ],
-        direct_passthrough=True)
-    '''
 
 @app.route('/mos/post_mos_rating', methods=['POST'])
 @require_login_if_closed_collection

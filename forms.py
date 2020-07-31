@@ -1,5 +1,7 @@
 import os
 
+from flask import current_app as app
+from flask import url_for
 from flask_security.forms import LoginForm, RegisterForm
 from flask_wtf import RecaptchaField
 from wtforms import (Form, HiddenField, MultipleFileField, SelectMultipleField,
@@ -15,6 +17,7 @@ from wtforms_components import ColorField
 
 from models import (Collection, Configuration, Role, User, PremiumItem, VerifierIcon,
                     VerifierQuote, VerifierTitle, VerifierFont, db, Posting, Application)
+
 
 # TODO: move to app configuration
 sex_choices = [('Kona','Kona'), ('Karl','Karl'), ('Annað','Annað')]
@@ -291,6 +294,16 @@ PostingForm = model_form(Posting, db_session=db.session,
                          exclude=["id", "created_at", "uuid", "collection", "applications"])
 
 
+class _TermsLazyLabel(object):
+    """
+    Lazy loadable label for the terms and agreements check field.
+    Since app context is not available when forms are imported
+    we need to lazy load the label.
+    """
+    def __repr__(self):
+        return f'Ég samþykki <a href="{url_for("tos")}" target="_blank">skilmála og gagnastefnu LVL</a>'
+
+
 class ApplicationForm(Form):
     name = StringField("Nafn", [validators.required()])
     sex = SelectField("Kyn", [validators.required()], choices=sex_choices)
@@ -299,7 +312,5 @@ class ApplicationForm(Form):
     voice = SelectField("Rödd", [validators.required()], choices=voice_choices)
     email = EmailField("Netfang", [validators.required()])
     phone = StringField("Sími")
-    terms_agreement = BooleanField(
-        'Ég samþykki <a href="/tos/" target="_blank">skilmála og gagnastefnu LVL</a>',
-        validators=[InputRequired()]
+    terms_agreement = BooleanField(_TermsLazyLabel(), validators=[InputRequired()]
     )

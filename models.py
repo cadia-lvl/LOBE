@@ -1149,22 +1149,65 @@ class Mos(BaseModel, db.Model):
     def edit_url(self):
         return url_for('mos_edit', id=self.id)
 
+    @property
+    def number_selected(self):
+        return sum(r.selected == True for r in self.mos_objects)
+
 class MosInstance(BaseModel, db.Model):
     __tablename__ = 'MosInstance'
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     mos_id = db.Column(db.Integer, db.ForeignKey('Mos.id'))
     token_id = db.Column(db.Integer, db.ForeignKey('Token.id'))
     recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
-    synthesized_audio_path = db.Column(db.String)
-    ratings = db.relationship("MosRating", lazy="joined")    
-    ground_truth_selected = db.Column(db.Boolean, default=False, info={
+    path = db.Column(db.String)
+    text = db.Column(db.String)
+    ratings = db.relationship("MosRating", lazy="joined")
+    is_synth = db.Column(db.Boolean, default=False)
+    selected = db.Column(db.Boolean, default=False, info={
         'label': 'Hafa upptoku'})
-    synth_selected = db.Column(db.Boolean, default=False, info={
-        'label': 'Hafa talgervingu'})
+
+    def get_dict(self):
+        return {
+            'id':self.id, 
+            'token': self.token.get_dict(),
+            'mos_id':self.mos_id, 
+            'path': self.path,
+            'text':self.text, 
+            'is_synth': self.is_synth,
+            'selected':self.selected, 
+        }
+
+    @property
+    def get_text(self):
+        if self.token_id and not self.is_synth:
+            return Recording.query.get(self.recording_id).get_token().text
+            #return self.text
+        elif self.is_synth:
+            return self.text
+        return "Villa í gagnagrunni"
+
+    @property
+    def get_path(self):
+        if self.token_id and not self.is_synth:
+            return Recording.query.get(self.recording_id).path
+        elif self.is_synth:
+            return self.path
+        return "Villa í gagnagrunni"
 
     @property
     def ajax_edit_action(self):
         return url_for('mos_instance_edit', id=self.id)
+
+    @property
+    def get_rating(self):
+        if(len(self.ratings) > 0):
+            total_ratings = 0
+            for i in self.ratings:
+                total_ratings += i.rating
+            total_ratings = total_ratings/len(self.ratings)
+            return total_ratings
+        else:
+            return "-"
 
     @property
     def token(self):

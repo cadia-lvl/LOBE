@@ -8,6 +8,7 @@ DATA_BASE_DIR = os.path.join(APP_ROOT, 'data/')
 
 TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'tokens/')
 RECORD_DIR = os.path.join(DATA_BASE_DIR, 'records/')
+SYNTH_DIR = os.path.join(DATA_BASE_DIR, 'synth/')
 VIDEO_DIR = os.path.join(DATA_BASE_DIR, 'videos/')
 ZIP_DIR = os.path.join(DATA_BASE_DIR, 'zips/')
 TEMP_DIR = os.path.join(DATA_BASE_DIR, 'temp/')

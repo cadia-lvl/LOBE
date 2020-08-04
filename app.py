@@ -717,44 +717,29 @@ def mos(id):
             with ZipFile(zip_file, 'r') as zip: 
                 tsv_name = '{}/index.tsv'.format(zip_file.filename[:-4])
                 with zip.open(tsv_name) as tsvfile:
-                    print(tsvfile)
                     mc = tsvfile.read()
                     c = csv.StringIO(mc.decode())
                     rd = csv.reader(c, delimiter="\t")
                     for row in rd:
                         print(row)
-                #data = StringIO.StringIO(zip.read(csv_file)) #don't forget this line!
-                #reader = csv.reader(data)
-#
-#
-                #for row in reader:
-                #    print(row)
-                
-                #print(zip.infolist())
-                #for key in collection_info:
-                #    text_name = collection_info[key]["text_info"]["fname"]
-                #    recording_name = collection_info[key]["recording_info"]["recording_fname"]
-                #    print(text_name)
-                #    print(recording_name)
-                #    token = zip.read(text_name)
-                #    recording = zip.read(recording_name)
+                        path_to_synth = zip.extract
+
 
             return redirect(url_for('mos', id=id))                    
         except Exception as e: 
             print(e)
             print("OH NO")
     mos = Mos.query.get(id)
+    print(mos.number_selected)
     mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
         request.args.get('sort_by', default='id'),
         order=request.args.get('order', default='desc'))).all()
     isReady = True
     for m in mos_list:
         m.selection_form = MosItemSelectionForm(obj=m)
-        if not m.synthesized_audio_path and isReady:
-            isReady = False
     collection=Collection.query.get(mos.collection_id)
     return render_template('mos.jinja', mos=mos, mos_list=mos_list,
-        collection=collection, mos_form=form, isReady=isReady, section='mos')
+        collection=collection, mos_form=form, section='mos')
 
 @app.route('/mos/<int:id>/mostest', methods=['GET', 'POST'])
 @login_required
@@ -768,23 +753,29 @@ def mos_test(id):
         request.args.get('sort_by', default='id'),
         order=request.args.get('order', default='desc'))).all()
     mos_list_to_use = []
+    print(mos_list)
     for i in mos_list:
-        if (i.ground_truth_selected and i.recording_id) or (i.synth_selected and i.synthesized_audio_path):
+        if (i.selected and i.path):
             mos_list_to_use.append(i)
     random.shuffle(mos_list_to_use)
     tokens=[]
     recordings=[]
     recordings_url=[]
+    info = {'paths': [], 'texts': []}
     for i in mos_list_to_use:
         tokens.append(i.token)
         recordings.append(i.recording)
         recordings_url.append(i.recording.get_download_url())
+        info['paths'].append(i.path)
+        info['texts'].append(i.get_text)
+    info_json = json.dumps(info)
     collection = Collection.query.get(mos.collection_id)
     recordings_json = json.dumps([r.get_dict() for r in recordings])
+    mos_list_json = json.dumps([r.get_dict() for r in mos_list_to_use])
 
     return render_template('mos_test.jinja', mos=mos, mos_list=mos_list_to_use,
         collection=collection, user=user, token=tokens[0], recordings=recordings_json, 
-        recordings_url=recordings_url, json_tokens=json.dumps([t.get_dict() for t in tokens]),
+        recordings_url=recordings_url, json_mos=mos_list_json, json_tokens=json.dumps([t.get_dict() for t in tokens]),
         section='mos')
 
 
@@ -810,23 +801,21 @@ def stream_MOS_zip(id):
                                     "attachment;filename={}_tokens.txt".format(mos.printable_id)})
 
 @app.route('/mos/post_mos_rating', methods=['POST'])
-@require_login_if_closed_collection
+@login_required
 def post_mos_rating():
-    collection = Collection.query.get(request.form.get("collection_id"))
     try:
-        session_id = save_MOS_ratings(request.form, request.files)
+        mos_id = save_MOS_ratings(request.form, request.files)
     except Exception as error:
         flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
         app.logger.error("Error posting recordings: {}\n{}".format(error,   traceback.format_exc()))
         return Response(str(error), status=500)
 
-    if collection.posting:
-        return Response(url_for("application_success"))
-    elif session_id is None:
-        flash("Engar upptökur, bara setningar merktar.", category='success')
-        return Response(url_for('index'), status=200)
+    if mos_id is None:
+        flash("Engar einkunnir í MOS prófi.", category='success')
+        return Response(url_for('mos_list'), status=200)
     else:
-        return Response(url_for('rec_session', id=session_id), status=200)
+        flash("MOS próf klárað", category='success')
+        return Response(url_for('mos', id=mos_id), status=200)
 
 
 @app.route('/mos/instances/<int:id>/edit', methods=['POST'])
@@ -869,9 +858,11 @@ def mos_create(id):
                 mos_instance.mos_id = mos.id
                 rand_recording_num = random.randint(0, len(i.recordings)-1)
                 mos_instance.token_id = i.id
-                mos_instance.recording_id = i.recordings[0].id
-                mos_instance.mos_instance_type = "recording"
-                mos_instance.mos_selected = False
+                mos_instance.recording_id = i.recordings[rand_recording_num].id
+                mos_instance.path = i.recordings[rand_recording_num].path
+                mos_instance.text = i.recordings[rand_recording_num].get_token().text
+                mos_instance.is_synth = False
+                mos_instance.selected = False
                 mos.mos_objects.append(mos_instance)            
             db.session.add(mos)
             db.session.commit()

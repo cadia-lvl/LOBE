@@ -24,7 +24,7 @@
 
     <div class='row'>
         <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
-            {% include 'recording/token_card.jinja' %}
+            {% include 'mos_token_card.jinja' %}
         </div>
     </div>
     <div class='row mt-2'>
@@ -38,10 +38,6 @@
   <div class='row mt-4'>
         <div class='row col-12'>
             <form class="mx-auto row" id="ratingButtons">
-                <div class="column">
-                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option1" value="0"></input>
-                    <p class="mx-3">0</p>
-                </div>
                 <div class="column">
                     <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option2" value="1"></input>
                     <p class="mx-3">1</p>
@@ -86,9 +82,11 @@
         var postRatingsRoute = "{{url_for('post_mos_rating')}}";
         var user_id = {{user.id}};
         var collection_id = {{collection.id}};
+        var mos_id = {{mos.id}}
         var conf = {{collection.configuration.json}};
         var recordings = {{recordings}}
         var recordings_url = {{recordings_url}}
+        var mos_list = {{json_mos}}
     </script>
     <script>
         'use strict';
@@ -106,9 +104,10 @@
         let stream;
         let meter;
 
-        var tokenIndex = 0; // At what utterance are we now?
+        var mosIndex = 0; // At what utterance are we now?
+        var mosIndex = 0;
         var numTokens = tokens.length;
-
+        var numMosInstances = mos_list.length;
 
         //token stuff
         const tokenText = document.querySelector("#tokenText");
@@ -159,24 +158,24 @@
         // ---------------- Actions --------------------
         function nextAction(){
             // Increment the sentence index and update the UI
-            if(tokenIndex < numTokens - 1){
-                tokenIndex += 1; updateUI();
+            if(mosIndex < numMosInstances - 1){
+                mosIndex += 1; updateUI();
             }
 
         }
 
         function prevAction(){
             // Decrement the sentence index and update the UI
-            if(tokenIndex > 0){
-                tokenIndex -= 1; updateUI();
+            if(mosIndex > 0){
+                mosIndex -= 1; updateUI();
             }
         }
 
 
         function playAction(){
             // Play the recording for the sentence at the current index.
-            recordingAudio.src = recordings_url[tokenIndex]
-            play(recordings[tokenIndex].id)
+            recordingAudio.src = recordings_url[mosIndex]
+            play(recordings[mosIndex].id)
         }
 
         var isPlaying = false;
@@ -184,7 +183,7 @@
         var audio;
 
         function getRating(value){
-            tokens[tokenIndex]['rating'] = value
+            mos_list[mosIndex]['rating'] = value
             setFinishButtonUI();
         }
 
@@ -220,6 +219,7 @@
             }
         }
         function finishAction(){
+            console.log(mos_list)
             finishButtonIcon.removeClass('fa-arrow-right').addClass('fa-spinner').addClass('fa-spin');
             var xhr = new XMLHttpRequest();
             xhr.onload = function(e) {
@@ -227,11 +227,11 @@
                     finishButtonIcon.removeClass('fa-spinner').removeClass('fa-spin');
                     if(xhr.status == '200'){
                         // if we finish we go straight to the session
-                        var session_url = xhr.responseText;
+                        var mos_url = xhr.responseText;
                         finishButtonIcon.addClass('fa-check');
 
                         window.onbeforeunload = null;
-                        window.location = session_url;
+                        window.location = mos_url;
                     } else{
                         finishButtonIcon.addClass('fa-times');
                         finishButton.classList.add('btn-danger');
@@ -240,34 +240,14 @@
                 }
                 finishButton.disabled = true;
             };
+            for(var i = 0; i < mos_list.length; i++){
+                mos_list[i]['placement'] = i + 1
+            }
             var fd = new FormData();
-            var recordings = {};
-            var skipped = [];
             fd.append('duration', JSON.stringify((new Date().getTime() - startTime.getTime())/1000));
             fd.append('user_id', user_id);
-            fd.append('manager_id', manager_id);
-            fd.append('collection_id', collection_id);
-            for(var i=0; i<numTokens; i++){
-                if('recording' in tokens[i]){
-                    recordings[tokens[i].id] = tokens[i].recording;
-                    if('analysis' in tokens[i]){
-                        recordings[tokens[i].id].analysis = tokens[i].analysis;
-                    }
-                    if('cut' in tokens[i]){
-                        recordings[tokens[i].id].cut = {
-                            'start': tokens[i].cut.start,
-                            'end': tokens[i].cut.end
-                        }
-                    }
-                    fd.append("file_"+tokens[i].id, tokens[i].recording.blob,
-                        tokens[i].recording.fname);
-                } else if(tokens[i].skipped){
-                    // append as skipped
-                    skipped.push(tokens[i]['id']);
-                }
-            }
-            fd.append('recordings', JSON.stringify(recordings));
-            fd.append('skipped', JSON.stringify(skipped));
+            fd.append('mos_id', mos_id);
+            fd.append('mos_list', JSON.stringify(mos_list));
             xhr.open("POST", postRatingsRoute, true);
             xhr.send(fd);
         }
@@ -276,27 +256,27 @@
         // ---------------- UI configuration --------------------
         async function updateUI(){
             setTokenUI();
-            setProgressUI(tokenIndex + 1);
+            setProgressUI(mosIndex + 1);
             setFinishButtonUI();
             setRadioUI();
         }
 
         function setProgressUI(i){
-            var ratio = (i / numTokens) * 100;
+            var ratio = (i / numMosInstances) * 100;
             tokenProgress.style.width = `${ratio.toString()}%`;
             currentIndexSpan.innerHTML = i;
         }
 
 
         function setTokenUI(){
-            tokenText.innerHTML = tokens[tokenIndex]['text'];
-            tokenfileIDSpan.innerHTML = tokens[tokenIndex]['file_id'];
-            tokenHref.href = tokens[tokenIndex]['url'];
+            tokenText.innerHTML = mos_list[mosIndex]['text'];
+            tokenfileIDSpan.innerHTML = mos_list[mosIndex]['token']['file_id'];
+            tokenHref.href = mos_list[mosIndex]['token']['url'];
         };
 
         function setRadioUI(){
-            if(tokens[tokenIndex]['rating']){
-                ratingButtons.options[tokens[tokenIndex]['rating']].checked=true;
+            if(mos_list[mosIndex]['rating']){
+                ratingButtons.options[mos_list[mosIndex]['rating']].checked=true;
             }
             else{
                 for(let i = 0; i < ratingButtons.options.length; i++){
@@ -307,8 +287,8 @@
 
         function setFinishButtonUI(){
             //only allow if at least one marked token or one recording
-            for(var i=0; i<numTokens; i++){
-                if('rating' in tokens[i]){
+            for(var i=0; i<numMosInstances; i++){
+                if('rating' in mos_list[i]){
                     finishButton.disabled = false;
                     return true;
                 }
@@ -331,7 +311,7 @@
         }
 
         // --------------------- Initialize UI --------------------------
-        totalIndexSpan.innerHTML = numTokens;
+        totalIndexSpan.innerHTML = numMosInstances;
         updateUI();
 
     </script>

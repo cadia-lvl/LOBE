@@ -15,9 +15,6 @@
         {{field.label(class_="custom-file-label")}}
     {% elif field.type == 'FileField' %}
         {{field(class_='custom-file-input')}}
-        {{field.label(class_="custom-file-label")}}   
-    {% elif field.type == 'FileField' %}
-        {{field(class_='custom-file-input')}}
         {{field.label(class_="custom-file-label")}}
     {% else %}
         {{ field(class_='form-control') }}

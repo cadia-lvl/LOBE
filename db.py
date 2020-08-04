@@ -8,7 +8,7 @@ from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from functools import partialmethod
 from flask import flash
-from models import Collection, Recording, Session, Token, Trim, User, db
+from models import Collection, Recording, Session, Token, Trim, User, db, Mos, MosInstance, MosRating
 
 def create_tokens(collection_id, files, is_g2p):
     tokens = []
@@ -87,8 +87,32 @@ def insert_collection(form):
     db.session.commit()
     return collection
 
-def save_MOS_ratings(files):
-    pass
+
+def is_valid_rating(rating):
+    if int(rating) > 0 and int(rating) <= 5:
+        return True
+    return False
+
+
+def save_MOS_ratings(form, files):
+    duration = float(form['duration'])
+    user_id = int(form['user_id'])
+    mos_id = int(form['mos_id'])
+    mos = Mos.query.get(mos_id)
+    mos_list = json.loads(form['mos_list'])
+    for i in mos_list:
+        if "rating" in i:
+            if is_valid_rating(i['rating']):
+                mos_instance = MosInstance.query.get(i['id'])
+                rating = MosRating()
+                rating.rating = int(i['rating'])
+                rating.user_id = user_id
+                rating.MosInastance_id = i['id']
+                rating.placement = i['placement']
+                mos_instance.ratings.append(rating)
+    db.session.commit()
+    return mos_id
+
 
 def save_recording_session(form, files):
     duration = float(form['duration'])

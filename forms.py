@@ -90,7 +90,7 @@ class MosItemSelectionForm(ModelForm):
     
     class Meta:
         model = MosInstance
-        exclude = ['synthesized_audio_path']
+        exclude = ['path','text','is_synth']
 
 
 class CollectionForm(Form):

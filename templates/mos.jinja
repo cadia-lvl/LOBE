@@ -3,11 +3,11 @@
 {% block total %}{{mos_list|length}}{% endblock %}
 
 {% block header_content %}
-    {%if not isReady%}
-        <div class="float-left text-warning">
-            <span>Þessi MOS prufa er ekki tilbúin. Það á eftir að hlaða upp 1 eða fleiri talgerfingum.</span>
-        </div>
-    {% endif %}
+    <div class="float-left text-warning">
+        {% if not mos.number_selected > 0%}
+            <span>Veldu setningar til að nota í prófinu</span>
+        {% endif %}
+    </div>
 {% endblock %}
 
 {%block buttons %}
@@ -24,10 +24,18 @@
             {{macros.btn_icon('plus', 'r')}}
             Breyta
         </a>
+        {% if mos.number_selected > 0%}
         <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_test", id=mos.id)}}'>
             {{macros.btn_icon('play', 'r')}}
             Hefja MOS próf
         </a>
+        {% else %}
+        <a class='btn btn-secondary btn-sm text-warning float-right mr-2'>
+            {{macros.btn_icon('play', 'r')}}
+            Ekki tilbuid
+        </a>
+        {% endif %}
+        
     {% endif %}
 {% endblock %}
 

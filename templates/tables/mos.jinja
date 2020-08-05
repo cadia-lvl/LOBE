@@ -11,48 +11,89 @@
                 MOS-Einkunn
             </th>
             <th>
-                Upptaka til staðar
+                Er upptaka
             </th>
              <th>
-                Talgerving til staðar
+                Er talgerfing
             </th>
             <th>
             </th>
         </thead>
         <tbody>
             {% for mos in mos_list %}
-                <tr>
-                    <td><a href={{mos.token.get_url()}} class='{% if mos.token.marked_as_bad %} text-warning {% endif %}'><code>{{mos.token.get_printable_id()}}</code></a></td>
-                    <td>{{mos.get_text}}</td>
-                    <td>{{mos.get_rating}}</td>
-                    {% if mos.token_id %}
-                        <td class="text-success">Já</td>
-                    {% else %}
-                        <td class="text-danger">Nei</td>
-                    {% endif %}
-                    {% if mos.synthesized_audio_path %}
-                        <td class="text-success">Já</td>
-                    {% else %}
-                        <td class="text-danger">Nei</td>
-                    {% endif %}
-                    <td>
-                        <form class="mos-check-button" id="verificationForm" name="mos-{{mos.id}}" action="{{mos.ajax_edit_action}}" method="POST">
-                            {% for field in mos.selection_form %}
-                                <div class="custom-control custom-switch">
+                {% if mos.token_id %}
+                    <tr>
+                        {% if mos.token %}
+                            <td><a href={{mos.token.get_url()}} class='{% if mos.token.marked_as_bad %} text-warning {% endif %}'><code>{{mos.token.get_printable_id()}}</code></a></td>
+                        {% else %}
+                            <td>-</td>
+                        {% endif %}
+                        
+                        <td>{{mos.get_text}}</td>
+                        <td>{{mos.get_text}}</td>
+                        <td>{{mos.get_rating}}</td>
+                        {% if not mos.is_synth %}
+                            <td class="text-success">Já</td>
+                        {% else %}
+                            <td class="text-danger">Nei</td>
+                        {% endif %}
+                        {% if mos.is_synth %}
+                            <td class="text-success">Já</td>
+                        {% else %}
+                            <td class="text-danger">Nei</td>
+                        {% endif %}
+                        <td>
+                            <form class="mos-check-button" id="verificationForm" name="mos-{{mos.id}}" action="{{mos.ajax_edit_action}}" method="POST">
+                                {% for field in mos.selection_form %}
+                                    <div class="custom-control custom-switch">
 
-                                {% if field.name == "selected" %}
-                                    {% if mos.token_id%}
-                                        {{field(checked=field.data, id="check-field", class_="")}}
-                                    {% else %}
-                                        {{field(checked=field.data, id="check-field", class_="", disabled=true)}}
+                                    {% if field.name == "selected" %}
+                                        {% if mos.token_id%}
+                                            {{field(checked=field.data, id="check-field", class_="")}}
+                                        {% else %}
+                                            {{field(checked=field.data, id="check-field", class_="", disabled=true)}}
+                                        {% endif %}
+                                        {{field.label(class_="mosCheckboxLabel")}}
                                     {% endif %}
-                                    {{field.label(class_="mosCheckboxLabel")}}
-                                {% endif %}
-                                </div>
-                            {% endfor %}
-                        </form>
-                    </td>
-                </tr>
+                                    </div>
+                                {% endfor %}
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td>-</td>
+                        <td>{{mos.get_text}}</td>
+                        <td>{{mos.get_rating}}</td>
+                        {% if not mos.is_synth %}
+                            <td class="text-success">Já</td>
+                        {% else %}
+                            <td class="text-danger">Nei</td>
+                        {% endif %}
+                        {% if mos.is_synth %}
+                            <td class="text-success">Já</td>
+                        {% else %}
+                            <td class="text-danger">Nei</td>
+                        {% endif %}
+                        <td>
+                            <form class="mos-check-button" id="verificationForm" name="mos-{{mos.id}}" action="{{mos.ajax_edit_action}}" method="POST">
+                                {% for field in mos.selection_form %}
+                                    <div class="custom-control custom-switch">
+
+                                    {% if field.name == "selected" %}
+                                        {% if mos.token_id%}
+                                            {{field(checked=field.data, id="check-field", class_="")}}
+                                        {% else %}
+                                            {{field(checked=field.data, id="check-field", class_="", disabled=true)}}
+                                        {% endif %}
+                                        {{field.label(class_="mosCheckboxLabel")}}
+                                    {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </form>
+                        </td>
+                    </tr>
+                {% endif%}
             {% endfor %}
         </tbody>
     </table>

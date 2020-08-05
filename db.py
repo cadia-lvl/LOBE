@@ -87,6 +87,8 @@ def insert_collection(form):
     db.session.commit()
     return collection
 
+def save_synthesised_wav(files):
+    pass
 
 def is_valid_rating(rating):
     if int(rating) > 0 and int(rating) <= 5:

@@ -78,12 +78,9 @@
     <script src='{{url_for("static", filename="js/volume-meter.js")}}'></script>
     <script src='{{url_for("static", filename="js/meter.js")}}'></script>
     <script type='text/javascript'>
-        var tokens = {{json_tokens}};
         var postRatingsRoute = "{{url_for('post_mos_rating')}}";
         var user_id = {{user.id}};
-        var collection_id = {{collection.id}};
         var mos_id = {{mos.id}}
-        var conf = {{collection.configuration.json}};
         var recordings = {{recordings}}
         var recordings_url = {{recordings_url}}
         var mos_list = {{json_mos}}
@@ -106,7 +103,6 @@
 
         var mosIndex = 0; // At what utterance are we now?
         var mosIndex = 0;
-        var numTokens = tokens.length;
         var numMosInstances = mos_list.length;
 
         //token stuff
@@ -219,7 +215,6 @@
             }
         }
         function finishAction(){
-            console.log(mos_list)
             finishButtonIcon.removeClass('fa-arrow-right').addClass('fa-spinner').addClass('fa-spin');
             var xhr = new XMLHttpRequest();
             xhr.onload = function(e) {
@@ -270,8 +265,14 @@
 
         function setTokenUI(){
             tokenText.innerHTML = mos_list[mosIndex]['text'];
-            tokenfileIDSpan.innerHTML = mos_list[mosIndex]['token']['file_id'];
-            tokenHref.href = mos_list[mosIndex]['token']['url'];
+            if (mos_list[mosIndex]['token'] != null){
+                tokenfileIDSpan.innerHTML = mos_list[mosIndex]['token']['file_id'];
+                tokenHref.href = mos_list[mosIndex]['token']['url'];
+            }
+            else{
+                tokenfileIDSpan.innerHTML = ''
+                tokenHref.href = ''
+            }
         };
 
         function setRadioUI(){

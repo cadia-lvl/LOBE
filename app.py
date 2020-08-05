@@ -1,5 +1,8 @@
 import json
 import os
+import pathlib
+from pathlib import Path
+
 import traceback
 import shutil
 import logging
@@ -11,6 +14,8 @@ from logging.handlers import RotatingFileHandler
 import numpy as np
 from zipfile import ZipFile
 import csv
+from pydub import AudioSegment
+from werkzeug import secure_filename
 
 from flask import (Flask, Response, redirect, render_template, request,
                    send_from_directory, url_for, flash, jsonify)
@@ -31,7 +36,7 @@ from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm,
                    VerifierFontForm, DailySpinForm, MosForm, MosItemSelectionForm, MosUploadForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
-    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, Mos, MosInstance, db
+    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, Mos, MosInstance, Synth, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
@@ -592,6 +597,16 @@ def download_recording(id):
         app.logger.error(
             "Error downloading a recording : {}\n{}".format(error,traceback.format_exc()))
 
+@app.route('/synth/<int:id>/download/')
+@login_required
+def download_synth(id):
+    synth = Synth.query.get(id)
+    try:
+        return send_from_directory(synth.get_directory(), synth.fname,
+            as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading a synth : {}\n{}".format(error,traceback.format_exc()))
 
 # CONFIGURATION ROUTES
 @app.route('/confs/')
@@ -709,28 +724,82 @@ def mos_collection(id):
 @login_required
 @roles_accepted('admin')
 def mos(id):
+    mos = Mos.query.get(id)
     form = MosUploadForm(request.form)
     #if request.method == 'POST' and form.validate():
+    rec = Recording.query.get(1)
     if request.method == 'POST':
         try:
             zip_file = request.files.get('files')
             with ZipFile(zip_file, 'r') as zip: 
-                tsv_name = '{}/index.tsv'.format(zip_file.filename[:-4])
+                zip_name = zip_file.filename[:-4]
+                tsv_name = '{}/index.tsv'.format(zip_name)
                 with zip.open(tsv_name) as tsvfile:
+                    wav_path_dir = app.config["WAV_SYNTH_AUDIO_DIR"]+"{}".format(id)
+                    webm_path = app.config["SYNTH_DIR"]+"{}".format(id)
                     mc = tsvfile.read()
                     c = csv.StringIO(mc.decode())
                     rd = csv.reader(c, delimiter="\t")
+                    #listOfFileNames = zip.namelist()
+                    pathlib.Path(wav_path_dir).mkdir(exist_ok=True)
+                    pathlib.Path(webm_path).mkdir(exist_ok=True) 
                     for row in rd:
-                        print(row)
-                        path_to_synth = zip.extract
+                        if row[0]:
+                            if row[1]:
+                                for zip_info in zip.infolist():
+                                    if zip_info.filename[-1] == '/':
+                                        continue
+                                    zip_info.filename = os.path.basename(zip_info.filename)
+                                    if zip_info.filename == row[0]:
+                                        mos_instance = MosInstance()
+                                        synth = Synth()
+                                        db.session.add(synth)
+                                        db.session.add(mos_instance)
+                                        db.session.flush()
+                                        print("sadgasg", synth.id)
+                                        file_id = '{}_s{:09d}_m{:09d}'.format(
+                                            os.path.splitext(os.path.basename(zip_info.filename))[0], synth.id, id)
+                                        print(file_id)
+                                        fname = secure_filename(f'{file_id}.webm')
+                                        path = os.path.join(app.config['SYNTH_DIR'],
+                                            str(id), fname)
+                                        wav_path = os.path.join(app.config['WAV_SYNTH_AUDIO_DIR'],
+                                            str(id),
+                                            secure_filename(f'{file_id}.wav'))
 
+                                        zip_info.filename = secure_filename(f'{file_id}.wav')
+                                        zip.extract(zip_info, wav_path_dir)
+                                        sound = AudioSegment.from_wav(wav_path)
+                                        sound.export(path, format="webm")
+                                        
+                                        synth.original_fname = row[0]
+                                        synth.token_id = int(row[1])
+                                        synth.user_id = current_user.id#request.args.get('user_id')
+                                        synth.mos_instance_id = mos_instance.id
+                                        synth.file_id = file_id
+                                        synth.fname = fname
+                                        synth.path = path
+                                        synth.wav_path = wav_path
+                                        synth.text = Token.query.get(int(row[1])).text
 
+                                        mos_instance = MosInstance()
+                                        mos_instance.mos_id = id
+                                        mos_instance.token_id = int(row[1])
+                                        mos_instance.synth_id = synth.id
+                                        mos_instance.path = path
+                                        mos_instance.text = Token.query.get(int(row[1])).text
+                                        mos_instance.is_synth = True
+                                        mos_instance.selected = False
+                                        mos.mos_objects.append(mos_instance)            
+                            else:
+                                pass
+                    db.session.commit()
+
+                    #db.session.commit()
             return redirect(url_for('mos', id=id))                    
         except Exception as e: 
             print(e)
             print("OH NO")
-    mos = Mos.query.get(id)
-    print(mos.number_selected)
     mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
         request.args.get('sort_by', default='id'),
         order=request.args.get('order', default='desc'))).all()
@@ -745,7 +814,7 @@ def mos(id):
 @login_required
 @roles_accepted('admin')
 def mos_test(id):
-    user_id = 1#request.args.get('user_id')
+    user_id = current_user.id
     user_id = int(user_id)
     user = User.query.get(user_id)
     mos = Mos.query.get(id)
@@ -753,29 +822,33 @@ def mos_test(id):
         request.args.get('sort_by', default='id'),
         order=request.args.get('order', default='desc'))).all()
     mos_list_to_use = []
-    print(mos_list)
     for i in mos_list:
         if (i.selected and i.path):
             mos_list_to_use.append(i)
     random.shuffle(mos_list_to_use)
-    tokens=[]
-    recordings=[]
-    recordings_url=[]
+    audio=[]
+    audio_url=[]
     info = {'paths': [], 'texts': []}
     for i in mos_list_to_use:
-        tokens.append(i.token)
-        recordings.append(i.recording)
-        recordings_url.append(i.recording.get_download_url())
+        print(i)
+        if i.recording:
+            audio.append(i.recording)
+            audio_url.append(i.recording.get_download_url())
+        elif i.synth:
+            audio.append(i.synth)
+            audio_url.append(i.synth.get_download_url())
+        else:
+            continue
         info['paths'].append(i.path)
         info['texts'].append(i.get_text)
     info_json = json.dumps(info)
     collection = Collection.query.get(mos.collection_id)
-    recordings_json = json.dumps([r.get_dict() for r in recordings])
+    audio_json = json.dumps([r.get_dict() for r in audio])
     mos_list_json = json.dumps([r.get_dict() for r in mos_list_to_use])
 
     return render_template('mos_test.jinja', mos=mos, mos_list=mos_list_to_use,
-        collection=collection, user=user, token=tokens[0], recordings=recordings_json, 
-        recordings_url=recordings_url, json_mos=mos_list_json, json_tokens=json.dumps([t.get_dict() for t in tokens]),
+        user=user, recordings=audio_json, 
+        recordings_url=audio_url, json_mos=mos_list_json,
         section='mos')
 
 
@@ -788,9 +861,9 @@ def stream_MOS_zip(id):
         request.args.get('sort_by', default='id'),
         order=request.args.get('order', default='desc'))).all()
 
-    results =''
+    results ='mos_instance_id\ttoken_id\ttoken_text\n'
     for i in mos_list:
-        results += "{}\t{}\n".format(str(i.id), i.token.text)
+        results += "{}\t{}\t{}\n".format(str(i.id), str(i.token.id), i.token.text)
 
     generator = (cell for row in results
                     for cell in row)

@@ -627,6 +627,113 @@ class Recording(BaseModel, db.Model):
     is_verified = db.Column(db.Boolean, default=False)
     is_secondarily_verified = db.Column(db.Boolean, default=False)
 
+class Synth(BaseModel, db.Model):
+    __tablename__ = 'Synth'
+
+
+    def get_fname(self):
+        return self.fname
+
+    def get_download_url(self):
+        return url_for('download_synth', id=self.id)
+
+
+    def get_directory(self):
+        return os.path.dirname(self.path)
+
+    def get_path(self):
+        return self.path
+
+    def get_wav_path(self):
+        return self.wav_path
+
+    def get_zip_fname(self):
+        if self.wav_path is not None:
+            return os.path.split(self.wav_path)[1]
+        return self.fname
+
+    def get_zip_path(self):
+        if self.wav_path is not None:
+            return self.wav_path
+        return self.path
+
+
+    def get_configured_path(self):
+        '''
+        Get the path the program believes the token should be stored at
+        w.r.t. the current TOKEN_DIR environment variable
+        '''
+        file_id = '{}_r{:09d}'.format(os.path.splitext(self.original_fname)[0], self.id)
+        fname = secure_filename('{}.wav'.format(self.file_id))
+        path = os.path.join(app.config['SYNTH_DIR'],
+            str(self.token.collection_id), self.fname)
+        return path
+
+    def get_file_id(self):
+        if self.fname is not None:
+            return os.path.splitext(self.fname)[0]
+        else:
+            # not registered, (using) primary key
+            return "nrpk_{:09d}".format(self.id)
+
+    def get_user(self):
+        return User.query.get(self.user_id)
+
+    def get_token(self):
+        if self.token_id is not None:
+            return Token.query.get(self.token_id)
+        return None
+
+    def get_printable_id(self):
+        return "S-{:09d}".format(self.id)
+
+    def get_printable_duration(self):
+        if self.duration is not None:
+            return "{:2.2f}s".format(self.duration)
+        else:
+            return "n/a"
+
+
+    def _set_path(self):
+        # TODO: deal with file endings
+        self.file_id = '{}_s{:09d}_m{:09d}'.format(
+            os.path.splitext(self.original_fname)[0], self.id, self.token_id)
+        self.fname = secure_filename(f'{self.file_id}.webm')
+        self.path = os.path.join(app.config['SYNTH_DIR'],
+            str(self.mos_instance_id), self.fname)
+        self.wav_path = os.path.join(app.config['WAV_SYNTH_AUDIO_DIR'],
+            str(self.mos_instance_id),
+            secure_filename(f'{self.file_id}.wav'))
+
+    def get_dict(self):
+        if self.token is not None:
+            return {'id':self.id, 'token': self.token.get_dict()}
+        else:
+            return {'id':self.id, 'text': self.text, 'file_id': '', 'url': ''}
+
+    @property
+    def token(self):
+        if self.token_id is not None:
+            return Token.query.get(self.token_id)
+        return None
+
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    original_fname = db.Column(db.String, default='Unknown')
+
+    token_id = db.Column(db.Integer, db.ForeignKey('Token.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    mos_instance_id = db.Column(db.Integer, db.ForeignKey('MosInstance.id'))
+    text = db.Column(db.String)
+    duration = db.Column(db.Float)
+
+    fname = db.Column(db.String)
+    file_id = db.Column(db.String)
+    path = db.Column(db.String)
+    wav_path = db.Column(db.String)
+
+
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
 
@@ -1159,6 +1266,7 @@ class MosInstance(BaseModel, db.Model):
     mos_id = db.Column(db.Integer, db.ForeignKey('Mos.id'))
     token_id = db.Column(db.Integer, db.ForeignKey('Token.id'))
     recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
+    synth_id = db.Column(db.Integer, db.ForeignKey('Synth.id'))
     path = db.Column(db.String)
     text = db.Column(db.String)
     ratings = db.relationship("MosRating", lazy="joined")
@@ -1167,9 +1275,12 @@ class MosInstance(BaseModel, db.Model):
         'label': 'Hafa upptoku'})
 
     def get_dict(self):
+        token = None
+        if self.token is not None:
+            token = self.token.get_dict()
         return {
             'id':self.id, 
-            'token': self.token.get_dict(),
+            'token': token,
             'mos_id':self.mos_id, 
             'path': self.path,
             'text':self.text, 
@@ -1205,17 +1316,30 @@ class MosInstance(BaseModel, db.Model):
             for i in self.ratings:
                 total_ratings += i.rating
             total_ratings = total_ratings/len(self.ratings)
-            return total_ratings
+            return round(total_ratings, 2)
         else:
             return "-"
 
     @property
     def token(self):
-        return Recording.query.get(self.recording_id).get_token()
+        if (self.recording_id):
+            return Recording.query.get(self.recording_id).get_token()
+        else:
+            return None
 
     @property
     def recording(self):
-        return Recording.query.get(self.recording_id)
+        if (self.recording_id):
+            return Recording.query.get(self.recording_id)
+        else:
+            return None
+    
+    @property
+    def synth(self):
+        if self.synth_id:
+            return Synth.query.get(self.synth_id)
+        else:
+            return None
 
 class MosRating(BaseModel, db.Model):
     __tablename__ = 'MosRating'
@@ -1227,5 +1351,5 @@ class MosRating(BaseModel, db.Model):
     })
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     MosInastance_id = db.Column(db.Integer, db.ForeignKey('MosInstance.id'))
-    number = db.Column(db.Integer)
+    placement = db.Column(db.Integer)
 

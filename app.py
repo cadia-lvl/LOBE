@@ -32,7 +32,7 @@ from forms import (ApplicationForm, BulkTokenForm, CollectionForm,
                    VerifierRegisterForm, VerifierTitleForm,
                    collection_edit_form, PremiumItemForm)
 from ListPagination import ListPagination
-from managers import create_collection_zip, trim_collection_handler
+from managers import create_collection_zip, create_collection_info
 from models import (Application, Collection, Configuration, Posting, Recording,
                     Role, Session, Token, User, Verification, VerifierFont,
                     VerifierIcon, VerifierProgression, VerifierQuote,
@@ -385,6 +385,21 @@ def stream_collection_zip(id):
         ],
         direct_passthrough=True)
 
+@app.route('/collections/<int:id>/collection_info')
+@login_required
+@roles_accepted('admin')
+def download_collection_info(id):
+    info = create_collection_info(id)
+    json.dump(info,
+        open(os.path.join(app.config['TEMP_DIR'], f'{id}_info.json'),
+        'w', encoding='utf-8'), ensure_ascii=False, indent=4)
+    try:
+        return send_from_directory(app.config['TEMP_DIR'],
+            f'{id}_info.json',
+            as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading info : {}\n{}".format(error,traceback.format_exc()))
 
 @app.route('/collections/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required

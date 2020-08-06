@@ -59,7 +59,7 @@ COLORS = {
 
 ECONOMY = {
     'weekly_challenge': {
-        'goal': 15000,
+        'goal': 5000,
         'coin_reward': 300,
         'experience_reward': 3000,
         'extra_interval': 2000,
@@ -163,6 +163,20 @@ ECONOMY = {
                 'coin_reward': 500,
                 'experience_reward': 1500,
                 'fa_id': 'fa fa-user-secret'
+            },
+            '4':{
+                'title': 'Forseti spæjaraakademíunnar',
+                'goal': 300,
+                'coin_reward': 700,
+                'experience_reward': 2500,
+                'fa_id': 'fa fa-university'
+            },
+            '5':{
+                'title': 'Nóbelsverðlaun í spæjarafræðum',
+                'goal': 500,
+                'coin_reward': 1000,
+                'experience_reward': 5000,
+                'fa_id': 'fa fa-medal'
             }
         },
         'streak_minimum': 500,

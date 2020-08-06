@@ -596,6 +596,23 @@ def give_experience():
 
 
 @manager.command
+def delta_balance():
+    verifiers = get_verifiers()
+    print("Select a verifier id from the ones below:")
+    for verifier in verifiers:
+        print(f'{verifier.name} - [{verifier.id}]')
+    user_id = int(input('user id: '))
+    user = User.query.get(user_id)
+
+    coins = int(input('coin amount: '))
+    experience = int(input('exp amount: '))
+    progression = user.progression
+    progression.lobe_coins += coins
+    progression.experience += experience
+
+    db.session.commit()
+
+@manager.command
 def reset_weekly_challenge():
     verifiers = get_verifiers()
     best_verifier = sorted(
@@ -624,10 +641,10 @@ def reset_weekly_challenge():
 
         progression = verifier.progression
         progression.weekly_verifies = 0
-        progression.lobe_coins += coin_price
-        progression.experience += experience_price
-        progression.weekly_coin_price = coin_price
-        progression.weekly_experience_price = experience_price
+        progression.lobe_coins += v_coin_price
+        progression.experience += v_experience_price
+        progression.weekly_coin_price = v_coin_price
+        progression.weekly_experience_price = v_experience_price
         progression.has_seen_weekly_prices = False
 
     db.session.commit()
@@ -683,6 +700,48 @@ def accurate_time():
     out = float(out.strip('\n')) - collection.num_recorded_tokens*2
     hours = out/3600
     print(f'The collection has {hours:.3f} recorded hours')
+
+
+@manager.command
+def session_verification_status():
+    session_id = int(input('Select a session ID: '))
+    session = Session.query.get(session_id)
+    print(f'Session.is_verified: {session.is_verified}')
+    print(f'Session.is_secondarily_verified: {session.is_secondarily_verified}')
+    for recording in session.recordings:
+        print(f'Recording {recording.id} is_verified: {recording.is_verified}')
+        print(f'Recording {recording.id} is_secondarily_verified: {recording.is_secondarily_verified}')
+
+@manager.command
+def set_session_verified():
+    session_id = int(input('Select a session ID: '))
+    session = Session.query.get(session_id)
+    session.is_verified = True
+    db.session.commit()
+
+@manager.command
+def delete_session_verifications():
+    session_id = int(input('Select a session ID: '))
+    session = Session.query.get(session_id)
+    session.is_verified = False
+    session.is_secondarily_verified = False
+
+    for recording in session.recordings:
+        for verification in recording.verifications:
+            db.session.delete(verification)
+        recording.is_verified = False
+        recording.is_secondarily_verified = False
+    db.session.commit()
+
+@manager.command
+def delete_recording_verifications():
+    recording_id = int(input('Select a recording ID: '))
+    recording = Recording.query.get(recording_id)
+    for verification in recording.verifications:
+            db.session.delete(verification)
+    recording.is_verified = False
+    recording.is_secondarily_verified = False
+    db.session.commit()
 
 
 manager.add_command('db', MigrateCommand)

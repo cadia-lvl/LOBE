@@ -27,7 +27,7 @@ from sqlalchemy import or_, and_
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
-                delete_session_db, delete_token_db, save_recording_session, save_MOS_ratings, resolve_order,
+                delete_session_db, delete_token_db, delete_mos_instance_db, save_recording_session, save_MOS_ratings, resolve_order,
                 get_verifiers, insert_trims)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
@@ -36,7 +36,7 @@ from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm,
                    VerifierFontForm, DailySpinForm, MosForm, MosItemSelectionForm, MosUploadForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
-    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, Mos, MosInstance, Synth, db
+    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, Mos, MosInstance, Synth, SynthToken, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
@@ -462,6 +462,28 @@ def delete_collection_archive(id):
         flash("Söfnun hefur ekkert skjalasafn", category='warning')
     return redirect(url_for('collection', id=id))
 
+# SYNTHTOKEN ROUTES
+@app.route('/synth_tokens/<int:id>/')
+@login_required
+@roles_accepted('admin', 'Notandi')
+def synyh_token(id):
+    return render_template('synth_token.jinja', token=SynthToken.query.get(id),
+        section='token')
+
+
+@app.route('/synth_tokens/<int:id>/download/')
+@login_required
+@roles_accepted('admin', 'Notandi')
+def download_synth_token(id):
+    token = SynthToken.query.get(id)
+    try:
+        return send_from_directory(token.get_directory(), token.fname,
+            as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading a token : {}\n{}".format(error,traceback.format_exc()))
+
+
 
 # TOKEN ROUTES
 @app.route('/tokens/<int:id>/')
@@ -740,11 +762,11 @@ def mos(id):
                     mc = tsvfile.read()
                     c = csv.StringIO(mc.decode())
                     rd = csv.reader(c, delimiter="\t")
-                    #listOfFileNames = zip.namelist()
                     pathlib.Path(wav_path_dir).mkdir(exist_ok=True)
                     pathlib.Path(webm_path).mkdir(exist_ok=True) 
+                    synth_tokens = []
                     for row in rd:
-                        if row[0]:
+                        if row[0] and len(row) == 3:
                             if row[1]:
                                 for zip_info in zip.infolist():
                                     if zip_info.filename[-1] == '/':
@@ -756,10 +778,8 @@ def mos(id):
                                         db.session.add(synth)
                                         db.session.add(mos_instance)
                                         db.session.flush()
-                                        print("sadgasg", synth.id)
                                         file_id = '{}_s{:09d}_m{:09d}'.format(
                                             os.path.splitext(os.path.basename(zip_info.filename))[0], synth.id, id)
-                                        print(file_id)
                                         fname = secure_filename(f'{file_id}.webm')
                                         path = os.path.join(app.config['SYNTH_DIR'],
                                             str(id), fname)
@@ -774,7 +794,7 @@ def mos(id):
                                         
                                         synth.original_fname = row[0]
                                         synth.token_id = int(row[1])
-                                        synth.user_id = current_user.id#request.args.get('user_id')
+                                        synth.user_id = current_user.id
                                         synth.mos_instance_id = mos_instance.id
                                         synth.file_id = file_id
                                         synth.fname = fname
@@ -791,23 +811,94 @@ def mos(id):
                                         mos_instance.is_synth = True
                                         mos_instance.selected = False
                                         mos.mos_objects.append(mos_instance)            
+                            elif row[0] and row[2]:
+                                for zip_info in zip.infolist():
+                                    if zip_info.filename[-1] == '/':
+                                        continue
+                                    zip_info.filename = os.path.basename(zip_info.filename)
+                                    if zip_info.filename == row[0]:
+                                        synthTokenName = '{}_m{:09d}'.format(
+                                            zip_name, id)
+                                        mos_instance = MosInstance()
+                                        synth = Synth()
+                                        synthToken = SynthToken(row[2], synthTokenName, id)
+                                        db.session.add(synthToken)
+                                        db.session.add(synth)
+                                        db.session.add(mos_instance)
+                                        db.session.flush()
+                                        file_id = '{}_s{:09d}_m{:09d}'.format(
+                                            os.path.splitext(os.path.basename(zip_info.filename))[0], synth.id, id)
+                                        fname = secure_filename(f'{file_id}.webm')
+                                        path = os.path.join(app.config['SYNTH_DIR'],
+                                            str(id), fname)
+                                        wav_path = os.path.join(app.config['WAV_SYNTH_AUDIO_DIR'],
+                                            str(id),
+                                            secure_filename(f'{file_id}.wav'))
+
+                                        zip_info.filename = secure_filename(f'{file_id}.wav')
+                                        zip.extract(zip_info, wav_path_dir)
+                                        sound = AudioSegment.from_wav(wav_path)
+                                        sound.export(path, format="webm")
+                                        
+                                        synth.original_fname = row[0]
+                                        synth.user_id = current_user.id
+                                        synth.mos_instance_id = mos_instance.id
+                                        synth.synthToken_id = synthToken.id
+                                        synth.file_id = file_id
+                                        synth.fname = fname
+                                        synth.path = path
+                                        synth.wav_path = wav_path
+                                        synth.text = row[2]
+
+                                        mos_instance = MosInstance()
+                                        mos_instance.mos_id = id
+                                        mos_instance.synth_id = synth.id
+                                        mos_instance.path = path
+                                        mos_instance.text = row[2]
+                                        mos_instance.is_synth = True
+                                        mos_instance.selected = False
+                                        mos.mos_objects.append(mos_instance)  
+
+                                        synthToken.synth_id = synth.id   
+                                        synth_tokens.append(synthToken)
                             else:
                                 pass
                     db.session.commit()
-
-                    #db.session.commit()
+                    if len(synth_tokens) > 0:
+                        synth_token_dir = app.config["SYNTH_TOKEN_DIR"]+"{}".format(id)
+                        pathlib.Path(synth_token_dir).mkdir(exist_ok=True)
+                        for token in synth_tokens:
+                            token.save_to_disk()
+                        db.session.commit()
             return redirect(url_for('mos', id=id))                    
         except Exception as e: 
             print(e)
-            print("OH NO")
     mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
         request.args.get('sort_by', default='id'),
         order=request.args.get('order', default='desc'))).all()
-    isReady = True
+
+    combined_mos_list = []
     for m in mos_list:
         m.selection_form = MosItemSelectionForm(obj=m)
+        if m.token_id is None:
+            combined_mos_list.append([m])
+        elif len(combined_mos_list) == 0:
+            combined_mos_list.append([m])
+        else:
+            exists = False
+            for c in combined_mos_list:
+                if m.token_id == c[0].token_id:
+                    c.append(m)
+                    exists = True
+            if not exists:
+                combined_mos_list.append([m])
+
+    for i in combined_mos_list:
+        i.sort(key=lambda x: x.is_synth)
+
+
     collection=Collection.query.get(mos.collection_id)
-    return render_template('mos.jinja', mos=mos, mos_list=mos_list,
+    return render_template('mos.jinja', mos=mos, combined_mos_list = combined_mos_list, mos_list=mos_list,
         collection=collection, mos_form=form, section='mos')
 
 @app.route('/mos/<int:id>/mostest', methods=['GET', 'POST'])
@@ -907,7 +998,17 @@ def mos_instance_edit(id):
         errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
         return Response(errorMessage, status=500)
 
-
+@app.route('/mos/instances/<int:id>/delete/', methods=['GET'])
+@login_required
+@roles_accepted('admin')
+def delete_mos_instance(id):
+    instance = MosInstance.query.get(id)
+    did_delete = delete_mos_instance_db(instance)
+    if did_delete:
+        flash("Línu var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða línu", category='warning')
+    return redirect(url_for('rec_session_list'))
 
 
 @app.route('/mos/collection/<int:id>/create', methods=['GET', 'POST'])
@@ -925,7 +1026,7 @@ def mos_create(id):
             mos.collection = Collection.query.get(id)
             tokens = Token.query.filter(Token.num_recordings > 0) \
                                 .filter(Token.collection_id == id).all()
-            random_tokens = random.sample(tokens, form.num_samples.data-1)
+            random_tokens = random.sample(tokens, form.num_samples.data)
             for i in random_tokens:
                 mos_instance = MosInstance()
                 mos_instance.mos_id = mos.id
@@ -948,40 +1049,6 @@ def mos_create(id):
         action=url_for('mos_create', id=id), section='mos', type='create')
 
 
-@app.route('/mos/<int:id>/edit/', methods=['GET', 'POST'])
-@login_required
-@roles_accepted('admin')
-def mos_edit(id):
-    mos = Mos.query.get(id)
-    collection_id = mos.collection_id
-    max_num_recorded = Collection.query.get(collection_id).num_recorded_tokens
-    form = MosForm(max_num_recorded, obj=mos)
-    try:
-        if request.method == 'POST' and form.validate():
-            form.populate_obj(mos)
-            mos.collection = Collection.query.get(collection_id)
-            tokens = Token.query.filter(Token.num_recordings > 0) \
-                                .filter(Token.collection_id == collection_id).all()
-            print(form.num_samples.data)
-            random_tokens = random.sample(tokens, form.num_samples.data-1)
-            for i in random_tokens:
-                mos_instance = MosInstance()
-                mos_instance.mos_id = mos.id
-                rand_recording_num = random.randint(0, len(i.recordings)-1)
-                mos_instance.token_id = i.id
-                mos_instance.recording_id = i.recordings[0].id
-                mos_instance.mos_instance_type = "recording"
-                mos_instance.mos_selected = False
-                mos.mos_objects.append(mos_instance)            
-            db.session.add(mos)
-            db.session.commit()
-            flash("MOS var breytt", category="success")
-            return redirect(url_for('mos', id=mos.id))
-    except Exception as error:
-        flash("Error updating MOS.", category="danger")
-        app.logger.error("Error updating MOS {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form,
-        action=url_for('mos_edit', id=id), section='mos', type='edit')
 
 # SESSION ROUTES
 @app.route('/sessions/')

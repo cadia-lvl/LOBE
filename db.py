@@ -239,6 +239,27 @@ def delete_token_db(token):
     db.session.commit()
     return True
 
+def delete_mos_instance_db(instance):
+    if instance.is_synth:
+        if instance.token_id is None:
+            try:
+                os.remove(instance.token.get_path())
+            except Exception as error:
+                print(f'{error}\n{traceback.format_exc()}')
+                return False
+            db.session.delete(instance.token.get_path())
+        synth = instance.synth
+        try:
+            os.remove(synth.get_path())
+        except Exception as error:
+            print(f'{error}\n{traceback.format_exc()}')
+            return False
+        db.session.delete(synth)
+    db.session.delete(instanace)
+
+    db.session.commit()
+    return True
+
 
 def delete_session_db(record_session):
     tokens = [r.get_token() for r in record_session.recordings]

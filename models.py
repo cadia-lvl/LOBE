@@ -414,6 +414,98 @@ class Token(BaseModel, db.Model):
     recordings = db.relationship("Recording", lazy='joined', backref='token')
 
 
+class SynthToken(BaseModel, db.Model):
+    __tablename__ = 'SynthToken'
+
+    def __init__(self, text, original_fname, mos_id):
+        self.text = text
+        self.original_fname = original_fname
+        self.mos_id = mos_id
+        self.marked_as_bad = False
+
+
+    def get_url(self):
+        return url_for('synyh_token', id=self.id)
+
+
+    def get_path(self):
+        return self.path
+
+    def get_fname(self):
+        return self.fname
+
+    @hybrid_property
+    def length(self):
+        return len(self.text)
+
+    def short_text(self, limit=20):
+        if self.length < limit:
+            return self.text
+        else:
+            return f'{self.text[:limit]}...'
+
+    def save_to_disk(self):
+        self.set_path()
+        f = open(self.path, 'w', encoding='utf-8')
+        f.write(self.text)
+        f.close()
+
+
+    def set_path(self):
+        self.fname = secure_filename("{}_sy{:09d}.token".format(
+            os.path.splitext(self.original_fname)[0], self.id))
+        self.path = os.path.join(
+            app.config['SYNTH_TOKEN_DIR'], str(self.mos_id), self.fname)
+
+    def get_configured_path(self):
+        '''
+        Get the path the program believes the token should be stored at
+        w.r.t. the current TOKEN_DIR environment variable
+        '''
+        fname = secure_filename("{}_{:09d}.token".format(
+            os.path.splitext(self.original_fname)[0], self.id))
+        path = os.path.join(
+            app.config['SYNTH_TOKEN_DIR'], str(self.mos_id), self.fname)
+        return path
+
+    def get_dict(self):
+        return {'id':self.id, 'text':self.text, 'file_id':self.get_file_id(),
+        'url':self.get_url()}
+
+    def get_file_id(self):
+        return os.path.splitext(self.fname)[0]
+
+    def get_printable_id(self):
+        return "Sy-{:09d}".format(self.id)
+
+    def get_directory(self):
+        return os.path.dirname(self.path)
+
+    def get_download_url(self):
+        return url_for('download_synth_token', id=self.id)
+
+    @property
+    def synth(self):
+        return Synth.query.get(self.synth_id)
+
+
+    @hybrid_property
+    def mos(self):
+        return Mos.query.get(self.mos_id)
+
+    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    text = db.Column(db.String)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    original_fname = db.Column(db.String, default='Unknown')
+    mos_id = db.Column(db.Integer, db.ForeignKey('Mos.id'))
+    synth_id = db.Column(db.Integer, db.ForeignKey('Synth.id'))
+
+    fname = db.Column(db.String)
+    path = db.Column(db.String)
+    marked_as_bad = db.Column(db.Boolean, default=False)
+    
+
 class Rating(BaseModel, db.Model):
     __tablename__ = 'Rating'
 
@@ -715,6 +807,8 @@ class Synth(BaseModel, db.Model):
     def token(self):
         if self.token_id is not None:
             return Token.query.get(self.token_id)
+        elif self.synthToken_id is not None:
+            return SynthToken.query.get(self.synthToken_id)
         return None
 
 
@@ -723,8 +817,10 @@ class Synth(BaseModel, db.Model):
     original_fname = db.Column(db.String, default='Unknown')
 
     token_id = db.Column(db.Integer, db.ForeignKey('Token.id'))
+    synthToken_id = db.Column(db.Integer, db.ForeignKey('SynthToken.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     mos_instance_id = db.Column(db.Integer, db.ForeignKey('MosInstance.id'))
+    
     text = db.Column(db.String)
     duration = db.Column(db.Float)
 
@@ -1242,6 +1338,9 @@ class Mos(BaseModel, db.Model):
     num_samples = db.Column(db.Integer, default=0, info={
         'label': 'Fjöldi setninga'
     })
+    tokens = db.relationship("SynthToken", lazy='select', backref='mos',
+        cascade='all, delete, delete-orphan')
+
     mos_objects = db.relationship("MosInstance", lazy='joined')
 
     @property
@@ -1273,7 +1372,7 @@ class MosInstance(BaseModel, db.Model):
     is_synth = db.Column(db.Boolean, default=False)
     selected = db.Column(db.Boolean, default=False, info={
         'label': 'Hafa upptoku'})
-
+    
     def get_dict(self):
         token = None
         if self.token is not None:
@@ -1322,10 +1421,11 @@ class MosInstance(BaseModel, db.Model):
 
     @property
     def token(self):
-        if (self.recording_id):
-            return Recording.query.get(self.recording_id).get_token()
-        else:
-            return None
+        if self.token_id is not None:
+            return Token.query.get(self.token_id)
+        elif self.synth_id is not None:
+            return Synth.query.get(self.synth_id).token
+        return None
 
     @property
     def recording(self):

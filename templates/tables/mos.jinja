@@ -8,7 +8,10 @@
                 Texti
             </th>
             <th>
-                MOS-Einkunn
+                MOS-Einkunn-Upptaka
+            </th>
+            <th>
+                MOS-Einkunn-Synth
             </th>
             <th>
                 Er upptaka
@@ -17,83 +20,113 @@
                 Er talgerfing
             </th>
             <th>
+                <button class="btn btn-secondary btn-sm mr-2" type="button">
+                    Merkja alla
+                </button>
+                <button class="btn btn-secondary btn-sm mr-2" type="button">
+                    Afmerkja alla
+                </button>
+            </th>
+            <th>
             </th>
         </thead>
         <tbody>
-            {% for mos in mos_list %}
-                {% if mos.token_id %}
-                    <tr>
-                        {% if mos.token %}
-                            <td><a href={{mos.token.get_url()}} class='{% if mos.token.marked_as_bad %} text-warning {% endif %}'><code>{{mos.token.get_printable_id()}}</code></a></td>
-                        {% else %}
-                            <td>-</td>
-                        {% endif %}
+            {% for mos in combined_mos_list %}
+                <tr>
+                    {% if mos|length == 1 %}
                         
-                        <td>{{mos.get_text}}</td>
-                        <td>{{mos.get_text}}</td>
-                        <td>{{mos.get_rating}}</td>
-                        {% if not mos.is_synth %}
-                            <td class="text-success">Já</td>
-                        {% else %}
-                            <td class="text-danger">Nei</td>
-                        {% endif %}
-                        {% if mos.is_synth %}
-                            <td class="text-success">Já</td>
-                        {% else %}
-                            <td class="text-danger">Nei</td>
-                        {% endif %}
-                        <td>
-                            <form class="mos-check-button" id="verificationForm" name="mos-{{mos.id}}" action="{{mos.ajax_edit_action}}" method="POST">
-                                {% for field in mos.selection_form %}
-                                    <div class="custom-control custom-switch">
+                            {% if mos[0].token %}
+                                <td><a href={{mos[0].token.get_url()}} class='{% if mos[0].token.marked_as_bad %} text-warning {% endif %}'><code>{{mos[0].token.get_printable_id()}}</code></a></td>
+                            {% else %}
+                                <td>-</td>
+                            {% endif %}
+                            
+                            <td>{{mos[0].get_text}}</td>
+                            {% if mos[0].is_synth %}
+                                <td>-</td>
+                                <td>{{mos[0].get_rating}}</td>
+                            {% else %}
+                                <td>{{mos[0].get_rating}}</td>
+                                <td>-</td>
+                            {% endif%}
+                            {% if not mos[0].is_synth %}
+                                <td class="text-success">Já</td>
+                            {% else %}
+                                <td class="text-danger">Nei</td>
+                            {% endif %}
+                            {% if mos[0].is_synth %}
+                                <td class="text-success">Já</td>
+                            {% else %}
+                                <td class="text-danger">Nei</td>
+                            {% endif %}
+                            <td>
+                                <form class="mos-check-button" id="verificationForm" name="mos-{{mos[0].id}}" action="{{mos[0].ajax_edit_action}}" method="POST">
+                                    {% for field in mos[0].selection_form %}
+                                        <div class="custom-control custom-switch">
 
-                                    {% if field.name == "selected" %}
-                                        {% if mos.token_id%}
+                                        {% if field.name == "selected" %}
                                             {{field(checked=field.data, id="check-field", class_="")}}
-                                        {% else %}
-                                            {{field(checked=field.data, id="check-field", class_="", disabled=true)}}
+                                            
+                                            {{field.label(class_="mosCheckboxLabel")}}
                                         {% endif %}
-                                        {{field.label(class_="mosCheckboxLabel")}}
-                                    {% endif %}
-                                    </div>
-                                {% endfor %}
-                            </form>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td>-</td>
-                        <td>{{mos.get_text}}</td>
-                        <td>{{mos.get_rating}}</td>
-                        {% if not mos.is_synth %}
-                            <td class="text-success">Já</td>
+                                        </div>
+                                    {% endfor %}
+                                </form>
+                            </td>
+                            <td>
+                            <button class="btn btn-secondary btn-sm text-danger" type="button" data-toggle='modal', data-target='#deleteModal'>
+                                {{macros.btn_icon('trash', 'r')}}
+                            </button>
+                            </td>
                         {% else %}
-                            <td class="text-danger">Nei</td>
+                            <tr>
+                                {% if mos[0].token %}
+                                    <td><a href={{mos[0].token.get_url()}} class='{% if mos[0].token.marked_as_bad %} text-warning {% endif %}'><code>{{mos[0].token.get_printable_id()}}</code></a></td>
+                                {% else %}
+                                    <td>-</td>
+                                {% endif %}
+                                
+                                <td>{{mos[0].get_text}}</td>
+                                <td>{{mos[0].get_rating}}</td>
+                                <td>{{mos[1].get_rating}}</td>
+                                {% if not mos[0].is_synth %}
+                                    <td class="text-success">Já</td>
+                                {% else %}
+                                    <td class="text-danger">Nei</td>
+                                {% endif %}
+                                {% if mos[1].is_synth %}
+                                    <td class="text-success">Já</td>
+                                {% else %}
+                                    <td class="text-danger">Nei</td>
+                                {% endif %}
+                                <td>
+                                    {% for m in mos %}
+                                        <form class="mos-check-button" id="verificationForm" name="mos-{{m.id}}" action="{{m.ajax_edit_action}}" method="POST">
+                                            {% for field in m.selection_form %}
+                                                <div class="custom-control custom-switch">
+                                                {% if field.name == "selected" %}
+                                                    {{field(checked=field.data, id="check-field", class_="")}}
+                                                    {% if m.is_synth %}
+                                                        Hafa talgerfingu
+                                                    {% else %}
+                                                        {{field.label(class_="mosCheckboxLabel")}}
+                                                    {% endif %}
+                                                {% endif %}
+                                                </div>
+                                            {% endfor %}
+                                        </form>
+                                    {% endfor%}
+                                </td>
+                                <td>
+                                    <button class="btn btn-secondary btn-sm text-danger" type="button" data-toggle='modal', data-target='#deleteModal'>
+                                        {{macros.btn_icon('trash', 'r')}}
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm text-danger" type="button" data-toggle='modal', data-target='#deleteModal'>
+                                        {{macros.btn_icon('trash', 'r')}}
+                                    </button>
+                                </td>
                         {% endif %}
-                        {% if mos.is_synth %}
-                            <td class="text-success">Já</td>
-                        {% else %}
-                            <td class="text-danger">Nei</td>
-                        {% endif %}
-                        <td>
-                            <form class="mos-check-button" id="verificationForm" name="mos-{{mos.id}}" action="{{mos.ajax_edit_action}}" method="POST">
-                                {% for field in mos.selection_form %}
-                                    <div class="custom-control custom-switch">
-
-                                    {% if field.name == "selected" %}
-                                        {% if mos.token_id%}
-                                            {{field(checked=field.data, id="check-field", class_="")}}
-                                        {% else %}
-                                            {{field(checked=field.data, id="check-field", class_="", disabled=true)}}
-                                        {% endif %}
-                                        {{field.label(class_="mosCheckboxLabel")}}
-                                    {% endif %}
-                                    </div>
-                                {% endfor %}
-                            </form>
-                        </td>
                     </tr>
-                {% endif%}
             {% endfor %}
         </tbody>
     </table>

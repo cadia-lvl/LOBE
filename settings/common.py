@@ -7,6 +7,7 @@ APP_ROOT = os.path.abspath(os.path.join(
 DATA_BASE_DIR = os.path.join(APP_ROOT, 'data/')
 
 TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'tokens/')
+SYNTH_TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'synth_tokens/')
 RECORD_DIR = os.path.join(DATA_BASE_DIR, 'records/')
 SYNTH_DIR = os.path.join(DATA_BASE_DIR, 'synths/')
 VIDEO_DIR = os.path.join(DATA_BASE_DIR, 'videos/')

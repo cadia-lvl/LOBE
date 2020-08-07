@@ -20,10 +20,6 @@
             {{macros.btn_icon('upload', 'r')}}
             Hlaða upp talgerfingum
         </button>
-        <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_edit", id=mos.id)}}'>
-            {{macros.btn_icon('plus', 'r')}}
-            Breyta
-        </a>
         {% if mos.number_selected > 0%}
         <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_test", id=mos.id)}}'>
             {{macros.btn_icon('play', 'r')}}

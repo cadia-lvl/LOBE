@@ -4,11 +4,21 @@ import math
 import multiprocessing
 import os
 import traceback
+from flask import current_app as app
+import csv
+from pydub import AudioSegment
+from zipfile import ZipFile
+import pathlib
+from pathlib import Path
+from werkzeug import secure_filename
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from functools import partialmethod
 from flask import flash
-from models import Collection, Recording, Session, Token, Trim, User, db, Mos, MosInstance, MosRating
+from flask_security import current_user
+from models import (Collection, Recording, Session, Token, Trim, 
+                    User, db, Mos, MosInstance, Synth, SynthToken, 
+                    MosRating)
 
 def create_tokens(collection_id, files, is_g2p):
     tokens = []
@@ -87,8 +97,127 @@ def insert_collection(form):
     db.session.commit()
     return collection
 
-def save_synthesised_wav(files):
-    pass
+def save_synthesised_wav(zip, zip_name, tsv_name, mos, id):
+    print('asdfasdasfd')
+    with zip.open(tsv_name) as tsvfile:
+        wav_path_dir = app.config["WAV_SYNTH_AUDIO_DIR"]+"{}".format(id)
+        webm_path = app.config["SYNTH_DIR"]+"{}".format(id)
+        mc = tsvfile.read()
+        c = csv.StringIO(mc.decode())
+        rd = csv.reader(c, delimiter="\t")
+        pathlib.Path(wav_path_dir).mkdir(exist_ok=True)
+        pathlib.Path(webm_path).mkdir(exist_ok=True) 
+        synth_tokens = []
+        for row in rd:
+            if row[0] and len(row) == 3:
+                '''
+                if row[1]:
+                    for zip_info in zip.infolist():
+                        if zip_info.filename[-1] == '/':
+                            continue
+                        zip_info.filename = os.path.basename(zip_info.filename)
+                        if zip_info.filename == row[0]:
+                            mos_instance = MosInstance()
+                            synth = Synth()
+                            db.session.add(synth)
+                            db.session.add(mos_instance)
+                            db.session.flush()
+                            file_id = '{}_s{:09d}_m{:09d}'.format(
+                                os.path.splitext(os.path.basename(zip_info.filename))[0], synth.id, id)
+                            fname = secure_filename(f'{file_id}.webm')
+                            path = os.path.join(app.config['SYNTH_DIR'],
+                                str(id), fname)
+                            wav_path = os.path.join(app.config['WAV_SYNTH_AUDIO_DIR'],
+                                str(id),
+                                secure_filename(f'{file_id}.wav'))
+
+                            zip_info.filename = secure_filename(f'{file_id}.wav')
+                            zip.extract(zip_info, wav_path_dir)
+                            sound = AudioSegment.from_wav(wav_path)
+                            sound.export(path, format="webm")
+                            
+                            synth.original_fname = row[0]
+                            synth.token_id = int(row[1])
+                            synth.user_id = current_user.id
+                            synth.mos_instance_id = mos_instance.id
+                            synth.file_id = file_id
+                            synth.fname = fname
+                            synth.path = path
+                            synth.wav_path = wav_path
+                            synth.text = Token.query.get(int(row[1])).text
+
+                            mos_instance = MosInstance()
+                            mos_instance.mos_id = id
+                            mos_instance.token_id = int(row[1])
+                            mos_instance.synth_id = synth.id
+                            mos_instance.path = path
+                            mos_instance.text = Token.query.get(int(row[1])).text
+                            mos_instance.is_synth = True
+                            mos_instance.selected = False
+                            mos.mos_objects.append(mos_instance)
+                '''          
+                if row[0] and (row[1].lower()=='s' or row[1].lower()=='r') and row[2]:
+                    for zip_info in zip.infolist():
+                        if zip_info.filename[-1] == '/':
+                            continue
+                        zip_info.filename = os.path.basename(zip_info.filename)
+                        if zip_info.filename == row[0]:
+                            synthTokenName = '{}_m{:09d}'.format(
+                                zip_name, id)
+                            mos_instance = MosInstance()
+                            synth = Synth()
+                            synthToken = SynthToken(row[2], synthTokenName, id)
+                            db.session.add(synthToken)
+                            db.session.add(synth)
+                            db.session.add(mos_instance)
+                            db.session.flush()
+                            file_id = '{}_s{:09d}_m{:09d}'.format(
+                                os.path.splitext(os.path.basename(zip_info.filename))[0], synth.id, id)
+                            fname = secure_filename(f'{file_id}.webm')
+                            path = os.path.join(app.config['SYNTH_DIR'],
+                                str(id), fname)
+                            wav_path = os.path.join(app.config['WAV_SYNTH_AUDIO_DIR'],
+                                str(id),
+                                secure_filename(f'{file_id}.wav'))
+
+                            zip_info.filename = secure_filename(f'{file_id}.wav')
+                            zip.extract(zip_info, wav_path_dir)
+                            sound = AudioSegment.from_wav(wav_path)
+                            sound.export(path, format="webm")
+                            
+                            synth.original_fname = row[0]
+                            synth.user_id = current_user.id
+                            synth.mos_instance_id = mos_instance.id
+                            synth.synthToken_id = synthToken.id
+                            synth.file_id = file_id
+                            synth.fname = fname
+                            synth.path = path
+                            synth.wav_path = wav_path
+                            synth.text = row[2]
+
+                            mos_instance = MosInstance()
+                            mos_instance.mos_id = id
+                            mos_instance.synth_id = synth.id
+                            mos_instance.path = path
+                            mos_instance.text = row[2]
+                            if row[1].lower() == 's':
+                                mos_instance.is_synth = True
+                            else:
+                                mos_instance.is_synth = False
+                            mos_instance.selected = False
+                            mos.mos_objects.append(mos_instance)  
+
+                            synthToken.synth_id = synth.id   
+                            synth_tokens.append(synthToken)
+                else:
+                    pass
+        db.session.commit()
+        if len(synth_tokens) > 0:
+            synth_token_dir = app.config["SYNTH_TOKEN_DIR"]+"{}".format(id)
+            pathlib.Path(synth_token_dir).mkdir(exist_ok=True)
+            for token in synth_tokens:
+                token.save_to_disk()
+            db.session.commit()
 
 def is_valid_rating(rating):
     if int(rating) > 0 and int(rating) <= 5:
@@ -240,14 +369,15 @@ def delete_token_db(token):
     return True
 
 def delete_mos_instance_db(instance):
+    print(instance)
     if instance.is_synth:
         if instance.token_id is None:
             try:
                 os.remove(instance.token.get_path())
+                db.session.delete(instance.token.get_path())
             except Exception as error:
                 print(f'{error}\n{traceback.format_exc()}')
                 return False
-            db.session.delete(instance.token.get_path())
         synth = instance.synth
         try:
             os.remove(synth.get_path())
@@ -255,7 +385,7 @@ def delete_mos_instance_db(instance):
             print(f'{error}\n{traceback.format_exc()}')
             return False
         db.session.delete(synth)
-    db.session.delete(instanace)
+    db.session.delete(instance)
 
     db.session.commit()
     return True

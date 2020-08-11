@@ -452,7 +452,7 @@ class SynthToken(BaseModel, db.Model):
 
 
     def set_path(self):
-        self.fname = secure_filename("{}_sy{:09d}.token".format(
+        self.fname = secure_filename("{}_u{:09d}.token".format(
             os.path.splitext(self.original_fname)[0], self.id))
         self.path = os.path.join(
             app.config['SYNTH_TOKEN_DIR'], str(self.mos_id), self.fname)
@@ -476,7 +476,7 @@ class SynthToken(BaseModel, db.Model):
         return os.path.splitext(self.fname)[0]
 
     def get_printable_id(self):
-        return "Sy-{:09d}".format(self.id)
+        return "U-{:09d}".format(self.id)
 
     def get_directory(self):
         return os.path.dirname(self.path)
@@ -1389,12 +1389,7 @@ class MosInstance(BaseModel, db.Model):
 
     @property
     def get_text(self):
-        if self.token_id and not self.is_synth:
-            return Recording.query.get(self.recording_id).get_token().text
-            #return self.text
-        elif self.is_synth:
-            return self.text
-        return "Villa í gagnagrunni"
+        return self.synth.text
 
     @property
     def get_path(self):

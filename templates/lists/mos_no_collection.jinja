@@ -1,22 +1,9 @@
 {% extends "lists/_list.jinja" %}
-{% block title %}MOS prufur{% endblock %}
+{% block title %}MOS prufur óháð söfnun{% endblock %}
 {% block total %}{{mos_list.total}}{% endblock %}
 {% block buttons %}
     {% if current_user.is_admin() %}
-        <a href='{{url_for("user_create")}}' class='btn btn-success float-right dropdown-toggle' data-toggle='dropdown''>
-            Safnanir
-        </a>
-        <div class='dropdown-menu'>
-            <a href='{{url_for("mos_collection_none")}}' class='dropdown-item'>
-                Óháð söfnun
-            </a>
-            {% for collection in collections %}
-                <a href='{{collection.mos_url}}' class='dropdown-item'>
-                    {{collection.name}}
-                </a>
-            {% endfor %}
-        </div>
-        <a class='btn btn-secondary text-success mr-2 float-right' href='{{url_for("mos_create")}}'>
+        <a class='btn btn-secondary text-success float-right' href='{{url_for("mos_create")}}'>
             {{macros.btn_icon('plus', 'r')}}
             Búa til
         </a>

@@ -12,10 +12,6 @@
 
 {%block buttons %}
     {% if current_user.is_admin() %}
-        <a href='{{url_for("stream_MOS_zip", id=mos.id)}}' class='float-right btn btn-primary'>
-            {{macros.btn_icon('download', 'r')}}
-            Sækja
-        </a>
         <button class="btn btn-secondary btn-sm float-right mr-2" type="button" data-toggle='modal', data-target='#uploadMOSModal'>
             {{macros.btn_icon('upload', 'r')}}
             Hlaða upp talgerfingum
@@ -31,14 +27,39 @@
             Ekki tilbuid
         </a>
         {% endif %}
-        
+        <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_results", id=mos.id)}}'>
+            {{macros.btn_icon('chart-bar', 'r')}}
+            Skoða niðurstöður
+        </a>
     {% endif %}
 {% endblock %}
 
 {% block table %}
-    {% with mos_list=mos_list %}
-        {% include 'tables/mos.jinja'%}
-    {% endwith %}
+    <div>
+        <div>
+            <h3>Talgerfingar</h3>
+        </div>
+        
+        {% with mos_list=synths, isSynthTable=true%}
+            {% include 'tables/mos.jinja'%}
+        {% endwith %}
+    </div>
+
+    <div class="mt-4">
+        <div class="d-flex">
+            <h3 class="mr-auto p-2">Upptökur</h3>
+            <div>
+            <a href='{{url_for("stream_MOS_zip", id=mos.id)}}' class='p-2 btn btn-primary'>
+                {{macros.btn_icon('download', 'r')}}
+                Sækja
+            </a>
+            </div>
+        </div>
+        
+        {% with mos_list=ground_truths, isSynthTable=false%}
+            {% include 'tables/mos.jinja'%}
+        {% endwith %}
+    </div>
 {% endblock %}
 
 {% block no_results %}
@@ -81,15 +102,44 @@
             </div>
         </form>
     </div>
+
+     <div class="modal fade" id='deleteModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú ert við það að eyða línu!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Með því að eyða þessari lotu fremur þú alheimssglæp.
+                </p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a id='confirmationButton' href='{{url_for("delete_mos_instance", id=1)}}' class='btn btn-danger'>
+                    Eyða
+                    {{macros.btn_icon('trash', 'l')}}
+                </a>
+            </div>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}
 
 {% block scripts %}
     {{super()}}
     <script>
+        function deletebutton(id){
+            $('#deleteModal #confirmationButton').attr('href', '{{url_for("delete_mos_instance", id=1)}}'.replace("1", id));
+        }
 
         $(".mos-check-button").on('change', function(){
             var id = this.name.split('mos-')[1];
-            console.log(id)
             updateMOS(this)
         });
 

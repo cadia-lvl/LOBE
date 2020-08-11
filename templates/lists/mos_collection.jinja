@@ -3,7 +3,7 @@
 {% block total %}{{mos_list.total}}{% endblock %}
 {% block buttons %}
     {% if current_user.is_admin() %}
-        <a class='btn btn-secondary text-success float-right' href='{{url_for("mos_create", id=collection.id)}}'>
+        <a class='btn btn-secondary text-success float-right' href='{{url_for("mos_create_collection", id=collection.id)}}'>
             {{macros.btn_icon('plus', 'r')}}
             Búa til
         </a>

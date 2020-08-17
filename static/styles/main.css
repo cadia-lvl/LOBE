@@ -143,3 +143,17 @@ textarea#comment:disabled {
     animation: color-change 1s infinite;
 }
 
+.accordion-icons .card-header .btn:before {
+    font-family: Font Awesome\ 5 Free;
+    font-weight:900;
+    content:"\f07c";
+    padding-right: 4px;
+}
+.accordion-icons .card-header .btn.collapsed:before {
+    content:"\f07b";
+}
+.accordion-icons .card-header .btn:hover, 
+.accordion-icons .card-header .btn:active, 
+.accordion-icons .card-header .btn:focus  {
+    text-decoration:none;
+}

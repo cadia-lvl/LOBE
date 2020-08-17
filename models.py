@@ -1343,6 +1343,31 @@ class Mos(BaseModel, db.Model):
 
     mos_objects = db.relationship("MosInstance", lazy='joined')
 
+    def getAllRatings(self):
+        ratings = []
+        for m in self.mos_objects:
+            for r in m.ratings:
+                ratings.append(r)
+        return ratings
+
+    def getAllUserRatings(self, user_id):
+        ratings = []
+        for m in self.mos_objects:
+            for r in m.ratings:
+                if user_id == r.user_id:
+                    ratings.append(r)
+        return ratings
+
+    def getAllUsers(self):
+        ratings = self.getAllRatings()
+        user_ids = []
+        for i in ratings:
+            user_ids.append(i.user_id)
+        user_ids = list(set(user_ids))
+        return user_ids
+
+
+
     @property
     def url(self):
         return url_for('mos', id=self.id)
@@ -1445,6 +1470,14 @@ class MosRating(BaseModel, db.Model):
         'max': 5,
     })
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    MosInastance_id = db.Column(db.Integer, db.ForeignKey('MosInstance.id'))
+    mosInastance_id = db.Column(db.Integer, db.ForeignKey('MosInstance.id'))
     placement = db.Column(db.Integer)
+
+    @property
+    def get_user(self):
+        return User.query.get(self.user_id)
+
+    @property
+    def get_instance(self):
+        return MosInstance.query.get(self.mosInastance_id) 
 

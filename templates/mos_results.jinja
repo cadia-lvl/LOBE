@@ -1,12 +1,85 @@
 {% extends "__base.jinja" %}
 {% block body %}
-    asdfasdf
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Niðurstöður fyrir MOS#{{mos.id}}</h1>
+        </div>
+
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-6'><p>Fjöldi einkunna:</p></div>
+                <div class='col-6 text-right'><p>{{ratings | length}}</p></div>
+
+                <div class='col-6'><p>Fjöldi notenda:</p></div>
+                <div class='col-6 text-right'><p>{{users | length }}</p></div>
+
+                <div class='col-6'><p>Annað:</p></div>
+                <div class='col-6 text-right'><p>...</p></div>
+            </div>
+        </div>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-6'><p>Meðaleinkunn:</p></div>
+                <div class='col-6 text-right'><p>{{rating_json.average}}</p></div>
+
+                <div class='col-6'><p>Annað:</p></div>
+                <div class='col-6 text-right'><p>...</p></div>
+
+                <div class='col-6'><p>Annað2:</p></div>
+                <div class='col-6 text-right'><p>...</p></div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="wrapper">
+        <div data-toggle="collapse" data-target="#collapse-users" aria-expanded="false" aria-controls="collapse-users" style="cursor: pointer;">
+            <h4><i class="fas fa-plus" aria-hidden="true"> Notendur</i></h4>
+        </div>
+        <div class="collapse" id="collapse-users">
+            {% if users|length > 0 %}
+                {% with users=users %}
+                    {% include 'tables/mos_users.jinja'%}
+                {% endwith %}
+            {% endif %}
+        </div>
+    </div>
+
+       <div class="wrapper">
+        <div data-toggle="collapse" data-target="#collapse-ratings" aria-expanded="false" aria-controls="collapse-ratings" style="cursor: pointer;">
+            <h4><i class="fas fa-plus" aria-hidden="true"> Allar einkunnir</i></h4>
+        </div>
+        <div class="collapse" id="collapse-ratings">
+            {% if ratings|length > 0 %}
+                {% with ratings=ratings %}
+                    {% include 'tables/mos_results_ratings.jinja'%}
+                {% endwith %}
+            {% endif %}
+        </div>
+    </div>
+
 {% endblock %}
 
 {% block scripts %}
     {{super()}}
 
     <script>
- 
+        $(document).ready(function () {
+            $('.collapse')
+                .on('shown.bs.collapse', function() {
+                    $(this)
+                        .parent()
+                        .find(".fa-plus")
+                        .removeClass("fa-plus")
+                        .addClass("fa-minus");
+                })
+                .on('hidden.bs.collapse', function() {
+                    $(this)
+                        .parent()
+                        .find(".fa-minus")
+                        .removeClass("fa-minus")
+                        .addClass("fa-plus");
+                });
+        });
     </script> 
 {% endblock %}

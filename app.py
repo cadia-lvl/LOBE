@@ -843,7 +843,6 @@ def mos_test(id):
         info['paths'].append(i.path)
         info['texts'].append(i.get_text)
     info_json = json.dumps(info)
-    collection = Collection.query.get(mos.collection_id)
     audio_json = json.dumps([r.get_dict() for r in audio])
     mos_list_json = json.dumps([r.get_dict() for r in mos_list_to_use])
 
@@ -857,8 +856,28 @@ def mos_test(id):
 @roles_accepted('admin')
 def mos_results(id):
     mos = Mos.query.get(id)
-
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
+        request.args.get('sort_by', default='id'),
+        order=request.args.get('order', default='desc'))).all()
+    ratings = mos.getAllRatings()
+    user_ids = mos.getAllUsers()
+    users = User.query.filter(User.id.in_(user_ids)).all()
+    rating_json = {}
+    average = 0
+    for i in ratings:
+        average += i.rating
+    rating_json = {'average': average/len(ratings)}
+    users_json = []
+    for u in users:
+        ratings = mos.getAllUserRatings(u.id)
+        s = 0
+        for r in ratings:
+            s += r.rating
+        temp = {'user': u,'average': s/len(ratings), 'total': len(ratings)}
+        users_json.append(temp)
+    print(users_json)
     return render_template('mos_results.jinja', mos=mos, 
+        ratings=ratings, users=users_json, rating_json=rating_json,
         section='mos')
 
 @app.route('/mos/<int:id>/stream_zip')

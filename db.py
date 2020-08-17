@@ -98,7 +98,6 @@ def insert_collection(form):
     return collection
 
 def save_synthesised_wav(zip, zip_name, tsv_name, mos, id):
-    print('asdfasdasfd')
     with zip.open(tsv_name) as tsvfile:
         wav_path_dir = app.config["WAV_SYNTH_AUDIO_DIR"]+"{}".format(id)
         webm_path = app.config["SYNTH_DIR"]+"{}".format(id)
@@ -156,7 +155,7 @@ def save_synthesised_wav(zip, zip_name, tsv_name, mos, id):
                             mos_instance.selected = False
                             mos.mos_objects.append(mos_instance)
                 '''          
-                if row[0] and (row[1].lower()=='s' or row[1].lower()=='r') and row[2]:
+                if (row[1].lower()=='s' or row[1].lower()=='r') and row[2]:
                     for zip_info in zip.infolist():
                         if zip_info.filename[-1] == '/':
                             continue
@@ -238,7 +237,7 @@ def save_MOS_ratings(form, files):
                 rating = MosRating()
                 rating.rating = int(i['rating'])
                 rating.user_id = user_id
-                rating.MosInastance_id = i['id']
+                rating.mosInastance_id = i['id']
                 rating.placement = i['placement']
                 mos_instance.ratings.append(rating)
     db.session.commit()

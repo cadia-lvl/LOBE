@@ -1,5 +1,5 @@
 <div class="{% if field.type == 'BooleanField'%}custom-control custom-switch mb-2
-    {% elif field.type == 'MultipleFileField' %}custom-file mb-2
+    {% elif field.type == 'MultipleFileField' or field.type == 'FileField' %}custom-file mb-2
     {% else%}form-group{% endif%}">
     {% if field.type != 'HiddenField' and field.type != 'CSRFTokenField' and field.type != 'RecaptchaField'
         and field.type != 'BooleanField' and field.type != 'MultipleFileField' and field.type != 'FileField' %}

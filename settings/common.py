@@ -7,14 +7,14 @@ APP_ROOT = os.path.abspath(os.path.join(
 DATA_BASE_DIR = os.path.join(APP_ROOT, 'data/')
 
 TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'tokens/')
-SYNTH_TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'synth_tokens/')
+CUSTOM_TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'custom_tokens/')
 RECORD_DIR = os.path.join(DATA_BASE_DIR, 'records/')
-SYNTH_DIR = os.path.join(DATA_BASE_DIR, 'synths/')
+CUSTOM_RECORDING_DIR = os.path.join(DATA_BASE_DIR, 'custom_recordings/')
 VIDEO_DIR = os.path.join(DATA_BASE_DIR, 'videos/')
 ZIP_DIR = os.path.join(DATA_BASE_DIR, 'zips/')
 TEMP_DIR = os.path.join(DATA_BASE_DIR, 'temp/')
 WAV_AUDIO_DIR = os.path.join(DATA_BASE_DIR, 'wav_audio/')
-WAV_SYNTH_AUDIO_DIR = os.path.join(DATA_BASE_DIR, 'wav_synth_audio/')
+WAV_CUSTOM_AUDIO_DIR = os.path.join(DATA_BASE_DIR, 'wav_custom_audio/')
 
 OTHER_PATH = os.path.join(APP_ROOT, 'other')
 MANUAL_FNAME = 'LOBE_manual.pdf'

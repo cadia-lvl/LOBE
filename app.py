@@ -28,15 +28,15 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
                 delete_session_db, delete_token_db, delete_mos_instance_db, save_recording_session, save_MOS_ratings, resolve_order,
-                save_synthesised_wav, get_verifiers, insert_trims)
+                save_custom_wav, get_verifiers, insert_trims, save_uploaded_collection)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
-                   ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm,
-                   VerifierFontForm, DailySpinForm, MosForm, MosItemSelectionForm, MosUploadForm)
+                   ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm, MosSelectAllForm,
+                   VerifierFontForm, DailySpinForm, MosForm, MosItemSelectionForm, MosUploadForm, UploadCollectionForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
-    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, Mos, MosInstance, Synth, SynthToken, db
+    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, Mos, MosInstance, CustomRecording, CustomToken, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from ListPagination import ListPagination
 
@@ -287,10 +287,23 @@ def create_collection():
         section='collection')
 
 
-@app.route('/collections/')
+@app.route('/collections/', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin', 'Notandi')
 def collection_list():
+    form = UploadCollectionForm(request.form)
+    #if request.method == 'POST' and form.validate():
+    if request.method == 'POST':
+        try:
+            zip_file = request.files.get('files')
+            with ZipFile(zip_file, 'r') as zip:
+                zip_name = zip_file.filename[:-4]
+                tsv_name = '{}/index.tsv'.format(zip_name)
+                collection = save_uploaded_collection(zip, zip_name, tsv_name, form)
+            return redirect(url_for('collection', id=collection.id))               
+        except Exception as e: 
+            print(e)
+
     page = int(request.args.get('page', 1))
     # TODO: sort_by not currently supported
     sort_by = request.args.get('sort_by', 'name')
@@ -298,9 +311,8 @@ def collection_list():
             request.args.get('sort_by', default='name'),
             order=request.args.get('order', default='desc')))\
             .paginate(page,per_page=app.config['COLLECTION_PAGINATION'])
-    return render_template('lists/collections.jinja', collections=collections,
+    return render_template('lists/collections.jinja', form=form, collections=collections,
         section='collection')
-
 
 @app.route('/collections/zip_list/')
 @login_required
@@ -462,20 +474,20 @@ def delete_collection_archive(id):
         flash("Söfnun hefur ekkert skjalasafn", category='warning')
     return redirect(url_for('collection', id=id))
 
-# SYNTHTOKEN ROUTES
-@app.route('/synth_tokens/<int:id>/')
+# CUSTOMTOKEN ROUTES
+@app.route('/custom_tokens/<int:id>/')
 @login_required
 @roles_accepted('admin', 'Notandi')
-def synyh_token(id):
-    return render_template('synth_token.jinja', token=SynthToken.query.get(id),
+def custom_token(id):
+    return render_template('custom_token.jinja', token=CustomToken.query.get(id),
         section='token')
 
 
-@app.route('/synth_tokens/<int:id>/download/')
+@app.route('/custom_tokens/<int:id>/download/')
 @login_required
 @roles_accepted('admin', 'Notandi')
-def download_synth_token(id):
-    token = SynthToken.query.get(id)
+def download_custom_token(id):
+    token = CustomToken.query.get(id)
     try:
         return send_from_directory(token.get_directory(), token.fname,
             as_attachment=True)
@@ -619,16 +631,16 @@ def download_recording(id):
         app.logger.error(
             "Error downloading a recording : {}\n{}".format(error,traceback.format_exc()))
 
-@app.route('/synth/<int:id>/download/')
+@app.route('/custom-recording/<int:id>/download/')
 @login_required
-def download_synth(id):
-    synth = Synth.query.get(id)
+def download_custom_recording(id):
+    custom_recording = CustomRecording.query.get(id)
     try:
-        return send_from_directory(synth.get_directory(), synth.fname,
+        return send_from_directory(custom_recording.get_directory(), custom_recording.fname,
             as_attachment=True)
     except Exception as error:
         app.logger.error(
-            "Error downloading a synth : {}\n{}".format(error,traceback.format_exc()))
+            "Error downloading a custom recording : {}\n{}".format(error,traceback.format_exc()))
 
 # CONFIGURATION ROUTES
 @app.route('/confs/')
@@ -760,43 +772,39 @@ def mos_collection_none():
 def mos(id):
     mos = Mos.query.get(id)
     form = MosUploadForm(request.form)
+    select_all_forms = [
+        MosSelectAllForm(is_synth=True, select=True),
+        MosSelectAllForm(is_synth=True, select=False),
+        MosSelectAllForm(is_synth=False, select=True),
+        MosSelectAllForm(is_synth=False, select=False),
+    ]
+    #print(select_all_forms[0].data)
     #if request.method == 'POST' and form.validate():
+    #     
     if request.method == 'POST':
         try:
-            zip_file = request.files.get('files')
-            with ZipFile(zip_file, 'r') as zip:
-                zip_name = zip_file.filename[:-4]
-                tsv_name = '{}/index.tsv'.format(zip_name)
-                save_synthesised_wav(zip, zip_name, tsv_name, mos, id)
-            return redirect(url_for('mos', id=id))                    
+            if(form.is_g2p.data):
+                zip_file = request.files.get('files')
+                with ZipFile(zip_file, 'r') as zip:
+                    zip_name = zip_file.filename[:-4]
+                    tsv_name = '{}/index.tsv'.format(zip_name)
+                    save_custom_wav(zip, zip_name, tsv_name, mos, id)
+                return redirect(url_for('mos', id=id))   
+            else:
+                flash("Ekki tókst að hlaða upp skrá, vinsamlegast lestu leiðbeiningar of reyndu aftur.",
+                    category="danger")                 
         except Exception as e: 
-            print(e)
+            flash("Ekki tókst að hlaða upp skrá.",
+                        category="danger")   
+        
 
     mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
         request.args.get('sort_by', default='id'),
         order=request.args.get('order', default='desc'))).all()
     
-    combined_mos_list = []
-    for m in mos_list:
-        m.selection_form = MosItemSelectionForm(obj=m)
-        if m.token_id is None:
-            combined_mos_list.append([m])
-        elif len(combined_mos_list) == 0:
-            combined_mos_list.append([m])
-        else:
-            exists = False
-            for c in combined_mos_list:
-                if m.token_id == c[0].token_id:
-                    c.append(m)
-                    exists = True
-            if not exists:
-                combined_mos_list.append([m])
 
-    for i in combined_mos_list:
-        i.sort(key=lambda x: x.is_synth)
-
-    if mos.collection_id:
-        collection=Collection.query.get(mos.collection_id)
+    if mos.collection is not None:
+        collection = mos.collection
     else:
         collection=json.dumps({'name': 'Óháð söfnun', 'id': 0})
 
@@ -804,20 +812,20 @@ def mos(id):
     ground_truths = []
     synths = []
     for m in mos_list:
+        m.selection_form = MosItemSelectionForm(obj=m)
         if m.is_synth:
             synths.append(m)
         else:
             ground_truths.append(m)
-
-    return render_template('mos.jinja', mos=mos, combined_mos_list = combined_mos_list, mos_list=mos_list,
-        collection=collection, ground_truths=ground_truths, synths=synths, mos_form=form, section='mos')
+    return render_template('mos.jinja', mos=mos, 
+    mos_list=mos_list, collection=collection, select_all_forms=select_all_forms,
+    ground_truths=ground_truths, synths=synths, mos_form=form, section='mos')
 
 @app.route('/mos/<int:id>/mostest', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('admin')
+@roles_accepted('admin', 'Notandi')
 def mos_test(id):
-    user_id = current_user.id
-    user_id = int(user_id)
+    user_id = int(current_user.id)
     user = User.query.get(user_id)
     mos = Mos.query.get(id)
     mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
@@ -827,21 +835,19 @@ def mos_test(id):
     for i in mos_list:
         if (i.selected and i.path):
             mos_list_to_use.append(i)
+    random.seed(1)
     random.shuffle(mos_list_to_use)
     audio=[]
     audio_url=[]
     info = {'paths': [], 'texts': []}
     for i in mos_list_to_use:
-        if i.recording:
-            audio.append(i.recording)
-            audio_url.append(i.recording.get_download_url())
-        elif i.synth:
-            audio.append(i.synth)
-            audio_url.append(i.synth.get_download_url())
+        if i.custom_recording:
+            audio.append(i.custom_recording)
+            audio_url.append(i.custom_recording.get_download_url())
         else:
             continue
         info['paths'].append(i.path)
-        info['texts'].append(i.get_text)
+        info['texts'].append(i.text)
     info_json = json.dumps(info)
     audio_json = json.dumps([r.get_dict() for r in audio])
     mos_list_json = json.dumps([r.get_dict() for r in mos_list_to_use])
@@ -864,20 +870,43 @@ def mos_results(id):
     users = User.query.filter(User.id.in_(user_ids)).all()
     rating_json = {}
     average = 0
+    placement = [0]*len(mos_list)
+    p_counter = [0]*len(mos_list)
     for i in ratings:
         average += i.rating
-    rating_json = {'average': average/len(ratings)}
+        placement[i.placement - 1] += i.rating
+        p_counter[i.placement - 1] += 1
+    for i in range(len(placement)):
+        if p_counter[i] != 0 and placement[i] != 0:
+            placement[i] = placement[i]/p_counter[i]
+    placement_info = {'placement': placement, 'p_nums': list(range(1, len(mos_list)))}
+    rating_json = {'average': round(average/len(ratings), 2)}
+    mos_stats = {'names': [], 'means': [], 'total_amount': []}
+    for m in mos_list:
+        mos_stats['names'].append(str(m.id))
+        mos_stats['means'].append(m.average_rating)
+        mos_stats['total_amount'].append(m.number_of_ratings)
     users_json = []
+    users_graph_json = []
     for u in users:
-        ratings = mos.getAllUserRatings(u.id)
+        rat = mos.getAllUserRatings(u.id)
         s = 0
         for r in ratings:
             s += r.rating
-        temp = {'user': u,'average': s/len(ratings), 'total': len(ratings)}
+        mos_ratings_per_user = []
+        for m in mos_list:
+            if not m.getUserRating(u.id):
+                mos_ratings_per_user.append('')
+            else:
+                mos_ratings_per_user.append(m.getUserRating(u.id))
+        user_ratings = {"username": u.get_printable_name(), "ratings": mos_ratings_per_user}
+        temp = {'user': u,'average': s/len(rat), 'total': len(rat), 'user_ratings': user_ratings}
+        temp2 = {'user_ratings': user_ratings}
         users_json.append(temp)
-    print(users_json)
-    return render_template('mos_results.jinja', mos=mos, 
-        ratings=ratings, users=users_json, rating_json=rating_json,
+        users_graph_json.append(temp2)
+    return render_template('mos_results.jinja', mos=mos, mos_stats=mos_stats,
+        ratings=ratings, placement_info=placement_info, users=users_json, 
+        rating_json=rating_json, users_graph_json=users_graph_json,
         section='mos')
 
 @app.route('/mos/<int:id>/stream_zip')
@@ -889,9 +918,9 @@ def stream_MOS_zip(id):
         request.args.get('sort_by', default='id'),
         order=request.args.get('order', default='desc'))).all()
 
-    results ='mos_instance_id\ttoken_id\ttoken_text\n'
+    results ='mos_instance_id\tcustom_token_id\ttoken_text\n'
     for i in mos_list:
-        results += "{}\t{}\t{}\n".format(str(i.id), str(i.token.id), i.token.text)
+        results += "{}\t{}\t{}\n".format(str(i.id), str(i.custom_token.id), i.custom_token.text)
 
     generator = (cell for row in results
                     for cell in row)
@@ -901,9 +930,29 @@ def stream_MOS_zip(id):
                        headers={"Content-Disposition":
                                     "attachment;filename={}_tokens.txt".format(mos.printable_id)})
 
-@app.route('/mos/post_mos_rating', methods=['POST'])
+
+@app.route('/mos/stream_index_demo')
 @login_required
-def post_mos_rating():
+@roles_accepted('admin')
+def stream_MOS_index_demo():
+    other_dir = app.config["OTHER_PATH"]
+    try:
+        return send_from_directory(other_dir, 'index_demo.tsv',
+            as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading a custom recording : {}\n{}".format(error,traceback.format_exc()))
+
+    #return Response(generator,
+    #                   mimetype="text/plain",
+    #                   headers={"Content-Disposition":
+    #                                "attachment;filename={}_tokens.txt".format(mos.printable_id)})
+
+
+@app.route('/mos/post_mos_rating/<int:id>', methods=['POST'])
+@login_required
+def post_mos_rating(id):
+    mos_id = id
     try:
         mos_id = save_MOS_ratings(request.form, request.files)
     except Exception as error:
@@ -925,6 +974,7 @@ def post_mos_rating():
 def mos_instance_edit(id):
     try:
         instance = MosInstance.query.get(id)
+        print(request.form)
         form = MosItemSelectionForm(request.form, obj=instance)
         form.populate_obj(instance)
         db.session.commit()
@@ -935,17 +985,39 @@ def mos_instance_edit(id):
         errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
         return Response(errorMessage, status=500)
 
+@app.route('/mos/<int:id>/select_all', methods=['POST'])
+@login_required
+@roles_accepted('admin')
+def mos_select_all(id):
+    try:
+        form = MosSelectAllForm(request.form)
+        mos = Mos.query.get(id)
+        is_synth = True if form.data['is_synth']=='True' else False
+        select = True if form.data['select']=='True' else False
+
+        mos_list = MosInstance.query.filter(MosInstance.mos_id == id).filter(MosInstance.is_synth == is_synth).all()
+        for m in mos_list:
+            m.selected = select
+        db.session.commit()
+        return redirect(url_for('mos', id=id))
+    except Exception as error:
+        print(error)
+        flash("Ekki gekk að merkja alla", category='warning')
+    return redirect(url_for('mos', id=id))
+
+
 @app.route('/mos/instances/<int:id>/delete/', methods=['GET'])
 @login_required
 @roles_accepted('admin')
 def delete_mos_instance(id):
     instance = MosInstance.query.get(id)
+    mos_id = instance.mos_id
     did_delete = delete_mos_instance_db(instance)
     if did_delete:
         flash("Línu var eytt", category='success')
     else:
         flash("Ekki gekk að eyða línu", category='warning')
-    return redirect(url_for('mos', id=id))
+    return redirect(url_for('mos', id=mos_id))
 
 @app.route('/mos/create', methods=['GET', 'POST'])
 @login_required
@@ -960,7 +1032,7 @@ def mos_create():
     except Exception as error:
         flash("Error creating MOS.", category="danger")
         app.logger.error("Error creating MOS {}\n{}".format(error,traceback.format_exc()))
-    return redirect(url_for('mos'))
+    return redirect(url_for('mos', id=mos.id))
 
 @app.route('/mos/collection/<int:id>/create', methods=['GET', 'POST'])
 @login_required
@@ -969,35 +1041,32 @@ def mos_create_collection(id):
     max_num_recorded = Collection.query.get(id).num_recorded_tokens
     form = MosForm(max_num_recorded, request.form)
     tokens = Token.query.filter(Token.num_recordings > 0).filter(Token.collection_id == id).all()
-
     if request.method == 'POST' and form.validate():
         try:
             mos = Mos()
             form.populate_obj(mos)
             mos.collection = Collection.query.get(id)
+            mos.collection_id = id
             tokens = Token.query.filter(Token.num_recordings > 0) \
                                 .filter(Token.collection_id == id).all()
             random_tokens = random.sample(tokens, form.num_samples.data)
             for i in random_tokens:
-                mos_instance = MosInstance()
-                mos_instance.mos_id = mos.id
                 rand_recording_num = random.randint(0, len(i.recordings)-1)
-                mos_instance.token_id = i.id
-                mos_instance.recording_id = i.recordings[rand_recording_num].id
-                mos_instance.path = i.recordings[rand_recording_num].path
-                mos_instance.text = i.recordings[rand_recording_num].get_token().text
-                mos_instance.is_synth = False
-                mos_instance.selected = False
+                custom_token = CustomToken(i.text, i.original_fname, True)
+                custom_token.copyToken(i)
+                custom_recording = CustomRecording(True)
+                custom_recording.copyRecording(i.recordings[rand_recording_num])
+                mos_instance = MosInstance(custom_token=custom_token, custom_recording=custom_recording)
                 mos.mos_objects.append(mos_instance)            
             db.session.add(mos)
             db.session.commit()
             flash("Nýrri MOS prufu bætt við", category="success")
-            return redirect(url_for('mos_collection', id=id))
+            return redirect(url_for('mos', id=mos.id))
         except Exception as error:
             flash("Error creating MOS.", category="danger")
             app.logger.error("Error creating MOS {}\n{}".format(error,traceback.format_exc()))
     return render_template('forms/model.jinja', form=form,
-        action=url_for('mos_create', id=id), section='mos', type='create')
+        action=url_for('mos_create_collection', id=id), section='mos', type='create')
 
 
 

@@ -46,13 +46,17 @@
                     <p>Tekið úr:</p>
                 </div>
                 <div class='col-7 text-right'>
-                    <p>Upphleðslu</p>
+                    <p>{{token.source}}</p>
                 </div>
                 <div class='col-5'>
                     <p>Röðunarstuðull</p>
                 </div>
                 <div class='col-7 text-right'>
-                    <p>Ótilgreint</p>
+                    {% if token.score %}
+                        <p>{{token.score}}</p>
+                    {% else %}
+                        <p>Ekki tilgreint</p>
+                    {% endif %}
                 </div>
                 <div class='col-5'>
                     <p>Í lagi: </p>

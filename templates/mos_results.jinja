@@ -1,4 +1,8 @@
 {% extends "__base.jinja" %}
+{% block headscripts %}
+    {{super()}}
+    <script src="https://cdn.plot.ly/plotly-latest.min.js" charset="utf-8"></script>
+{% endblock %}
 {% block body %}
     <div class='row'>
         <div class='col-12'>
@@ -57,6 +61,40 @@
             {% endif %}
         </div>
     </div>
+    
+    <div class='col-12' style="margin-top: 50px;">
+        <h3 class='font-weight-bold'>Notendahegðun</h3>
+        <p>Línurit notenda</p>
+        <div class='card'>
+            <div class='card-body'>
+                <div id='line-chart'>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class='col-12' style="margin-top: 50px;">
+        <h3 class='font-weight-bold'>Meðaleinkunn setninga</h3>
+        <p>Stöplarit</p>
+        <div class='card'>
+            <div class='card-body'>
+                <div id='bar-chart'>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class='col-12' style="margin-top: 50px;">
+        <h3 class='font-weight-bold'>Röð einkunna</h3>
+        <p>Stöplarit</p>
+        <div class='card'>
+            <div class='card-body'>
+                <div id='bar-chart-placement'>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 {% endblock %}
 
@@ -81,5 +119,138 @@
                         .addClass("fa-plus");
                 });
         });
+        var container = document.getElementById('line-chart');
+        var layout = {
+            plot_bgcolor: 'rgba(0, 0, 0, 0)',
+            paper_bgcolor: 'rgba(0, 0, 0, 0)',
+            margin: {
+                'l': 30,
+                'r': 30,
+                't': 30,
+                'b': 30
+            },
+            font: {
+                color: 'white'
+            },
+            yaxis:{
+                title:{
+                    text: 'Einkunn'
+                }
+            },
+            xaxis:{
+                title:{
+                    text: 'Setning'
+                },
+                tickmode:'linear'
+            }
+        };
+        var config = {
+            responsive: true
+        }
+        var data = [];
+
+        var users = {{users_graph_json}}
+        var placement = {{placement_info}}
+        var mos_stats = {{mos_stats}}
+        var temp = []
+        users.forEach( user => {
+            var trace = {
+                x: mos_stats['names'],
+                y: user.user_ratings.ratings,
+                fill: 'scatter',
+                marker: {
+                    size: 12
+                },
+                connectgaps: true
+
+            };
+            data.push(trace)
+        });
+
+        Plotly.newPlot(container, data, layout, config);
+
+        var container_bar = document.getElementById('bar-chart');
+        var layout_bar = {
+            plot_bgcolor: 'rgba(0, 0, 0, 0)',
+            paper_bgcolor: 'rgba(0, 0, 0, 0)',
+            margin: {
+                'l': 30,
+                'r': 30,
+                't': 30,
+                'b': 30
+            },
+            font: {
+                color: 'white'
+            },
+            yaxis:{
+                title:{
+                    text: 'Meðaleinkunn'
+                }
+            },
+            xaxis:{
+                title:{
+                    text: 'Setning'
+                },
+                tickmode: 'linear'
+            }
+        };
+
+        var trace1 = {
+            x: mos_stats['names'],
+            y: mos_stats['means'],
+            name: 'Meðaleinkunn',
+            type: 'bar'
+        };
+        /*
+        var trace2 = {
+            x: mos_stats['names'],
+            y:  mos_stats['total_amount'],
+            name: 'Fjöldi einkunna',
+            type: 'bar'
+        };
+        */
+        var data = [trace1];
+
+        Plotly.newPlot(container_bar, data, layout_bar, config);
+
+        var container_bar_placement = document.getElementById('bar-chart-placement');
+        var layout_bar = {
+            barmode: 'group',
+            plot_bgcolor: 'rgba(0, 0, 0, 0)',
+            paper_bgcolor: 'rgba(0, 0, 0, 0)',
+            margin: {
+                'l': 30,
+                'r': 30,
+                't': 30,
+                'b': 30
+            },
+            font: {
+                color: 'white'
+            },
+            yaxis:{
+                title:{
+                    text: 'Meðaleinkunn'
+                }
+            },
+            xaxis:{
+                title:{
+                    text: 'Númer einkunnargjafar'
+                },
+                tickmode: 'linear'
+            }
+        };
+
+        var trace1 = {
+            x: placement['p_nums'],
+            y: placement['placement'],
+            name: 'Meðaleinkunn',
+            type: 'bar'
+        };
+
+
+        var data = [trace1];
+
+        Plotly.newPlot(container_bar_placement, data, layout_bar, config);
+
     </script> 
 {% endblock %}

@@ -8,15 +8,26 @@
                 Texti
             </th>
             <th>
-                MOS-Einkunn
+                Meðaleinkunn
             </th>
             <th>
-                <button class="btn btn-secondary btn-sm mr-2" type="button">
-                    Merkja alla
-                </button>
-                <button class="btn btn-secondary btn-sm mr-2" type="button">
-                    Afmerkja alla
-                </button>
+                <form id='selectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
+                    {% for f in selectAllForm %}
+                        {{f}}
+                    {% endfor%}
+                    <button type='submit' id='selectAll' class='btn btn-primary btn-sm float-right mr-2'>
+                        <span class='ml-1 font-weight-bold'>Merkja alla</span>
+                    </button>
+                </form>
+                <form id='deselectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
+                    {% for f in deselectAllForm %}
+                        {{f}}
+                    {% endfor%}
+                    <button type='submit' id='selectAll' class='btn btn-primary btn-sm float-right mr-2'>
+                        <span class='ml-1 font-weight-bold'>Af merkja alla</span>
+                    </button>
+                </form>
+    
             </th>
             <th>
             </th>
@@ -24,25 +35,20 @@
         <tbody>
             {% for mos in mos_list %}
                 <tr>      
-                    {% if mos.token %}
-                        <td><a href={{mos.token.get_url()}} class='{% if mos.token.marked_as_bad %} text-warning {% endif %}'><code>{{mos.token.get_printable_id()}}</code></a></td>
+                    {% if mos.custom_token %}
+                        <td><a href={{mos.custom_token.get_url()}} class='{% if mos.custom_token.marked_as_bad %} text-warning {% endif %}'><code>{{mos.custom_token.get_printable_id()}}</code></a></td>
                     {% else %}
                         <td>-</td>
                     {% endif %}
                     
-                    <td>{{mos.get_text}}</td>
-                    <td>{{mos.get_rating}}</td>
+                    <td>{{mos.text}}</td>
+                    <td>{{mos.average_rating}}</td>
                     <td>
                         <form class="mos-check-button" id="verificationForm" name="mos-{{mos.id}}" action="{{mos.ajax_edit_action}}" method="POST">
                             {% for field in mos.selection_form %}
                                 <div class="custom-control custom-switch">
                                 {% if field.name == "selected" %}
                                     {{field(checked=field.data, id="check-field", class_="")}}
-                                    {% if isSynthTable %}
-                                        Hafa talgerfingu
-                                    {% else %}
-                                        {{field.label(class_="mosCheckboxLabel")}}
-                                    {% endif %}
                                 {% endif %}
                                 </div>
                             {% endfor %}
@@ -58,4 +64,5 @@
         </tbody>
     </table>
 </div>
+
 

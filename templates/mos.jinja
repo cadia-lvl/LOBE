@@ -14,7 +14,7 @@
     {% if current_user.is_admin() %}
         <button class="btn btn-secondary btn-sm float-right mr-2" type="button" data-toggle='modal', data-target='#uploadMOSModal'>
             {{macros.btn_icon('upload', 'r')}}
-            Hlaða upp talgerfingum
+            Hlaða upp talgervingum
         </button>
         {% if mos.number_selected > 0%}
         <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_test", id=mos.id)}}'>
@@ -27,6 +27,10 @@
             Ekki tilbuid
         </a>
         {% endif %}
+        <a href='{{url_for("stream_MOS_zip", id=mos.id)}}' class='btn btn-primary btn-sm float-right mr-2'>
+            {{macros.btn_icon('download', 'r')}}
+            Sækja upptökur
+        </a>
         <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_results", id=mos.id)}}'>
             {{macros.btn_icon('chart-bar', 'r')}}
             Skoða niðurstöður
@@ -37,10 +41,10 @@
 {% block table %}
     <div>
         <div>
-            <h3>Talgerfingar</h3>
+            <h3>Talgervingar</h3>
         </div>
         
-        {% with mos_list=synths, isSynthTable=true%}
+        {% with mos=mos, mos_list=synths, isSynthTable=true, selectAllForm=select_all_forms[0], deselectAllForm=select_all_forms[1] %}
             {% include 'tables/mos.jinja'%}
         {% endwith %}
     </div>
@@ -48,15 +52,9 @@
     <div class="mt-4">
         <div class="d-flex">
             <h3 class="mr-auto p-2">Upptökur</h3>
-            <div>
-            <a href='{{url_for("stream_MOS_zip", id=mos.id)}}' class='p-2 btn btn-primary'>
-                {{macros.btn_icon('download', 'r')}}
-                Sækja
-            </a>
-            </div>
         </div>
         
-        {% with mos_list=ground_truths, isSynthTable=false%}
+        {% with mos=mos, mos_list=ground_truths, isSynthTable=false, selectAllForm=select_all_forms[2], deselectAllForm=select_all_forms[3]%}
             {% include 'tables/mos.jinja'%}
         {% endwith %}
     </div>
@@ -76,7 +74,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Hlaða upp talgerfingum fyrir MOS próf</h5>
+                    <h5 class="modal-title">Hlaða upp talgervingum fyrir MOS próf</h5>
                     <button type="button" class="close" data-dismiss="modal">
                     <span>&times;</span>
                     </button>
@@ -84,19 +82,24 @@
                 <div class="modal-body">
                     <p>
                         Athugaðu að hlaða þarf upp .zip skrá sem inniheldur möppu sem heitir "audio" og skrá sem heitir index.tsv.
-                        Audio mappan inniheldur allar talgerfingarnar og index.tsv tengir auðkenni hverrar MOS-setningar við nafn
-                        talgerfingarinnar í audio möppunni.
+                        Audio mappan inniheldur allar talgervingarnar og index.tsv tengir auðkenni hverrar MOS-setningar við nafn
+                        talgervingarinnar í audio möppunni.
                     </p>
                     {% with form=mos_form %}
                         {% include 'forms/_form.jinja' %}
                     {% endwith %}
                 </div>
                 <div class="modal-footer">
+                    <a href='{{url_for("stream_MOS_index_demo")}}' class='btn btn-primary btn-sm float-left mr-2'>
+                        {{macros.btn_icon('download', 'r')}}
+                        Sækja sýnidæmi(index_demo.tsv)
+                    </a>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
                     <button class='btn btn-primary' type='submit'>
                         Klára
                         <span class='ml-1'><i class='fa fa-check'></i></span>
                     </button>
+                    
                 </div>
                 </div>
             </div>
@@ -138,13 +141,32 @@
             $('#deleteModal #confirmationButton').attr('href', '{{url_for("delete_mos_instance", id=1)}}'.replace("1", id));
         }
 
+        $("#check-all-button").on('click', function(){
+            var elements = document.getElementsByClassName("mos-check-button");
+            var ids = []
+            for (var i = 0, len = elements.length; i < len; i++) {
+                var id = elements[i].name.split('mos-')[1];
+                var box = elements[i].getElementsByTagName('input');
+                box.checked = true;
+                console.log('ssdfasdf')
+                console.log(elements[i])
+                //updateMOS(elements[i])
+            }
+        });
+
+        $("#check-none-button").on('click', function(){
+            console.log('asdfasdf')
+        });
+
         $(".mos-check-button").on('change', function(){
             var id = this.name.split('mos-')[1];
+            //console.log(this.data)
             updateMOS(this)
         });
 
 
         function updateMOS(form) {
+            //console.log(form)
             var xhr = new XMLHttpRequest();
             xhr.onload = function(e) {
                 if(this.readyState === XMLHttpRequest.DONE) {
@@ -157,8 +179,19 @@
                 }
             }
             let formData = new FormData(form);
+            console.log(form)
+            console.log(form.action)
+            console.log(formData)
+
             xhr.open("POST", form.action, true);
             xhr.send(formData);
         }
+    
+        $('#files').on('change',function(){
+            //get the file name
+            var fileName = $(this).val();
+            //replace the "Choose a file" label
+            $(this).next('.custom-file-label').html(fileName);
+        });
     </script>
 {% endblock %}

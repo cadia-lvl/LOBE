@@ -17,7 +17,7 @@ from functools import partialmethod
 from flask import flash
 from flask_security import current_user
 from models import (Collection, Recording, Session, Token, Trim, 
-                    User, db, Mos, MosInstance, Synth, SynthToken, 
+                    User, db, Mos, MosInstance, CustomRecording, CustomToken, 
                     MosRating)
 
 def create_tokens(collection_id, files, is_g2p):
@@ -97,85 +97,39 @@ def insert_collection(form):
     db.session.commit()
     return collection
 
-def save_synthesised_wav(zip, zip_name, tsv_name, mos, id):
+def save_custom_wav(zip, zip_name, tsv_name, mos, id):
     with zip.open(tsv_name) as tsvfile:
-        wav_path_dir = app.config["WAV_SYNTH_AUDIO_DIR"]+"{}".format(id)
-        webm_path = app.config["SYNTH_DIR"]+"{}".format(id)
+        wav_path_dir = app.config["WAV_CUSTOM_AUDIO_DIR"]+"{}".format(id)
+        webm_path = app.config["CUSTOM_RECORDING_DIR"]+"{}".format(id)
         mc = tsvfile.read()
         c = csv.StringIO(mc.decode())
         rd = csv.reader(c, delimiter="\t")
         pathlib.Path(wav_path_dir).mkdir(exist_ok=True)
         pathlib.Path(webm_path).mkdir(exist_ok=True) 
-        synth_tokens = []
+        custom_tokens = []
         for row in rd:
-            if row[0] and len(row) == 3:
-                '''
-                if row[1]:
-                    for zip_info in zip.infolist():
-                        if zip_info.filename[-1] == '/':
-                            continue
-                        zip_info.filename = os.path.basename(zip_info.filename)
-                        if zip_info.filename == row[0]:
-                            mos_instance = MosInstance()
-                            synth = Synth()
-                            db.session.add(synth)
-                            db.session.add(mos_instance)
-                            db.session.flush()
-                            file_id = '{}_s{:09d}_m{:09d}'.format(
-                                os.path.splitext(os.path.basename(zip_info.filename))[0], synth.id, id)
-                            fname = secure_filename(f'{file_id}.webm')
-                            path = os.path.join(app.config['SYNTH_DIR'],
-                                str(id), fname)
-                            wav_path = os.path.join(app.config['WAV_SYNTH_AUDIO_DIR'],
-                                str(id),
-                                secure_filename(f'{file_id}.wav'))
-
-                            zip_info.filename = secure_filename(f'{file_id}.wav')
-                            zip.extract(zip_info, wav_path_dir)
-                            sound = AudioSegment.from_wav(wav_path)
-                            sound.export(path, format="webm")
-                            
-                            synth.original_fname = row[0]
-                            synth.token_id = int(row[1])
-                            synth.user_id = current_user.id
-                            synth.mos_instance_id = mos_instance.id
-                            synth.file_id = file_id
-                            synth.fname = fname
-                            synth.path = path
-                            synth.wav_path = wav_path
-                            synth.text = Token.query.get(int(row[1])).text
-
-                            mos_instance = MosInstance()
-                            mos_instance.mos_id = id
-                            mos_instance.token_id = int(row[1])
-                            mos_instance.synth_id = synth.id
-                            mos_instance.path = path
-                            mos_instance.text = Token.query.get(int(row[1])).text
-                            mos_instance.is_synth = True
-                            mos_instance.selected = False
-                            mos.mos_objects.append(mos_instance)
-                '''          
+            if row[0] and len(row) == 3:     
                 if (row[1].lower()=='s' or row[1].lower()=='r') and row[2]:
                     for zip_info in zip.infolist():
                         if zip_info.filename[-1] == '/':
                             continue
                         zip_info.filename = os.path.basename(zip_info.filename)
                         if zip_info.filename == row[0]:
-                            synthTokenName = '{}_m{:09d}'.format(
+                            custom_token_name = '{}_m{:09d}'.format(
                                 zip_name, id)
-                            mos_instance = MosInstance()
-                            synth = Synth()
-                            synthToken = SynthToken(row[2], synthTokenName, id)
-                            db.session.add(synthToken)
-                            db.session.add(synth)
+                            custom_recording = CustomRecording()
+                            custom_token = CustomToken(row[2], custom_token_name)
+                            mos_instance = MosInstance(custom_token=custom_token, custom_recording=custom_recording)
+                            db.session.add(custom_token)
+                            db.session.add(custom_recording)
                             db.session.add(mos_instance)
                             db.session.flush()
                             file_id = '{}_s{:09d}_m{:09d}'.format(
-                                os.path.splitext(os.path.basename(zip_info.filename))[0], synth.id, id)
+                                os.path.splitext(os.path.basename(zip_info.filename))[0], custom_recording.id, id)
                             fname = secure_filename(f'{file_id}.webm')
-                            path = os.path.join(app.config['SYNTH_DIR'],
+                            path = os.path.join(app.config['CUSTOM_RECORDING_DIR'],
                                 str(id), fname)
-                            wav_path = os.path.join(app.config['WAV_SYNTH_AUDIO_DIR'],
+                            wav_path = os.path.join(app.config['WAV_CUSTOM_AUDIO_DIR'],
                                 str(id),
                                 secure_filename(f'{file_id}.wav'))
 
@@ -184,39 +138,140 @@ def save_synthesised_wav(zip, zip_name, tsv_name, mos, id):
                             sound = AudioSegment.from_wav(wav_path)
                             sound.export(path, format="webm")
                             
-                            synth.original_fname = row[0]
-                            synth.user_id = current_user.id
-                            synth.mos_instance_id = mos_instance.id
-                            synth.synthToken_id = synthToken.id
-                            synth.file_id = file_id
-                            synth.fname = fname
-                            synth.path = path
-                            synth.wav_path = wav_path
-                            synth.text = row[2]
-
-                            mos_instance = MosInstance()
-                            mos_instance.mos_id = id
-                            mos_instance.synth_id = synth.id
-                            mos_instance.path = path
-                            mos_instance.text = row[2]
+                            custom_recording.original_fname = row[0]
+                            custom_recording.user_id = current_user.id
+                            custom_recording.file_id = file_id
+                            custom_recording.fname = fname
+                            custom_recording.path = path
+                            custom_recording.wav_path = wav_path
                             if row[1].lower() == 's':
                                 mos_instance.is_synth = True
                             else:
                                 mos_instance.is_synth = False
-                            mos_instance.selected = False
-                            mos.mos_objects.append(mos_instance)  
 
-                            synthToken.synth_id = synth.id   
-                            synth_tokens.append(synthToken)
+                            mos.mos_objects.append(mos_instance)  
+                            custom_tokens.append(custom_token)
                 else:
                     pass
         db.session.commit()
-        if len(synth_tokens) > 0:
-            synth_token_dir = app.config["SYNTH_TOKEN_DIR"]+"{}".format(id)
-            pathlib.Path(synth_token_dir).mkdir(exist_ok=True)
-            for token in synth_tokens:
+        if len(custom_tokens) > 0:
+            custom_token_dir = app.config["CUSTOM_TOKEN_DIR"]+"{}".format(id)
+            pathlib.Path(custom_token_dir).mkdir(exist_ok=True)
+            for token in custom_tokens:
                 token.save_to_disk()
             db.session.commit()
+
+def save_uploaded_collection(zip, zip_name, tsv_name):
+    #creating new collection
+    collection = Collection()
+    db.session.add(collection)
+    db.session.flush()
+
+    dirs = [collection.get_record_dir(), collection.get_token_dir(),
+        collection.get_video_dir(), collection.get_wav_audio_dir()]
+    # create dirs for tokens and records
+    for dir in dirs:
+        if not os.path.exists(dir): os.makedirs(dir)
+        else:
+            raise ValueError("""
+                For some reason, we are about to create a collection with the
+                same primary key as a previous collection. This could happen
+                for example if 2 databases are used on the same machine. If
+                this error occurs, the current environment has to change the
+                DATA_BASE_DIR, TOKEN_DIR, RECORD_DIR flask environment variables
+                to point to some other place.
+
+                Folder that already exists: {}
+
+                Perhaps some of the source folders have never been created before.
+                """.format(dir))
+                
+    with zip.open(tsv_name) as tsvfile:
+        wav_path_dir = app.config["WAV_CUSTOM_AUDIO_DIR"]+"{}".format(id)
+        webm_path = app.config["CUSTOM_RECORDING_DIR"]+"{}".format(id)
+        mc = tsvfile.read()
+        c = csv.StringIO(mc.decode())
+        rd = csv.reader(c, delimiter="\t")
+        pathlib.Path(wav_path_dir).mkdir(exist_ok=True)
+        pathlib.Path(webm_path).mkdir(exist_ok=True) 
+        custom_tokens = []
+        tokens = []
+        num_errors = 0
+        error_line, error_file = None, None
+        #creating session
+        duration = float(form['duration'])
+        user_id = int(form['user_id'])
+        manager_id = int(form['manager_id'])
+        collection_id = int(form['collection_id'])
+        collection = Collection.query.get(collection_id)
+        has_video = collection.configuration.has_video
+        recording_objs = json.loads(form['recordings'])
+        skipped = json.loads(form['skipped'])
+        record_session = None
+        if len(recording_objs) > 0 or len(skipped):
+            record_session = Session(user_id, collection_id, manager_id,
+                duration=duration, has_video=has_video, is_dev=collection.is_dev)
+            db.session.add(record_session)
+            db.session.flush()
+
+        for row in rd:
+            if row[0] and len(row) == 5:     
+                    for zip_info in zip.infolist():
+                        if zip_info.filename[-1] == '/':
+                            continue
+                        zip_info.filename = os.path.basename(zip_info.filename)
+                        if zip_info.filename == row[0]:
+                            try:
+                                #create a new token
+                                text, src, scr, pron = row[1], row[2], row[3], row[4]
+                                token = Token(text, file.zip_name, collection.id, score=scr,
+                                    pron=pron, source=src)
+                                tokens.append(token)
+                                db.session.add(token)
+                            except ValueError as error:
+                                num_errors += 1
+                                error_line = idx + 1
+                                error_file = file.filename
+                                continue
+
+
+                            
+                            for token_id, recording_obj in recording_objs.items():
+                                # this token has a recording
+                                file_obj = files.get('file_{}'.format(token_id))
+                                recording = Recording(int(token_id), file_obj.filename, user_id,
+                                    session_id=record_session.id, has_video=has_video)
+                                if "analysis" in recording_obj:
+                                    recording.analysis = recording_obj['analysis']
+                                if "cut" in recording_obj:
+                                    recording.start = recording_obj['cut']['start']
+                                    recording.end = recording_obj['cut']['end']
+                                if "transcription" in recording_obj and recording_obj['transcription']:
+                                    recording.transcription = recording_obj['transcription']
+                                db.session.add(recording)
+                                db.session.flush()
+                                recording.add_file_obj(file_obj, recording_obj['settings'])
+                            db.session.commit()
+
+                            for token_id in recording_objs:
+                                token = Token.query.get(token_id)
+                                token.update_numbers()
+                            db.session.commit()
+
+                            for token_id in skipped:
+                                # this token was skipped and has no token
+                                token = Token.query.get(int(token_id))
+                                token.marked_as_bad = True
+                                token.marked_as_bad_session_id = record_session.id
+                            db.session.commit()
+
+                            # then update the numbers of the collection
+                            collection.update_numbers()
+                            
+                        
+
+    return collection
+
 
 def is_valid_rating(rating):
     if int(rating) > 0 and int(rating) <= 5:
@@ -225,7 +280,7 @@ def is_valid_rating(rating):
 
 
 def save_MOS_ratings(form, files):
-    duration = float(form['duration'])
+    #duration = float(form['duration'])
     user_id = int(form['user_id'])
     mos_id = int(form['mos_id'])
     mos = Mos.query.get(mos_id)
@@ -237,7 +292,6 @@ def save_MOS_ratings(form, files):
                 rating = MosRating()
                 rating.rating = int(i['rating'])
                 rating.user_id = user_id
-                rating.mosInastance_id = i['id']
                 rating.placement = i['placement']
                 mos_instance.ratings.append(rating)
     db.session.commit()
@@ -368,24 +422,13 @@ def delete_token_db(token):
     return True
 
 def delete_mos_instance_db(instance):
-    print(instance)
-    if instance.is_synth:
-        if instance.token_id is None:
-            try:
-                os.remove(instance.token.get_path())
-                db.session.delete(instance.token.get_path())
-            except Exception as error:
-                print(f'{error}\n{traceback.format_exc()}')
-                return False
-        synth = instance.synth
-        try:
-            os.remove(synth.get_path())
-        except Exception as error:
-            print(f'{error}\n{traceback.format_exc()}')
-            return False
-        db.session.delete(synth)
+    try:
+        os.remove(instance.custom_token.get_path())
+        os.remove(instance.custom_recording.get_path())
+    except Exception as error:
+        print(f'{error}\n{traceback.format_exc()}')
+        return False
     db.session.delete(instance)
-
     db.session.commit()
     return True
 

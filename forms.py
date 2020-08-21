@@ -86,12 +86,31 @@ class MosForm(ModelForm):
             raise ValidationError("Ekki nógu markar upptökur til í safni. Sláðu inn tölu á milli 0 og {}".format(form.max_available))
 
 
+class MosSelectAllForm(Form):
+    is_synth = HiddenField()
+    select = HiddenField()
+
+
 class MosItemSelectionForm(ModelForm):
-    
     class Meta:
         model = MosInstance
-        exclude = ['path','text','is_synth']
+        exclude = ['is_synth']
 
+class UploadCollectionForm(Form):
+    name = TextField('Nafn', validators=[validators.required()])
+    assigned_user_id = QuerySelectField('Rödd', query_factory=lambda: User.query,
+                                        get_label='name', allow_blank=True)
+    configuration_id = QuerySelectField('Stilling', query_factory=lambda: Configuration.query,
+                                        get_label='printable_name', allow_blank=False)
+    sort_by = SelectField("Röðun", choices=[
+        ('score', 'Röðunarstuðull'),
+        ('same', 'Sömu röð og í skjali'),
+        ('random', 'Slembiröðun')])
+    is_dev = BooleanField('Tilraunarsöfnun')
+    is_multi_speaker = BooleanField("Margar raddir")
+    is_g2p = BooleanField('Staðlað form.', description='Hakið við ef uphleðslan er á stöðluðu formi samanber lýsingu hér að ofan',
+                          default=False)
+    files = FileField(validators=[FileAllowed(['zip']), FileRequired()])
 
 class CollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])

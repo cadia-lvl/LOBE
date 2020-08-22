@@ -5,7 +5,9 @@
 {% block header_content %}
     <div class="float-left text-warning">
         {% if not mos.number_selected > 0%}
-            <span>Veldu setningar til að nota í prófinu</span>
+            <span id="additional-info">Veldu setningar til að nota í prófinu</span>
+        {% else %}
+            <span class='d-none' id="additional-info">Veldu setningar til að nota í prófinu</span>
         {% endif %}
     </div>
 {% endblock %}
@@ -17,14 +19,14 @@
             Hlaða upp talgervingum
         </button>
         {% if mos.number_selected > 0%}
-        <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_test", id=mos.id)}}'>
+        <a class='btn btn-secondary btn-sm text-success float-right mr-2' id='start-button' href='{{url_for("mos_test", id=mos.id)}}'>
             {{macros.btn_icon('play', 'r')}}
             Hefja MOS próf
         </a>
         {% else %}
-        <a class='btn btn-secondary btn-sm text-warning float-right mr-2'>
+        <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled' id='start-button' href='{{url_for("mos_test", id=mos.id)}}'>
             {{macros.btn_icon('play', 'r')}}
-            Ekki tilbuid
+            Hefja MOS próf
         </a>
         {% endif %}
         <a href='{{url_for("stream_MOS_zip", id=mos.id)}}' class='btn btn-primary btn-sm float-right mr-2'>
@@ -141,29 +143,33 @@
             $('#deleteModal #confirmationButton').attr('href', '{{url_for("delete_mos_instance", id=1)}}'.replace("1", id));
         }
 
-        $("#check-all-button").on('click', function(){
-            var elements = document.getElementsByClassName("mos-check-button");
-            var ids = []
-            for (var i = 0, len = elements.length; i < len; i++) {
-                var id = elements[i].name.split('mos-')[1];
-                var box = elements[i].getElementsByTagName('input');
-                box.checked = true;
-                console.log('ssdfasdf')
-                console.log(elements[i])
-                //updateMOS(elements[i])
-            }
-        });
-
-        $("#check-none-button").on('click', function(){
-            console.log('asdfasdf')
-        });
 
         $(".mos-check-button").on('change', function(){
             var id = this.name.split('mos-')[1];
-            //console.log(this.data)
+            updateUI()
             updateMOS(this)
         });
 
+
+        function updateUI(){
+            var elements = document.getElementsByClassName("mos-check-button");
+            var ids = []
+            var none_checked = true;
+            for (var i = 0, len = elements.length; i < len; i++) {
+                var array = $( elements[i] ).serializeArray()
+                if (!(array === undefined || array.length == 0)) {
+                    none_checked = false;
+                }
+            }
+            if(none_checked){
+                $("#start-button").addClass( "disabled" );
+                $("#additional-info").removeClass( "d-none" );
+            }
+            else{
+                $("#start-button").removeClass( "disabled" );
+                $("#additional-info").addClass( "d-none" );
+            }
+        }
 
         function updateMOS(form) {
             //console.log(form)
@@ -179,9 +185,7 @@
                 }
             }
             let formData = new FormData(form);
-            console.log(form)
-            console.log(form.action)
-            console.log(formData)
+
 
             xhr.open("POST", form.action, true);
             xhr.send(formData);

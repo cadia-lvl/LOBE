@@ -27,6 +27,6 @@
     {% if mos_list.total == 0 %}
         {{macros.no_results("Engar MOS prufur",
             "Til að sjá MOS prufur þarf fyrst að búa þær til.",
-            url_for('mos_create'), "Búa til MOS prufu")}}
+            url_for('mos_create_collection', id=collection.id), "Búa til MOS prufu")}}
     {% endif %}
 {% endblock %}

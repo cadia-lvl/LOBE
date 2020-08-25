@@ -7,6 +7,7 @@ import traceback
 from flask import current_app as app
 import csv
 from pydub import AudioSegment
+from pydub.utils import mediainfo
 from zipfile import ZipFile
 import pathlib
 from pathlib import Path
@@ -72,6 +73,7 @@ def create_tokens(collection_id, files, is_g2p):
 
 def insert_collection(form):
     collection = Collection()
+    print(form.data)
     form.populate_obj(collection)
     db.session.add(collection)
     db.session.flush()
@@ -161,9 +163,13 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                 token.save_to_disk()
             db.session.commit()
 
-def save_uploaded_collection(zip, zip_name, tsv_name):
+def save_uploaded_collection(zip, zip_name, tsv_name, form):
     #creating new collection
     collection = Collection()
+    #print(form.data)
+    
+    form.populate_obj(collection)
+   
     db.session.add(collection)
     db.session.flush()
 
@@ -187,32 +193,25 @@ def save_uploaded_collection(zip, zip_name, tsv_name):
                 """.format(dir))
                 
     with zip.open(tsv_name) as tsvfile:
-        wav_path_dir = app.config["WAV_CUSTOM_AUDIO_DIR"]+"{}".format(id)
-        webm_path = app.config["CUSTOM_RECORDING_DIR"]+"{}".format(id)
         mc = tsvfile.read()
         c = csv.StringIO(mc.decode())
         rd = csv.reader(c, delimiter="\t")
-        pathlib.Path(wav_path_dir).mkdir(exist_ok=True)
-        pathlib.Path(webm_path).mkdir(exist_ok=True) 
         custom_tokens = []
         tokens = []
         num_errors = 0
         error_line, error_file = None, None
         #creating session
-        duration = float(form['duration'])
-        user_id = int(form['user_id'])
-        manager_id = int(form['manager_id'])
-        collection_id = int(form['collection_id'])
-        collection = Collection.query.get(collection_id)
-        has_video = collection.configuration.has_video
-        recording_objs = json.loads(form['recordings'])
-        skipped = json.loads(form['skipped'])
-        record_session = None
-        if len(recording_objs) > 0 or len(skipped):
-            record_session = Session(user_id, collection_id, manager_id,
-                duration=duration, has_video=has_video, is_dev=collection.is_dev)
-            db.session.add(record_session)
-            db.session.flush()
+        duration = 0
+        user_id = int(form.data['assigned_user_id'])
+        manager_id = current_user.id
+        collection_id = collection.id
+        has_video = False
+
+        
+        record_session = Session(user_id, collection_id, manager_id,
+            duration=duration, has_video=has_video, is_dev=collection.is_dev)
+        db.session.add(record_session)
+        db.session.flush()
 
         for row in rd:
             if row[0] and len(row) == 5:     
@@ -224,50 +223,61 @@ def save_uploaded_collection(zip, zip_name, tsv_name):
                             try:
                                 #create a new token
                                 text, src, scr, pron = row[1], row[2], row[3], row[4]
-                                token = Token(text, file.zip_name, collection.id, score=scr,
+                                token = Token(text, zip_name, collection.id, score=scr,
                                     pron=pron, source=src)
                                 tokens.append(token)
                                 db.session.add(token)
+                                db.session.flush()
+
                             except ValueError as error:
                                 num_errors += 1
                                 error_line = idx + 1
                                 error_file = file.filename
                                 continue
 
-
+                            recording = Recording(int(token.id), row[0], user_id,
+                                session_id=record_session.id, has_video=has_video)
                             
-                            for token_id, recording_obj in recording_objs.items():
-                                # this token has a recording
-                                file_obj = files.get('file_{}'.format(token_id))
-                                recording = Recording(int(token_id), file_obj.filename, user_id,
-                                    session_id=record_session.id, has_video=has_video)
-                                if "analysis" in recording_obj:
-                                    recording.analysis = recording_obj['analysis']
-                                if "cut" in recording_obj:
-                                    recording.start = recording_obj['cut']['start']
-                                    recording.end = recording_obj['cut']['end']
-                                if "transcription" in recording_obj and recording_obj['transcription']:
-                                    recording.transcription = recording_obj['transcription']
-                                db.session.add(recording)
-                                db.session.flush()
-                                recording.add_file_obj(file_obj, recording_obj['settings'])
-                            db.session.commit()
+                            db.session.add(recording)
+                            db.session.flush()
+                            recording._set_path()
 
-                            for token_id in recording_objs:
-                                token = Token.query.get(token_id)
-                                token.update_numbers()
-                            db.session.commit()
+                            wav_path = os.path.join(dirs[3], secure_filename(row[0]))
+                   
+                            zip_info.filename = '{}.wav'.format(os.path.splitext(os.path.basename(recording.fname))[0])#secure_filename(row[0])
+                            export_to_path = secure_filename('{}.webm'.format(os.path.splitext(os.path.basename(row[0]))[0]))
+                            export_to_path = os.path.join(dirs[0], export_to_path)
+                           
+                            zip.extract(zip_info, dirs[3])
+                            sound = AudioSegment.from_wav(recording.wav_path)
+                            sound.export(recording.path, format="webm")
+                            fpath_info = os.path.join(dirs[0],secure_filename(row[0]))
+                      
+                            info = mediainfo(recording.path)
 
-                            for token_id in skipped:
-                                # this token was skipped and has no token
-                                token = Token.query.get(int(token_id))
-                                token.marked_as_bad = True
-                                token.marked_as_bad_session_id = record_session.id
-                            db.session.commit()
+                            recorder_settings = {
+                                'sampleRate': info['sample_rate'],
+                                'sampleSize': 16,
+                                'channelCount': info['channels'],
+                                'latency': 0,
+                                'autoGainControl': False,
+                                'echoCancellation': False,
+                                'noiseSuppression': False,
+                            }
 
-                            # then update the numbers of the collection
-                            collection.update_numbers()
-                            
+                            recording._set_wave_params(recorder_settings)
+        db.session.commit()
+
+        for t in tokens:
+            token = Token.query.get(t.id)
+            token.update_numbers()
+        db.session.commit()
+
+
+        # then update the numbers of the collection
+        collection.update_numbers()
+        db.session.commit()
+                    
                         
 
     return collection

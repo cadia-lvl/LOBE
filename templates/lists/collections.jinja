@@ -11,9 +11,9 @@
                 {{macros.btn_icon('plus', 'r')}}
                 Búa til
             </a>
-            <a class='dropdown-item' type="button" data-toggle='modal', data-target='#uploadMOSModal'>
+            <a class='dropdown-item' type="button" data-toggle='modal', data-target='#uploadCollectionModal'>
                 {{macros.btn_icon('upload', 'r')}}
-                Hlaða upp talgervingum
+                Hlaða upp söfnun
             </a>
         </div>
         <a class='btn btn-secondary float-right mr-2' href='{{url_for("collection_zip_list")}}'>
@@ -46,7 +46,7 @@
 {% endblock %}
 
 {% block modals %}
-<div class="modal fade" id='uploadMOSModal' tabindex="-1">
+<div class="modal fade" id='uploadCollectionModal' tabindex="-1">
         <form method='POST' enctype="multipart/form-data">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -60,14 +60,22 @@
                     <p>
                         Athugaðu að hlaða þarf upp .zip skrá sem inniheldur möppu sem heitir "audio", möppu sem heitir "text" og 
                         skrá sem heitir index.tsv.
-                        Audio mappan inniheldur allar uppt-lur og index.tsv tengir auðkenni hverrar MOS-setningar við nafn
-                        talgervingarinnar í audio möppunni.
+                        Audio mappan inniheldur allar upptökur og index.tsv tengir nafn hverrar upptöku við setningu. 
+                        <li>Dálkur 1 í index.tsv er nafn upptöku í "audio" möppunni.</li>
+                        <li>Dálkur 2 er seningin sjálf.</li>
+                        <li>Dálkur 3 er hvaðan setningin kemur.</li>
+                        <li>Dálkur 4 er einkunn sem setning fær.</li>
+                        <li>Dálkur 5 er framburður seningarinnar.</li>
                     </p>
                     {% with form=form %}
                         {% include 'forms/_form.jinja' %}
                     {% endwith %}
                 </div>
                 <div class="modal-footer">
+                    <a href='{{url_for("stream_collection_index_demo")}}' class='btn btn-primary btn-sm float-left mr-2'>
+                        {{macros.btn_icon('download', 'r')}}
+                        Sækja sýnidæmi(index_demo.tsv)
+                    </a>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
                     <button class='btn btn-primary' type='submit'>
                         Klára
@@ -78,4 +86,16 @@
             </div>
         </form>
     </div>
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script>
+        $('#files').on('change',function(){
+            //get the file name
+            var fileName = $(this).val();
+            //replace the "Choose a file" label
+            $(this).next('.custom-file-label').html(fileName);
+        });
+    </script>
 {% endblock %}

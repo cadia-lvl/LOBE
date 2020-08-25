@@ -85,6 +85,17 @@
     </div>
 
     <div class='col-12' style="margin-top: 50px;">
+        <h3 class='font-weight-bold'>Fjöldi einkunna á setningu</h3>
+        <p>Stöplarit</p>
+        <div class='card'>
+            <div class='card-body'>
+                <div id='bar-chart-total-number'>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class='col-12' style="margin-top: 50px;">
         <h3 class='font-weight-bold'>Röð einkunna</h3>
         <p>Stöplarit</p>
         <div class='card'>
@@ -161,7 +172,9 @@
                 marker: {
                     size: 12
                 },
-                connectgaps: true
+                connectgaps: true,
+                name: user.user_ratings.username
+
 
             };
             data.push(trace)
@@ -209,6 +222,44 @@
             type: 'bar'
         };
         */
+        var data = [trace1];
+
+        Plotly.newPlot(container_bar, data, layout_bar, config);
+
+       var container_bar = document.getElementById('bar-chart-total-number');
+        var layout_bar = {
+            plot_bgcolor: 'rgba(0, 0, 0, 0)',
+            paper_bgcolor: 'rgba(0, 0, 0, 0)',
+            margin: {
+                'l': 30,
+                'r': 30,
+                't': 30,
+                'b': 30
+            },
+            font: {
+                color: 'white'
+            },
+            yaxis:{
+                title:{
+                    text: 'Fjöldi'
+                }
+            },
+            xaxis:{
+                title:{
+                    text: 'Setning'
+                },
+                tickmode: 'linear'
+            }
+        };
+
+        
+        var trace1 = {
+            x: mos_stats['names'],
+            y:  mos_stats['total_amount'],
+            name: 'Fjöldi einkunna',
+            type: 'bar'
+        };
+        
         var data = [trace1];
 
         Plotly.newPlot(container_bar, data, layout_bar, config);

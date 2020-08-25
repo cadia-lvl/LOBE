@@ -11,22 +11,24 @@
                 Meðaleinkunn
             </th>
             <th>
-                <form id='deselectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
-                    {% for f in deselectAllForm %}
-                        {{f}}
-                    {% endfor%}
-                    <button type='submit' id='selectAll' class='btn btn-primary btn-sm float-right mr-2'>
-                        <span class='ml-1 font-weight-bold'><i class="far fa-square"></i></span>
-                    </button>
-                </form>
-                <form id='selectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
-                    {% for f in selectAllForm %}
-                        {{f}}
-                    {% endfor%}
-                    <button type='submit' id='selectAll' class='btn btn-primary btn-sm float-right mr-2'>
-                        <span class='ml-1 font-weight-bold'><i class="far fa-check-square"></i></span>
-                    </button>
-                </form>
+                <div class='row'>
+                    <form id='selectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
+                        {% for f in selectAllForm %}
+                            {{f}}
+                        {% endfor%}
+                        <button type='submit' id='selectAll' class='btn btn-primary btn-sm mr-2'>
+                            <span class=''><i class="far fa-check-square"></i></span>
+                        </button>
+                    </form>
+                    <form id='deselectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
+                        {% for f in deselectAllForm %}
+                            {{f}}
+                        {% endfor%}
+                        <button type='submit' id='selectAll' class='btn btn-primary btn-sm mr-2'>
+                            <span class=''><i class="far fa-square"></i></span>
+                        </button>
+                    </form>
+                </div>
             </th>
             <th>
             </th>

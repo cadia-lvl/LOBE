@@ -19,24 +19,31 @@
             Hlaða upp talgervingum
         </button>
         {% if mos.number_selected > 0%}
-        <a class='btn btn-secondary btn-sm text-success float-right mr-2' id='start-button' href='{{url_for("mos_test", id=mos.id)}}'>
-            {{macros.btn_icon('play', 'r')}}
-            Hefja MOS próf
-        </a>
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2' id='start-button' href='{{url_for("mos_test", id=mos.id)}}'>
+                {{macros.btn_icon('play', 'r')}}
+                Hefja MOS próf
+            </a>
         {% else %}
-        <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled' id='start-button' href='{{url_for("mos_test", id=mos.id)}}'>
-            {{macros.btn_icon('play', 'r')}}
-            Hefja MOS próf
-        </a>
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled' id='start-button' href='{{url_for("mos_test", id=mos.id)}}'>
+                {{macros.btn_icon('play', 'r')}}
+                Hefja MOS próf
+            </a>
         {% endif %}
         <a href='{{url_for("stream_MOS_zip", id=mos.id)}}' class='btn btn-primary btn-sm float-right mr-2'>
             {{macros.btn_icon('download', 'r')}}
             Sækja upptökur
         </a>
-        <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_results", id=mos.id)}}'>
-            {{macros.btn_icon('chart-bar', 'r')}}
-            Skoða niðurstöður
-        </a>
+        {% if mos.number_selected > 0%}
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_results", id=mos.id)}}'>
+                {{macros.btn_icon('chart-bar', 'r')}}
+                Skoða niðurstöður
+            </a>
+        {% else %}
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2 disabled' href='{{url_for("mos_results", id=mos.id)}}'>
+                {{macros.btn_icon('chart-bar', 'r')}}
+                Skoða niðurstöður
+            </a>
+        {% endif %}
     {% endif %}
 {% endblock %}
 

@@ -292,6 +292,7 @@ def create_collection():
 @roles_accepted('admin', 'Notandi')
 def collection_list():
     form = UploadCollectionForm(request.form)
+    print(form.validate())
     #if request.method == 'POST' and form.validate():
     if request.method == 'POST':
         try:
@@ -473,6 +474,19 @@ def delete_collection_archive(id):
     else:
         flash("Söfnun hefur ekkert skjalasafn", category='warning')
     return redirect(url_for('collection', id=id))
+
+
+@app.route('/mos/stream_index_demo')
+@login_required
+@roles_accepted('admin')
+def stream_collection_index_demo():
+    other_dir = app.config["OTHER_PATH"]
+    try:
+        return send_from_directory(other_dir, 'collection_index_demo.tsv',
+            as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading a custom recording : {}\n{}".format(error,traceback.format_exc()))
 
 # CUSTOMTOKEN ROUTES
 @app.route('/custom_tokens/<int:id>/')
@@ -817,9 +831,12 @@ def mos(id):
             synths.append(m)
         else:
             ground_truths.append(m)
+    ratings = mos.getAllRatings()
+
     return render_template('mos.jinja', mos=mos, 
     mos_list=mos_list, collection=collection, select_all_forms=select_all_forms,
-    ground_truths=ground_truths, synths=synths, mos_form=form, section='mos')
+    ground_truths=ground_truths, synths=synths, mos_form=form,
+    ratings=ratings, section='mos')
 
 @app.route('/mos/<int:id>/mostest', methods=['GET', 'POST'])
 @login_required
@@ -866,12 +883,19 @@ def mos_results(id):
         request.args.get('sort_by', default='id'),
         order=request.args.get('order', default='desc'))).all()
     ratings = mos.getAllRatings()
+    max_placement = 1
+    for j in ratings:
+        if j.placement > max_placement:
+            max_placement = j.placement
+
+    if len(ratings) == 0:
+        return redirect(url_for('mos', id=mos.id))  
     user_ids = mos.getAllUsers()
     users = User.query.filter(User.id.in_(user_ids)).all()
     rating_json = {}
     average = 0
-    placement = [0]*len(mos_list)
-    p_counter = [0]*len(mos_list)
+    placement = [0]*max_placement
+    p_counter = [0]*max_placement
     for i in ratings:
         average += i.rating
         placement[i.placement - 1] += i.rating
@@ -937,16 +961,13 @@ def stream_MOS_zip(id):
 def stream_MOS_index_demo():
     other_dir = app.config["OTHER_PATH"]
     try:
-        return send_from_directory(other_dir, 'index_demo.tsv',
+        return send_from_directory(other_dir, 'mos_index_demo.tsv',
             as_attachment=True)
     except Exception as error:
         app.logger.error(
             "Error downloading a custom recording : {}\n{}".format(error,traceback.format_exc()))
 
-    #return Response(generator,
-    #                   mimetype="text/plain",
-    #                   headers={"Content-Disposition":
-    #                                "attachment;filename={}_tokens.txt".format(mos.printable_id)})
+
 
 
 @app.route('/mos/post_mos_rating/<int:id>', methods=['POST'])
@@ -959,7 +980,8 @@ def post_mos_rating(id):
         flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
         app.logger.error("Error posting recordings: {}\n{}".format(error,   traceback.format_exc()))
         return Response(str(error), status=500)
-
+    if(not current_user.is_admin()):
+        return Response(url_for('user', id=current_user.id), status=200)
     if mos_id is None:
         flash("Engar einkunnir í MOS prófi.", category='success')
         return Response(url_for('mos_list'), status=200)
@@ -1028,11 +1050,11 @@ def mos_create():
         db.session.add(mos)
         db.session.commit()
         flash("Nýrri MOS prufu bætt við", category="success")
-        return redirect(url_for('mos_collection_none'))
+        return redirect(url_for('mos', id=mos.id))
     except Exception as error:
         flash("Error creating MOS.", category="danger")
         app.logger.error("Error creating MOS {}\n{}".format(error,traceback.format_exc()))
-    return redirect(url_for('mos', id=mos.id))
+    return redirect(url_for('mos_collection_none'))
 
 @app.route('/mos/collection/<int:id>/create', methods=['GET', 'POST'])
 @login_required

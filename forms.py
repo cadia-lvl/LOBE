@@ -112,6 +112,18 @@ class UploadCollectionForm(Form):
                           default=False)
     files = FileField(validators=[FileAllowed(['zip']), FileRequired()])
 
+    
+    def validate_assigned_user_id(self, field):
+        # HACK to user the QuerySelectField on User objects
+        # but then later populate the field with only the pk.
+        if field.data is not None:
+            field.data = field.data.id
+
+    def validate_configuration_id(self, field):
+        if field.data is not None:
+            field.data = field.data.id
+    
+        
 class CollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])
     assigned_user_id = QuerySelectField('Rödd', query_factory=lambda: User.query,

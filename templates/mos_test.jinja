@@ -35,32 +35,28 @@
             </button>
         </div>
     </div>
-  <div class='row mt-4'>
-        <div class='row col-12'>
-            <form class="mx-auto row" id="ratingButtons">
-                <div class="column">
-                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option2" value="1"></input>
-                    <p class="mx-3">1</p>
-                </div>
-                <div class="column">
-                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option3" value="2"></input>
-                    <p class="mx-3">2</p>
-                </div>
-                <div class="column">
-                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option4" value="3"></input>
-                    <p class="mx-3">3</p>
-                </div>
-                <div class="column">
-                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option5" value="4"></input>
-                    <p class="mx-3">4</p>
-                </div>
-                <div class="column">
-                    <input class="mx-3" type="radio" name="options" onchange="getRating(value)" id="option6" value="5"></input>
-                    <p class="mx-3">5</p>
-                </div>
-            </form>
-        </div>
+  <div class='mt-4'>
+        <form class="text-center" id="ratingButtons">
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                <label class="btn btn-primary mx-1 center-block" name="optionsLabel">
+                    <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option1" value="1">1
+                </label>
+                <label class="btn btn-primary mx-1 center-block" name="optionsLabel">
+                    <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option2" value="2">2
+                </label>
+                <label class="btn btn-primary mx-1 center-block" name="optionsLabel">
+                    <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option3" value="3">3
+                </label>
+                <label class="btn btn-primary mx-1 center-block" name="optionsLabel">
+                    <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option4" value="4">4
+                </label>
+                <label class="btn btn-primary mx-1 center-block" name="optionsLabel">
+                    <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option5" value="5">5
+                </label>
+            </div>
+        </form>
     </div>
+
 
     <div class='row mt-2'>
         <div class='col-12'>
@@ -90,7 +86,9 @@
         window.onbeforeunload = function() {
             return "Are you sure?";
         };
-
+        window.onload = function(){
+            setRatingsButtonsOff()
+        }
         let mediaRecorder;
         let recorderSettings;
         let audioCtx;
@@ -121,6 +119,7 @@
         const playButton = document.querySelector('button#play');
         const finishButton = document.querySelector('button#send');
         const finishButtonIcon = $('#finishButtonIcon');
+
         //radio
         const ratingButtons = document.getElementById('ratingButtons')
 
@@ -183,6 +182,21 @@
             setFinishButtonUI();
         }
 
+        function setRatingsButtonsOn(){
+            $("#ratingButtons").css('opacity', 1);
+            var buttons = document.getElementsByClassName("ratingButton");
+            for(var i = 0; i < buttons.length; i++){
+                $(buttons[i]).prop('disabled', false);
+            }
+        }
+
+        function setRatingsButtonsOff(){
+            $("#ratingButtons").css('opacity', 0.2);
+            var buttons = document.getElementsByClassName("ratingButton");
+            for(var i = 0; i < buttons.length; i++){
+                $(buttons[i]).prop('disabled', true);
+            }
+        }
         function play(id){
             if(isPlaying){
                 //stop
@@ -208,6 +222,8 @@
                 }
                 audio.onended = function(){
                     playButtonIcon.removeClass('fa-stop').addClass('fa-play');
+                    mos_list[mosIndex]['is_played'] = true
+                    setRatingsButtonsOn()
                 }
                 // play audio
                 playButtonIcon.removeClass('fa-play').addClass('fa-stop');
@@ -276,6 +292,20 @@
         };
 
         function setRadioUI(){
+            var labels = ratingButtons.getElementsByTagName('label');
+            for(let i = 0; i < labels.length; i++){
+                labels[i].classList.remove("active");
+            }
+            if(mos_list[mosIndex]['rating']){
+                labels[mos_list[mosIndex]['rating']-1].classList.add("active");
+            }
+            if(mos_list[mosIndex]['is_played']){
+                setRatingsButtonsOn()
+            }
+            else{
+                setRatingsButtonsOff()
+            }
+            /*
             if(mos_list[mosIndex]['rating']){
                 ratingButtons.options[mos_list[mosIndex]['rating']].checked=true;
             }
@@ -284,17 +314,18 @@
                     ratingButtons.options[i].checked = false;
                 }
             }
+            */
         }
 
         function setFinishButtonUI(){
             //only allow if at least one marked token or one recording
             for(var i=0; i<numMosInstances; i++){
-                if('rating' in mos_list[i]){
-                    finishButton.disabled = false;
-                    return true;
+                if(!('rating' in mos_list[i])){
+                    finishButton.disabled = true;
+                    return false;
                 }
             }
-            finishButton.disabled = true;
+            finishButton.disabled = false;
         }
 
 

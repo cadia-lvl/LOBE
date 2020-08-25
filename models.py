@@ -646,6 +646,7 @@ class Recording(BaseModel, db.Model):
             str(self.token.collection_id),
             secure_filename(f'{self.file_id}.wav'))
 
+
     def get_configured_path(self):
         '''
         Get the path the program believes the token should be stored at

@@ -96,6 +96,7 @@ class MosItemSelectionForm(ModelForm):
         model = MosInstance
         exclude = ['is_synth']
 
+
 class UploadCollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])
     assigned_user_id = QuerySelectField('Rödd', query_factory=lambda: User.query,
@@ -108,11 +109,14 @@ class UploadCollectionForm(Form):
         ('random', 'Slembiröðun')])
     is_dev = BooleanField('Tilraunarsöfnun')
     is_multi_speaker = BooleanField("Margar raddir")
-    is_g2p = BooleanField('Staðlað form.', description='Hakið við ef uphleðslan er á stöðluðu formi samanber lýsingu hér að ofan',
-                          default=False)
-    files = FileField(validators=[FileAllowed(['zip']), FileRequired()])
+    is_g2p = BooleanField('Staðlað form.',
+        description='Hakið við ef uphleðslan er á stöðluðu formi samanber lýsingu hér að ofan',
+        default=False)
+    files = FileField(validators=[
+        #validators.required(),
+        FileAllowed(['zip'])
+    ])
 
-    
     def validate_assigned_user_id(self, field):
         # HACK to user the QuerySelectField on User objects
         # but then later populate the field with only the pk.
@@ -122,6 +126,7 @@ class UploadCollectionForm(Form):
     def validate_configuration_id(self, field):
         if field.data is not None:
             field.data = field.data.id
+    
     
         
 class CollectionForm(Form):

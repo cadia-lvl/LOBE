@@ -292,18 +292,20 @@ def create_collection():
 @roles_accepted('admin', 'Notandi')
 def collection_list():
     form = UploadCollectionForm(request.form)
-    print(form.validate())
-    #if request.method == 'POST' and form.validate():
     if request.method == 'POST':
-        try:
-            zip_file = request.files.get('files')
-            with ZipFile(zip_file, 'r') as zip:
-                zip_name = zip_file.filename[:-4]
-                tsv_name = '{}/index.tsv'.format(zip_name)
-                collection = save_uploaded_collection(zip, zip_name, tsv_name, form)
-            return redirect(url_for('collection', id=collection.id))               
-        except Exception as e: 
-            print(e)
+        if form.validate():
+            try:
+                print('Form validated')
+                zip_file = request.files.get('files')
+                with ZipFile(zip_file, 'r') as zip:
+                    zip_name = zip_file.filename[:-4]
+                    tsv_name = '{}/index.tsv'.format(zip_name)
+                    collection = save_uploaded_collection(zip, zip_name, tsv_name, form)
+                return redirect(url_for('collection', id=collection.id))          
+            except Exception as e: 
+                print(e)
+        else:
+            flash('Ekki tókst að hlaða söfnun upp. Athugaðu hvort öllum leiðbeiningum sé fylgt og reyndu aftur.', category='warning')
 
     page = int(request.args.get('page', 1))
     # TODO: sort_by not currently supported
@@ -476,13 +478,13 @@ def delete_collection_archive(id):
     return redirect(url_for('collection', id=id))
 
 
-@app.route('/mos/stream_index_demo')
+@app.route('/mos/stream_collection_demo')
 @login_required
 @roles_accepted('admin')
 def stream_collection_index_demo():
     other_dir = app.config["OTHER_PATH"]
     try:
-        return send_from_directory(other_dir, 'collection_index_demo.tsv',
+        return send_from_directory(other_dir, 'synidaemi_collection.zip',
             as_attachment=True)
     except Exception as error:
         app.logger.error(
@@ -805,7 +807,7 @@ def mos(id):
                     save_custom_wav(zip, zip_name, tsv_name, mos, id)
                 return redirect(url_for('mos', id=id))   
             else:
-                flash("Ekki tókst að hlaða upp skrá, vinsamlegast lestu leiðbeiningar of reyndu aftur.",
+                flash("Ekki tókst að hlaða upp skrá, vinsamlegast lestu leiðbeiningar og reyndu aftur.",
                     category="danger")                 
         except Exception as e: 
             flash("Ekki tókst að hlaða upp skrá.",
@@ -931,7 +933,7 @@ def mos_results(id):
     return render_template('mos_results.jinja', mos=mos, mos_stats=mos_stats,
         ratings=ratings, placement_info=placement_info, users=users_json, 
         rating_json=rating_json, users_graph_json=users_graph_json,
-        section='mos')
+        mos_list=mos_list, section='mos')
 
 @app.route('/mos/<int:id>/stream_zip')
 @login_required
@@ -955,13 +957,13 @@ def stream_MOS_zip(id):
                                     "attachment;filename={}_tokens.txt".format(mos.printable_id)})
 
 
-@app.route('/mos/stream_index_demo')
+@app.route('/mos/stream_mos_demo')
 @login_required
 @roles_accepted('admin')
 def stream_MOS_index_demo():
     other_dir = app.config["OTHER_PATH"]
     try:
-        return send_from_directory(other_dir, 'mos_index_demo.tsv',
+        return send_from_directory(other_dir, 'synidaemi_mos.zip',
             as_attachment=True)
     except Exception as error:
         app.logger.error(

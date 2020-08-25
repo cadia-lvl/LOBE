@@ -2,6 +2,9 @@
     <table class='table'>
         <thead>
             <th>
+            
+            </th>
+            <th>
                 Auðkenni setningar
             </th>
             <th>
@@ -11,12 +14,12 @@
                 Meðaleinkunn
             </th>
             <th>
-                <div class='row'>
+                <div class="column btn-group btn-group-toggle">
                     <form id='selectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
                         {% for f in selectAllForm %}
                             {{f}}
                         {% endfor%}
-                        <button type='submit' id='selectAll' class='btn btn-primary btn-sm mr-2'>
+                        <button type='submit' id='selectAll' class='btn'>
                             <span class=''><i class="far fa-check-square"></i></span>
                         </button>
                     </form>
@@ -24,7 +27,7 @@
                         {% for f in deselectAllForm %}
                             {{f}}
                         {% endfor%}
-                        <button type='submit' id='selectAll' class='btn btn-primary btn-sm mr-2'>
+                        <button type='submit' id='selectAll' class='btn'>
                             <span class=''><i class="far fa-square"></i></span>
                         </button>
                     </form>
@@ -36,6 +39,12 @@
         <tbody>
             {% for mos in mos_list %}
                 <tr>      
+                    <td>
+                        <audio id="audio-{{mos.custom_recording.id}}" src={{mos.custom_recording.get_download_url()}} type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{mos.custom_recording.id}})">
+                            <i id='playButtonIcon-{{mos.custom_recording.id}}' class='fa fa-play'></i>
+                        </button>
+                    </td>
                     {% if mos.custom_token %}
                         <td><a href={{mos.custom_token.get_url()}} class='{% if mos.custom_token.marked_as_bad %} text-warning {% endif %}'><code>{{mos.custom_token.get_printable_id()}}</code></a></td>
                     {% else %}
@@ -66,4 +75,5 @@
     </table>
 </div>
 
+<script src='{{url_for("static", filename="js/listControls.js")}}'></script>
 

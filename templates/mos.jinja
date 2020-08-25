@@ -18,6 +18,10 @@
             {{macros.btn_icon('upload', 'r')}}
             Hlaða upp talgervingum
         </button>
+        <a href='{{url_for("stream_MOS_zip", id=mos.id)}}' class='btn btn-primary btn-sm float-right mr-2'>
+            {{macros.btn_icon('download', 'r')}}
+            Sækja upptökur
+        </a>
         {% if mos.number_selected > 0%}
             <a class='btn btn-secondary btn-sm text-success float-right mr-2' id='start-button' href='{{url_for("mos_test", id=mos.id)}}'>
                 {{macros.btn_icon('play', 'r')}}
@@ -29,11 +33,8 @@
                 Hefja MOS próf
             </a>
         {% endif %}
-        <a href='{{url_for("stream_MOS_zip", id=mos.id)}}' class='btn btn-primary btn-sm float-right mr-2'>
-            {{macros.btn_icon('download', 'r')}}
-            Sækja upptökur
-        </a>
-        {% if mos.number_selected > 0%}
+
+        {% if ratings | length  > 0%}
             <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_results", id=mos.id)}}'>
                 {{macros.btn_icon('chart-bar', 'r')}}
                 Skoða niðurstöður
@@ -50,7 +51,8 @@
 {% block table %}
     <div>
         <div>
-            <h3>Talgervingar</h3>
+            <h3>Talgervingar sem búnar voru til</h3>
+            <p>Hljóðklippur sem búnar voru til með hjálp talgervils</p>
         </div>
         
         {% with mos=mos, mos_list=synths, isSynthTable=true, selectAllForm=select_all_forms[0], deselectAllForm=select_all_forms[1] %}
@@ -59,8 +61,9 @@
     </div>
 
     <div class="mt-4">
-        <div class="d-flex">
-            <h3 class="mr-auto p-2">Upptökur</h3>
+        <div class="">
+            <h3 class="">Upptökur sem teknar voru upp</h3>
+            <p>Upptökur sem teknar voru upp af alvöru fólki</p>
         </div>
         
         {% with mos=mos, mos_list=ground_truths, isSynthTable=false, selectAllForm=select_all_forms[2], deselectAllForm=select_all_forms[3]%}
@@ -92,16 +95,19 @@
                     <p>
                         Athugaðu að hlaða þarf upp .zip skrá sem inniheldur möppu sem heitir "audio" og skrá sem heitir index.tsv.
                         Audio mappan inniheldur allar talgervingarnar og index.tsv tengir auðkenni hverrar MOS-setningar við nafn
-                        talgervingarinnar í audio möppunni.
+                        talgervingarinnar í audio möppunni. Í index tsv eru eftirfarandi dálkar:
+                        <li>Dálkur 1 er nafn upptöku í "audio" möppunni.</li>
+                        <li>Dálkur 2 er "R" ef setningin er upptaka en "S" ef seningin er talgerfing.</li>
+                        <li>Dálkur 3 er seningin sjálf. </li>
                     </p>
                     {% with form=mos_form %}
                         {% include 'forms/_form.jinja' %}
                     {% endwith %}
                 </div>
                 <div class="modal-footer">
-                    <a href='{{url_for("stream_MOS_index_demo")}}' class='btn btn-primary btn-sm float-left mr-2'>
+                    <a href='{{url_for("stream_MOS_index_demo")}}' class='btn btn-primary float-left mr-2'>
                         {{macros.btn_icon('download', 'r')}}
-                        Sækja sýnidæmi(index_demo.tsv)
+                        Sýnidæmi
                     </a>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
                     <button class='btn btn-primary' type='submit'>

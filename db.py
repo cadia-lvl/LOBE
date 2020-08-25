@@ -73,7 +73,6 @@ def create_tokens(collection_id, files, is_g2p):
 
 def insert_collection(form):
     collection = Collection()
-    print(form.data)
     form.populate_obj(collection)
     db.session.add(collection)
     db.session.flush()
@@ -214,7 +213,7 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
         db.session.flush()
 
         for row in rd:
-            if row[0] and len(row) == 5:     
+            if row[0] and len(row) >= 2:     
                     for zip_info in zip.infolist():
                         if zip_info.filename[-1] == '/':
                             continue
@@ -222,7 +221,13 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
                         if zip_info.filename == row[0]:
                             try:
                                 #create a new token
-                                text, src, scr, pron = row[1], row[2], row[3], row[4]
+                                if not row[1]:
+                                    continue
+                                text = row[1]
+                                src = row[2] if row[2] else None
+                                scr = row[3] if row[3] else None
+                                pron = row[4] if row[4] else None
+                                #text, src, scr, pron = row[1], row[2], row[3], row[4]
                                 token = Token(text, zip_name, collection.id, score=scr,
                                     pron=pron, source=src)
                                 tokens.append(token)
@@ -272,8 +277,7 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
             token = Token.query.get(t.id)
             token.update_numbers()
         db.session.commit()
-
-
+        
         # then update the numbers of the collection
         collection.update_numbers()
         db.session.commit()

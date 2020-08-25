@@ -58,23 +58,24 @@
                 </div>
                 <div class="modal-body">
                     <p>
-                        Athugaðu að hlaða þarf upp .zip skrá sem inniheldur möppu sem heitir "audio", möppu sem heitir "text" og 
-                        skrá sem heitir index.tsv.
-                        Audio mappan inniheldur allar upptökur og index.tsv tengir nafn hverrar upptöku við setningu. 
-                        <li>Dálkur 1 í index.tsv er nafn upptöku í "audio" möppunni.</li>
-                        <li>Dálkur 2 er seningin sjálf.</li>
-                        <li>Dálkur 3 er hvaðan setningin kemur.</li>
-                        <li>Dálkur 4 er einkunn sem setning fær.</li>
-                        <li>Dálkur 5 er framburður seningarinnar.</li>
+                        Athugaðu að hlaða þarf upp .zip skrá sem inniheldur möppu sem heitir "audio" 
+                        og skrá sem heitir index.tsv.
+                        Audio mappan inniheldur allar upptökur og index.tsv tengir nafn hverrar upptöku við setningu. <br>
+                        Í index.tsv eru eftirfarandi dálkar:
+                        <li>Dálkur 1 er nafn upptöku í "audio" möppunni.</li>
+                        <li>Dálkur 2 er setningin sjálf.</li>
+                        <li>Dálkur 3 er hvaðan setningin kemur. (Valfrjálst)</li>
+                        <li>Dálkur 4 er röðunarstuðull. Fleytitala 0-1, hversu ofarlega sentningin raðast í listum. (Valfrjálst)</li>
+                        <li>Dálkur 5 er framburður setningarinnar. (Valfrjálst)</li>
                     </p>
                     {% with form=form %}
                         {% include 'forms/_form.jinja' %}
                     {% endwith %}
                 </div>
                 <div class="modal-footer">
-                    <a href='{{url_for("stream_collection_index_demo")}}' class='btn btn-primary btn-sm float-left mr-2'>
+                    <a href='{{url_for("stream_collection_index_demo")}}' class='btn btn-primary float-left mr-2'>
                         {{macros.btn_icon('download', 'r')}}
-                        Sækja sýnidæmi(index_demo.tsv)
+                        Sýnidæmi
                     </a>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
                     <button class='btn btn-primary' type='submit'>

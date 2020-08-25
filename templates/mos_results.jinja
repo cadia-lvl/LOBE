@@ -38,7 +38,7 @@
 
     <div class="wrapper">
         <div data-toggle="collapse" data-target="#collapse-users" aria-expanded="false" aria-controls="collapse-users" style="cursor: pointer;">
-            <h4><i class="fas fa-plus" aria-hidden="true"> Notendur</i></h4>
+            <h4><i class="fas fa-plus" aria-hidden="true"></i> Notendur</h4>
         </div>
         <div class="collapse" id="collapse-users">
             {% if users|length > 0 %}
@@ -51,12 +51,12 @@
 
        <div class="wrapper">
         <div data-toggle="collapse" data-target="#collapse-ratings" aria-expanded="false" aria-controls="collapse-ratings" style="cursor: pointer;">
-            <h4><i class="fas fa-plus" aria-hidden="true"> Allar einkunnir</i></h4>
+            <h4><i class="fas fa-plus" aria-hidden="true"></i> Setningar</h4>
         </div>
         <div class="collapse" id="collapse-ratings">
-            {% if ratings|length > 0 %}
-                {% with ratings=ratings %}
-                    {% include 'tables/mos_results_ratings.jinja'%}
+            {% if mos_list|length > 0 %}
+                {% with mos_list=mos_list %}
+                    {% include 'tables/mos_results_instances.jinja'%}
                 {% endwith %}
             {% endif %}
         </div>

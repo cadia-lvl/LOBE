@@ -14,12 +14,13 @@
                 Meðaleinkunn
             </th>
             <th>
-                <div class="column btn-group btn-group-toggle">
+                <div class="btn-group" style="margin-bottom: -8px;">
+                
                     <form id='selectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
                         {% for f in selectAllForm %}
                             {{f}}
                         {% endfor%}
-                        <button type='submit' id='selectAll' class='btn'>
+                        <button type='submit' id='selectAll' class='btn' style="margin-right: -8px;">
                             <span class=''><i class="far fa-check-square"></i></span>
                         </button>
                     </form>
@@ -27,7 +28,7 @@
                         {% for f in deselectAllForm %}
                             {{f}}
                         {% endfor%}
-                        <button type='submit' id='selectAll' class='btn'>
+                        <button type='submit' id='selectAll' class='btn' style="margin-left: -8px;">
                             <span class=''><i class="far fa-square"></i></span>
                         </button>
                     </form>

@@ -10,13 +10,18 @@
         <th>
             Meðaleinkunn
         </th>
+        <th>
+            Staðalfrávik
+        </th>
     </thead>
     <tbody>
         {% for user in users %}
             <tr>
                 <td><a href={{user.user.get_url()}}>{{user.user.get_printable_name()}}</a></td>
                 <td>{{user.total}}</td>
-                <td>{{user.average}}</td>
+                <td>{{user.mean}}</td>
+                <td>{{user.std}}</td>
+
             </tr>
         {% endfor %}
     </tbody>

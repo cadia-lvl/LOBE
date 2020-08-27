@@ -581,3 +581,4 @@ manager.add_command('add_default_configuration', AddDefaultConfiguration)
 
 if __name__ == '__main__':
     manager.run()
+

@@ -37,7 +37,7 @@
 
 
     <div class="wrapper">
-        <div data-toggle="collapse" data-target="#collapse-users" aria-expanded="false" aria-controls="collapse-users" style="cursor: pointer;">
+        <div style="background-color: #303030; padding-left: 8px;" data-toggle="collapse" data-target="#collapse-users" aria-expanded="false" aria-controls="collapse-users" style="cursor: pointer;">
             <h4><i class="fas fa-plus" aria-hidden="true"></i> Notendur</h4>
         </div>
         <div class="collapse" id="collapse-users">
@@ -49,8 +49,8 @@
         </div>
     </div>
 
-       <div class="wrapper">
-        <div data-toggle="collapse" data-target="#collapse-ratings" aria-expanded="false" aria-controls="collapse-ratings" style="cursor: pointer;">
+    <div class="wrapper" style="margin-top: 10px;">
+        <div style="background-color: #303030; padding-left: 8px;" data-toggle="collapse" data-target="#collapse-ratings" aria-expanded="false" aria-controls="collapse-ratings" style="cursor: pointer;">
             <h4><i class="fas fa-plus" aria-hidden="true"></i> Setningar</h4>
         </div>
         <div class="collapse" id="collapse-ratings">
@@ -64,7 +64,7 @@
     
     <div class='col-12' style="margin-top: 50px;">
         <h3 class='font-weight-bold'>Notendahegðun</h3>
-        <p>Línurit notenda</p>
+        <p>Hver lína sýnir einkunnagjöf ákveðins notenda fyrir þær einkunnir sem viðkomandi hefur gefið</p>
         <div class='card'>
             <div class='card-body'>
                 <div id='line-chart'>
@@ -75,7 +75,7 @@
 
     <div class='col-12' style="margin-top: 50px;">
         <h3 class='font-weight-bold'>Meðaleinkunn setninga</h3>
-        <p>Stöplarit</p>
+        <p>Hver stöpull sýnir meðaleinkunn ákveðinnar seningar frá öllum notendum</p>
         <div class='card'>
             <div class='card-body'>
                 <div id='bar-chart'>
@@ -86,7 +86,7 @@
 
     <div class='col-12' style="margin-top: 50px;">
         <h3 class='font-weight-bold'>Fjöldi einkunna á setningu</h3>
-        <p>Stöplarit</p>
+        <p>Hver stöpull sýnir fjölda einkunna sem hver sening hefur</p>
         <div class='card'>
             <div class='card-body'>
                 <div id='bar-chart-total-number'>
@@ -97,7 +97,10 @@
 
     <div class='col-12' style="margin-top: 50px;">
         <h3 class='font-weight-bold'>Röð einkunna</h3>
-        <p>Stöplarit</p>
+        <p>
+            Hver stöpull sýnir meðaleinkun eftir því hvenær einkunn er gefin. Þannig sýnir fyrsti 
+            stöpull meðaleinkun þeirra einkunna sem gefnar voru fyrst og svo koll af kolli.
+        </p>
         <div class='card'>
             <div class='card-body'>
                 <div id='bar-chart-placement'>
@@ -212,16 +215,12 @@
             x: mos_stats['names'],
             y: mos_stats['means'],
             name: 'Meðaleinkunn',
-            type: 'bar'
+            type: 'bar',
+            marker: {
+                color: '#00bc8c'
+            }
         };
-        /*
-        var trace2 = {
-            x: mos_stats['names'],
-            y:  mos_stats['total_amount'],
-            name: 'Fjöldi einkunna',
-            type: 'bar'
-        };
-        */
+
         var data = [trace1];
 
         Plotly.newPlot(container_bar, data, layout_bar, config);
@@ -257,7 +256,10 @@
             x: mos_stats['names'],
             y:  mos_stats['total_amount'],
             name: 'Fjöldi einkunna',
-            type: 'bar'
+            type: 'bar',
+            marker: {
+                color: '#00bc8c'
+            }
         };
         
         var data = [trace1];
@@ -295,7 +297,10 @@
             x: placement['p_nums'],
             y: placement['placement'],
             name: 'Meðaleinkunn',
-            type: 'bar'
+            type: 'bar',
+            marker: {
+                color: '#00bc8c'
+            }
         };
 
 

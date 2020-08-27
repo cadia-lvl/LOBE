@@ -2,6 +2,7 @@ import os
 
 from flask_security.forms import LoginForm, RegisterForm
 from flask_wtf import RecaptchaField
+from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import (Form, HiddenField, MultipleFileField, SelectMultipleField,
                      SelectField, TextField, IntegerField, BooleanField,
@@ -97,7 +98,8 @@ class MosItemSelectionForm(ModelForm):
         exclude = ['is_synth']
 
 
-class UploadCollectionForm(Form):
+
+class UploadCollectionForm(FlaskForm):
     name = TextField('Nafn', validators=[validators.required()])
     assigned_user_id = QuerySelectField('Rödd', query_factory=lambda: User.query,
                                         get_label='name', allow_blank=True)
@@ -112,11 +114,9 @@ class UploadCollectionForm(Form):
     is_g2p = BooleanField('Staðlað form.',
         description='Hakið við ef uphleðslan er á stöðluðu formi samanber lýsingu hér að ofan',
         default=False)
-    files = FileField(validators=[
-        #validators.required(),
-        FileAllowed(['zip'])
-    ])
+    files = FileField(validators=[FileAllowed(['zip'], 'Skrá verður að vera zip mappa'), FileRequired('Hladdu upp zip skrá')])
 
+    
     def validate_assigned_user_id(self, field):
         # HACK to user the QuerySelectField on User objects
         # but then later populate the field with only the pk.
@@ -126,8 +126,7 @@ class UploadCollectionForm(Form):
     def validate_configuration_id(self, field):
         if field.data is not None:
             field.data = field.data.id
-    
-    
+
         
 class CollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])
@@ -180,10 +179,10 @@ class BulkTokenForm(Form):
         return
     '''
 
-class MosUploadForm(Form):
+class MosUploadForm(FlaskForm):
     is_g2p = BooleanField('Staðlað form.', description='Hakið við ef uphleðslan er á stöðluðu formi samanber lýsingu hér að ofan',
                           default=False)
-    files = FileField(validators=[FileAllowed(['zip']), FileRequired()])
+    files = FileField(validators=[FileAllowed(['zip'], 'Skrá verður að vera zip mappa'), FileRequired('Hladdu upp zip skrá')])
 
 class RecordForm(Form):
     token = HiddenField('Texti')

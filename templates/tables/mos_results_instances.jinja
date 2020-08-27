@@ -10,10 +10,10 @@
             Texti
         </th>
         <th>
-            Meðaleinkunn
+            Fjöldi einkunna
         </th>
         <th>
-            Fjöldi einkunna
+            Meðaleinkunn
         </th>
     </thead>
     <tbody>
@@ -32,10 +32,10 @@
                 {% endif %}
                 
                 <td>{{mos.text}}</td>
-                <td>{{mos.average_rating}}</td>
                 <td>
                     {{mos.number_of_ratings}}
                 </td>
+                <td>{{mos.average_rating}}</td>
             </tr>
         {% endfor %}
     </tbody>

@@ -274,8 +274,8 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
         db.session.commit()
 
         for t in tokens:
-            token = Token.query.get(t.id)
-            token.update_numbers()
+            t.save_to_disk()
+            t.update_numbers()
         db.session.commit()
         
         # then update the numbers of the collection
@@ -292,16 +292,27 @@ def is_valid_rating(rating):
         return True
     return False
 
+def delete_rating_if_exists(mos_instance_id, user_id):
+    rating = MosRating.query.filter(MosRating.mos_instance_id == mos_instance_id) \
+            .filter(MosRating.user_id == user_id).all()
+    exists = False
+    for r in rating:
+        exists = True
+        db.session.delete(r)
+    db.session.commit()
+    return exists
 
 def save_MOS_ratings(form, files):
     #duration = float(form['duration'])
     user_id = int(form['user_id'])
     mos_id = int(form['mos_id'])
     mos = Mos.query.get(mos_id)
+
     mos_list = json.loads(form['mos_list'])
     for i in mos_list:
         if "rating" in i:
             if is_valid_rating(i['rating']):
+                delete_rating_if_exists(i['id'], user_id)
                 mos_instance = MosInstance.query.get(i['id'])
                 rating = MosRating()
                 rating.rating = int(i['rating'])

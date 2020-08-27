@@ -291,11 +291,10 @@ def create_collection():
 @login_required
 @roles_accepted('admin', 'Notandi')
 def collection_list():
-    form = UploadCollectionForm(request.form)
+    form = UploadCollectionForm()
     if request.method == 'POST':
-        if form.validate():
+        if form.validate() and form.is_g2p.data:
             try:
-                print('Form validated')
                 zip_file = request.files.get('files')
                 with ZipFile(zip_file, 'r') as zip:
                     zip_name = zip_file.filename[:-4]
@@ -787,17 +786,15 @@ def mos_collection_none():
 @roles_accepted('admin')
 def mos(id):
     mos = Mos.query.get(id)
-    form = MosUploadForm(request.form)
+    form = MosUploadForm()
     select_all_forms = [
         MosSelectAllForm(is_synth=True, select=True),
         MosSelectAllForm(is_synth=True, select=False),
         MosSelectAllForm(is_synth=False, select=True),
         MosSelectAllForm(is_synth=False, select=False),
     ]
-    #print(select_all_forms[0].data)
-    #if request.method == 'POST' and form.validate():
-    #     
-    if request.method == 'POST':
+
+    if request.method == 'POST' and form.validate():
         try:
             if(form.is_g2p.data):
                 zip_file = request.files.get('files')
@@ -810,9 +807,10 @@ def mos(id):
                 flash("Ekki tókst að hlaða upp skrá, vinsamlegast lestu leiðbeiningar og reyndu aftur.",
                     category="danger")                 
         except Exception as e: 
+            print(e)
             flash("Ekki tókst að hlaða upp skrá.",
                         category="danger")   
-        
+  
 
     mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
         request.args.get('sort_by', default='id'),
@@ -917,16 +915,21 @@ def mos_results(id):
     for u in users:
         rat = mos.getAllUserRatings(u.id)
         s = 0
+        ratings_stats = []
         for r in ratings:
             s += r.rating
+            ratings_stats.append(r.rating)
+        ratings_stats = np.array(ratings_stats)
+
         mos_ratings_per_user = []
         for m in mos_list:
             if not m.getUserRating(u.id):
                 mos_ratings_per_user.append('')
             else:
                 mos_ratings_per_user.append(m.getUserRating(u.id))
+        print(ratings_stats)
         user_ratings = {"username": u.get_printable_name(), "ratings": mos_ratings_per_user}
-        temp = {'user': u,'average': s/len(rat), 'total': len(rat), 'user_ratings': user_ratings}
+        temp = {'user': u, 'mean': round(np.mean(ratings_stats),2), 'std': round(np.std(ratings_stats), 2), 'total': len(rat), 'user_ratings': user_ratings}
         temp2 = {'user_ratings': user_ratings}
         users_json.append(temp)
         users_graph_json.append(temp2)

@@ -1507,6 +1507,9 @@ class MosInstance(BaseModel, db.Model):
 
 class MosRating(BaseModel, db.Model):
     __tablename__ = 'MosRating'
+    __table_args__ = (
+        db.UniqueConstraint('mos_instance_id', 'user_id'),
+      )
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     rating = db.Column(db.Integer, default=0, info={
         'label': 'Einkunn',
@@ -1525,4 +1528,3 @@ class MosRating(BaseModel, db.Model):
     def get_instance(self):
         return MosInstance.query.get(self.mos_instance_id) 
 
-#https://docs.sqlalchemy.org/en/13/orm/events.html

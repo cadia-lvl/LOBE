@@ -17,20 +17,20 @@
                 <div class='col-6'><p>Fjöldi notenda:</p></div>
                 <div class='col-6 text-right'><p>{{users | length }}</p></div>
 
-                <div class='col-6'><p>Annað:</p></div>
-                <div class='col-6 text-right'><p>...</p></div>
+                <div class='col-6'><p>Fjöldi setninga:</p></div>
+                <div class='col-6 text-right'><p>{{mos_list | length}}</p></div>
             </div>
         </div>
         <div class='col-md-6 col-12'>
             <div class='row'>
+                <div class='col-6'><p>Búð til:</p></div>
+                <div class='col-6 text-right'><p>{{mos.created_at | datetime(format='low')}}</p></div>
+
                 <div class='col-6'><p>Meðaleinkunn:</p></div>
                 <div class='col-6 text-right'><p>{{rating_json.average}}</p></div>
 
-                <div class='col-6'><p>Annað:</p></div>
-                <div class='col-6 text-right'><p>...</p></div>
-
-                <div class='col-6'><p>Annað2:</p></div>
-                <div class='col-6 text-right'><p>...</p></div>
+                <div class='col-6'><p>Staðalfrávik:</p></div>
+                <div class='col-6 text-right'><p>{{rating_json.std}}</p></div>
             </div>
         </div>
     </div>

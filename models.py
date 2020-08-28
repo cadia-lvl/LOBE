@@ -5,6 +5,7 @@ import wave
 import json
 import subprocess
 import random
+import numpy as np
 from datetime import datetime, timedelta
 
 from flask import current_app as app
@@ -1404,6 +1405,7 @@ class Mos(BaseModel, db.Model):
             tokens.append(m.custom_token)
         return tokens
 
+
     @property
     def url(self):
         return url_for('mos', id=self.id)
@@ -1482,6 +1484,9 @@ class MosInstance(BaseModel, db.Model):
     def get_printable_id(self):
         return "MOS-Setning {}".format(self.id)
 
+    @property
+    def name(self):
+        return "MOS-Setning {}".format(self.id)
 
     @property
     def ajax_edit_action(self):
@@ -1498,6 +1503,14 @@ class MosInstance(BaseModel, db.Model):
         else:
             return "-"
 
+    @property
+    def std_of_ratings(self):
+        ratings = [r.rating for r in self.ratings]
+        if len(ratings) == 0:
+            return "-"
+        ratings = np.array(ratings)
+        return round(np.std(ratings), 2)
+        
     @property
     def number_of_ratings(self):
         return len(self.ratings)

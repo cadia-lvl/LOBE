@@ -139,8 +139,8 @@
         $(window).keyup(function (e) {
             if (e.key === ' ' || e.key === 'Spacebar'  || e.keyCode === 38 || e.keyCode === 87) {
                 // spacebar, arrow-up or "w"
-                //e.preventDefault()
-                //recordAction();
+                e.preventDefault()
+                playAction();
             } else if(e.keyCode === 37 || e.keyCode === 65){ // arrow-left or "a"
                 prevAction();
             } else if(e.keyCode === 39 || e.keyCode === 68){ // arrow-right or "d"
@@ -303,6 +303,7 @@
                 setRatingsButtonsOn()
             }
             else{
+                //setRatingsButtonsOn()
                 setRatingsButtonsOff()
             }
             /*

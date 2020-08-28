@@ -5,6 +5,7 @@
         </th>
         <th>
             Auðkenni setningar
+            {{macros.sort_th_a('id')}}
         </th>
         <th>
             Texti
@@ -14,6 +15,9 @@
         </th>
         <th>
             Meðaleinkunn
+        </th>
+        <th>
+            Staðalfrávik
         </th>
     </thead>
     <tbody>
@@ -36,6 +40,7 @@
                     {{mos.number_of_ratings}}
                 </td>
                 <td>{{mos.average_rating}}</td>
+                <td>{{mos.std_of_ratings}}</td>
             </tr>
         {% endfor %}
     </tbody>

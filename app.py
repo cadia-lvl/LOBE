@@ -10,6 +10,7 @@ from functools import wraps
 import random
 from datetime import date, datetime
 from logging.handlers import RotatingFileHandler
+from operator import itemgetter
 
 import numpy as np
 from zipfile import ZipFile
@@ -738,6 +739,8 @@ def delete_conf(id):
 
 
 # MOS ROUTES
+
+
 @app.route('/mos/')
 @login_required
 @roles_accepted('admin')
@@ -753,7 +756,6 @@ def mos_list():
     return render_template('lists/mos.jinja', mos_list=mos_list,
         collections=collections, section='mos')
 
-# MOS ROUTES
 @app.route('/mos/collection/<int:id>')
 @login_required
 @roles_accepted('admin')
@@ -845,9 +847,7 @@ def mos_test(id):
     user_id = int(current_user.id)
     user = User.query.get(user_id)
     mos = Mos.query.get(id)
-    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
-        request.args.get('sort_by', default='id'),
-        order=request.args.get('order', default='desc'))).all()
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).all()
     mos_list_to_use = []
     for i in mos_list:
         if (i.selected and i.path):
@@ -893,31 +893,31 @@ def mos_results(id):
     user_ids = mos.getAllUsers()
     users = User.query.filter(User.id.in_(user_ids)).all()
     rating_json = {}
-    average = 0
+    all_rating_stats = []
     placement = [0]*max_placement
     p_counter = [0]*max_placement
     for i in ratings:
-        average += i.rating
+        all_rating_stats.append(i.rating)
         placement[i.placement - 1] += i.rating
         p_counter[i.placement - 1] += 1
+    all_rating_stats = np.array(all_rating_stats)
     for i in range(len(placement)):
         if p_counter[i] != 0 and placement[i] != 0:
             placement[i] = placement[i]/p_counter[i]
     placement_info = {'placement': placement, 'p_nums': list(range(1, len(mos_list)))}
-    rating_json = {'average': round(average/len(ratings), 2)}
+    rating_json = {'average': round(np.mean(all_rating_stats), 2), 'std': round(np.std(all_rating_stats), 2)}
     mos_stats = {'names': [], 'means': [], 'total_amount': []}
     for m in mos_list:
         mos_stats['names'].append(str(m.id))
         mos_stats['means'].append(m.average_rating)
         mos_stats['total_amount'].append(m.number_of_ratings)
-    users_json = []
+    print(mos_list)
+    users_list = []
     users_graph_json = []
     for u in users:
-        rat = mos.getAllUserRatings(u.id)
-        s = 0
+        user_ratings = mos.getAllUserRatings(u.id)
         ratings_stats = []
-        for r in ratings:
-            s += r.rating
+        for r in user_ratings:
             ratings_stats.append(r.rating)
         ratings_stats = np.array(ratings_stats)
 
@@ -927,14 +927,16 @@ def mos_results(id):
                 mos_ratings_per_user.append('')
             else:
                 mos_ratings_per_user.append(m.getUserRating(u.id))
-        print(ratings_stats)
         user_ratings = {"username": u.get_printable_name(), "ratings": mos_ratings_per_user}
-        temp = {'user': u, 'mean': round(np.mean(ratings_stats),2), 'std': round(np.std(ratings_stats), 2), 'total': len(rat), 'user_ratings': user_ratings}
+        temp = {'user': u, 'mean': round(np.mean(ratings_stats),2), 'std': round(np.std(ratings_stats), 2), 'total': len(ratings_stats), 'user_ratings': mos_ratings_per_user}
         temp2 = {'user_ratings': user_ratings}
-        users_json.append(temp)
+        users_list.append(temp)
         users_graph_json.append(temp2)
+
+    users_list = sorted(users_list, key=itemgetter('mean')) 
+
     return render_template('mos_results.jinja', mos=mos, mos_stats=mos_stats,
-        ratings=ratings, placement_info=placement_info, users=users_json, 
+        ratings=ratings, placement_info=placement_info, users=users_list, 
         rating_json=rating_json, users_graph_json=users_graph_json,
         mos_list=mos_list, section='mos')
 

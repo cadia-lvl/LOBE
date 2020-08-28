@@ -911,7 +911,6 @@ def mos_results(id):
         mos_stats['names'].append(str(m.id))
         mos_stats['means'].append(m.average_rating)
         mos_stats['total_amount'].append(m.number_of_ratings)
-    print(mos_list)
     users_list = []
     users_graph_json = []
     for u in users:
@@ -1003,7 +1002,6 @@ def post_mos_rating(id):
 def mos_instance_edit(id):
     try:
         instance = MosInstance.query.get(id)
-        print(request.form)
         form = MosItemSelectionForm(request.form, obj=instance)
         form.populate_obj(instance)
         db.session.commit()

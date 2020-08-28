@@ -154,13 +154,15 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                             custom_tokens.append(custom_token)
                 else:
                     pass
-        db.session.commit()
+        #db.session.commit()
         if len(custom_tokens) > 0:
             custom_token_dir = app.config["CUSTOM_TOKEN_DIR"]+"{}".format(id)
             pathlib.Path(custom_token_dir).mkdir(exist_ok=True)
             for token in custom_tokens:
                 token.save_to_disk()
             db.session.commit()
+        return len(custom_tokens)
+        
 
 def save_uploaded_collection(zip, zip_name, tsv_name, form):
     #creating new collection

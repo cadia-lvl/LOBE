@@ -803,7 +803,11 @@ def mos(id):
                 with ZipFile(zip_file, 'r') as zip:
                     zip_name = zip_file.filename[:-4]
                     tsv_name = '{}/index.tsv'.format(zip_name)
-                    save_custom_wav(zip, zip_name, tsv_name, mos, id)
+]                    successfully_uploaded = save_custom_wav(zip, zip_name, tsv_name, mos, id)
+                    if successfully_uploaded > 0:
+                        flash("Tókst að hlaða upp {} setningum.".format(successfully_uploaded),category="success")
+                    else:
+                        flash("Ekki tókst að hlaða upp neinum setningum.".format(successfully_uploaded),category="warning")
                 return redirect(url_for('mos', id=id))   
             else:
                 flash("Ekki tókst að hlaða upp skrá, vinsamlegast lestu leiðbeiningar og reyndu aftur.",

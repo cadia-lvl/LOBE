@@ -1,15 +1,13 @@
 import datetime
 import json
 import math
-import multiprocessing
 import os
 import traceback
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor
-from functools import partialmethod
 from flask import flash
 from sqlalchemy import func
-from models import Collection, Recording, Session, Token, Trim, User, Verification, db
+from models import Collection, Recording, Session, Token, Trim, User, db
+
 
 def create_tokens(collection_id, files, is_g2p):
     tokens = []
@@ -22,11 +20,16 @@ def create_tokens(collection_id, files, is_g2p):
                 try:
                     text, src, scr, *pron = line.split('\t')[0:]
                     pron = '\t'.join(p for p in pron)
-                    token = Token(text, file.filename, collection_id, score=scr,
-                        pron=pron, source=src)
+                    token = Token(
+                        text,
+                        file.filename,
+                        collection_id,
+                        score=scr,
+                        pron=pron,
+                        source=src)
                     tokens.append(token)
                     db.session.add(token)
-                except ValueError as error:
+                except ValueError:
                     num_errors += 1
                     error_line = idx + 1
                     error_file = file.filename
@@ -44,7 +47,9 @@ def create_tokens(collection_id, files, is_g2p):
                 db.session.add(token)
 
     if num_errors > 0:
-        flash(f'{num_errors} villur komu upp, fyrsta villan í {error_file} í línu {error_line}',
+        flash(
+            f'{num_errors} villur komu upp, fyrsta villan í' +
+            f'{error_file} í línu {error_line}',
             category='danger')
 
     db.session.commit()
@@ -67,23 +72,26 @@ def insert_collection(form):
     db.session.add(collection)
     db.session.flush()
 
-    dirs = [collection.get_record_dir(), collection.get_token_dir(),
+    dirs = [
+        collection.get_record_dir(), collection.get_token_dir(),
         collection.get_video_dir(), collection.get_wav_audio_dir()]
     # create dirs for tokens and records
     for dir in dirs:
-        if not os.path.exists(dir): os.makedirs(dir)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
         else:
             raise ValueError("""
                 For some reason, we are about to create a collection with the
                 same primary key as a previous collection. This could happen
                 for example if 2 databases are used on the same machine. If
                 this error occurs, the current environment has to change the
-                DATA_BASE_DIR, TOKEN_DIR, RECORD_DIR flask environment variables
-                to point to some other place.
+                DATA_BASE_DIR, TOKEN_DIR, RECORD_DIR flask environment
+                variables to point to some other place.
 
                 Folder that already exists: {}
 
-                Perhaps some of the source folders have never been created before.
+                Perhaps some of the source folders have never been created
+                before.
                 """.format(dir))
     db.session.commit()
     return collection
@@ -100,15 +108,24 @@ def save_recording_session(form, files):
     skipped = json.loads(form['skipped'])
     record_session = None
     if len(recording_objs) > 0 or len(skipped):
-        record_session = Session(user_id, collection_id, manager_id,
-            duration=duration, has_video=has_video, is_dev=collection.is_dev)
+        record_session = Session(
+            user_id,
+            collection_id,
+            manager_id,
+            duration=duration,
+            has_video=has_video,
+            is_dev=collection.is_dev)
         db.session.add(record_session)
         db.session.flush()
     for token_id, recording_obj in recording_objs.items():
         # this token has a recording
         file_obj = files.get('file_{}'.format(token_id))
-        recording = Recording(int(token_id), file_obj.filename, user_id,
-            session_id=record_session.id, has_video=has_video)
+        recording = Recording(
+            int(token_id),
+            file_obj.filename,
+            user_id,
+            session_id=record_session.id,
+            has_video=has_video)
         if "analysis" in recording_obj:
             recording.analysis = recording_obj['analysis']
         if "cut" in recording_obj:
@@ -138,6 +155,7 @@ def save_recording_session(form, files):
     db.session.commit()
     return record_session.id if record_session else None
 
+
 def sessions_day_info(sessions, user):
     # insert by dates
     days = defaultdict(list)
@@ -149,26 +167,36 @@ def sessions_day_info(sessions, user):
         is_voice, is_manager = False, False
         role = "voice"
         for s in sessions:
-            if is_voice and is_manager: break
+            if is_voice and is_manager:
+                break
             is_voice = is_voice or user.id == s.user_id
             is_manager = is_manager or user.id == s.manager_id
         if is_manager:
-            if is_voice: role = "both"
-            else: role = "manager"
+            if is_voice:
+                role = "both"
+            else:
+                role = "manager"
         day_info[day] = {
             'sessions': sessions,
             'role': role,
             'start_time': sessions[0].get_start_time,
             'end_time': sessions[-1].created_at,
-            'est_work_time': datetime.timedelta(seconds=math.ceil((sessions[-1].created_at - sessions[0].get_start_time).total_seconds())),
-            'session_duration': datetime.timedelta(seconds=int(sum(s.duration for s in sessions)))}
+            'est_work_time': datetime.timedelta(
+                seconds=math.ceil(
+                    (sessions[-1].created_at - sessions[0]
+                        .get_start_time).total_seconds())),
+            'session_duration': datetime.timedelta(
+                seconds=int(sum(s.duration for s in sessions)))}
 
-    total_est_work_time = sum((i['est_work_time'] for _, i in day_info.items()),
+    total_est_work_time = sum(
+        (i['est_work_time'] for _, i in day_info.items()),
         datetime.timedelta(0))
-    total_session_duration = sum((i['session_duration'] for _, i in day_info.items()),
+    total_session_duration = sum(
+        (i['session_duration'] for _, i in day_info.items()),
         datetime.timedelta(0))
 
     return day_info, total_est_work_time, total_session_duration
+
 
 def delete_recording_db(recording):
     collection = Collection.query.get(recording.get_collection_id())
@@ -189,6 +217,7 @@ def delete_recording_db(recording):
     collection.update_numbers()
     db.session.commit()
     return True
+
 
 def delete_token_db(token):
     try:
@@ -239,6 +268,7 @@ def delete_session_db(record_session):
     db.session.commit()
     return True
 
+
 def resolve_order(object, sort_by, order='desc'):
     ordering = getattr(object, sort_by)
     if callable(ordering):
@@ -248,8 +278,11 @@ def resolve_order(object, sort_by, order='desc'):
     else:
         return ordering.desc()
 
+
 def get_verifiers():
-    return [u for u in User.query.all() if any(r.name == 'Greinir' for r in u.roles)]
+    return [u for u in User.query.all()
+            if any(r.name == 'Greinir' for r in u.roles)]
+
 
 def insert_trims(trims, verification_id):
     '''
@@ -267,6 +300,7 @@ def insert_trims(trims, verification_id):
         db.session.add(trim)
     db.session.commit()
 
+
 def activity(model):
     '''
     Returns two lists (x, y) where x contains timestamps
@@ -275,11 +309,13 @@ def activity(model):
     '''
     groups = ['year', 'month', 'day']
     groups = [func.extract(x, model.created_at).label(x) for x in groups]
-    q = (db.session.query(func.count(model.id).label('count'),*groups)
-        .group_by(*groups)
-        .order_by(*groups)
-        .all())
-    x = [(lambda x: f'{int(x.day)}/{int(x.month)}/{int(x.year)}')(el) for el in q]
+    q = (
+            db.session.query(func.count(model.id).label('count'), *groups)
+            .group_by(*groups)
+            .order_by(*groups)
+            .all())
+    x = [
+            (lambda x: f'{int(x.day)}/{int(x.month)}/{int(x.year)}')(el)
+            for el in q]
     y = [el.count for el in q]
     return x, y
-

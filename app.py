@@ -17,7 +17,7 @@ from flask_security import (Security, SQLAlchemyUserDatastore, current_user,
                             login_required, roles_accepted)
 from flask_security.utils import hash_password
 from sqlalchemy import and_, or_
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
+from sqlalchemy.exc import IntegrityError
 
 from db import (activity, create_tokens, delete_recording_db,
                 delete_session_db, delete_token_db, get_verifiers,
@@ -39,7 +39,6 @@ from models import (Application, Collection, Configuration, Posting, Recording,
                     VerifierTitle, db)
 from tools.analyze import (find_segment, load_sample, signal_is_too_high,
                            signal_is_too_low)
-from tools.date import last_day
 
 
 # TODO: Move this to a sensible location
@@ -50,7 +49,8 @@ logfile_name = 'logs/info.log'
 logfile_mode = 'w'
 if os.path.exists(logfile_name):
     logfile_mode = 'a'
-logHandler = RotatingFileHandler(logfile_name, maxBytes=1000,
+logHandler = RotatingFileHandler(
+    logfile_name, maxBytes=1000,
     backupCount=1, mode=logfile_mode)
 logHandler.setLevel(logging.DEBUG)
 logHandler.setFormatter(logging.Formatter(
@@ -63,9 +63,11 @@ user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 def create_app():
     app = Flask(__name__)
     if os.getenv('SEMI_PROD', False):
-        app.config.from_pyfile('{}.py'.format(os.path.join('settings/','semi_production')))
+        app.config.from_pyfile('{}.py'.format(
+            os.path.join('settings/', 'semi_production')))
     else:
-        app.config.from_pyfile('{}.py'.format(os.path.join('settings/',
+        app.config.from_pyfile('{}.py'.format(os.path.join(
+            'settings/',
             os.getenv('FLASK_ENV', 'development'))))
     app.logger.setLevel(logging.DEBUG)
     app.logger.addHandler(logHandler)
@@ -113,14 +115,17 @@ def require_login_if_closed_collection(func):
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
-        collection_id = kwargs.get("collection_id") or request.form.get("collection_id")
+        collection_id = kwargs.get("collection_id") or \
+            request.form.get("collection_id")
         user_id = request.args.get('user_id') or request.form.get('user_id')
 
         collection = Collection.query.get(collection_id)
         if not collection.is_closed and collection.open_for_applicant(user_id):
             return func(*args, **kwargs)
 
-        if current_user and (current_user.has_role("admin") or current_user.has_role("Notandi")):
+        if current_user and \
+            (current_user.has_role("admin") or
+                current_user.has_role("Notandi")):
             return func(*args, **kwargs)
 
         return app.login_manager.unauthorized()
@@ -135,8 +140,11 @@ def post_recording():
     try:
         session_id = save_recording_session(request.form, request.files)
     except Exception as error:
-        flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
-        app.logger.error("Error posting recordings: {}\n{}".format(error,   traceback.format_exc()))
+        flash(
+            "Villa kom upp. Hafið samband við kerfisstjóra",
+            category="danger")
+        app.logger.error("Error posting recordings: {}\n{}".format(
+            error, traceback.format_exc()))
         return Response(str(error), status=500)
 
     if collection.posting:
@@ -156,16 +164,21 @@ def record_session(collection_id):
     user_id = request.args.get('user_id')
 
     if not user_id:
-        flash("Villa kom upp. Vinsamlega veljið rödd til að taka upp", category="danger")
+        flash(
+            "Villa kom upp. Vinsamlega veljið rödd til að taka upp",
+            category="danger")
         return redirect(url_for('collection', id=collection_id))
     if not collection.configuration:
-        flash("Villa kom upp. Vinsamlega veljið stillingar fyrir söfnunina", category="danger")
+        flash(
+            "Villa kom upp. Vinsamlega veljið stillingar fyrir söfnunina",
+            category="danger")
         return redirect(url_for('collection', id=collection_id))
     user_id = int(user_id)
     user = User.query.get(user_id)
     if collection.has_assigned_user():
         if user_id != collection.assigned_user_id:
-            flash("Aðeins skráð rödd getur tekið upp í þessari söfnun",
+            flash(
+                "Aðeins skráð rödd getur tekið upp í þessari söfnun",
                 category="danger")
             return redirect(url_for('index'))
 
@@ -174,7 +187,8 @@ def record_session(collection_id):
         tokens = Token.query.filter(
             Token.collection_id == collection_id,
             Token.id.notin_(
-                Recording.query.filter(Recording.user_id == user_id).values(Recording.token_id)
+                Recording.query.filter(
+                    Recording.user_id == user_id).values(Recording.token_id)
             ),
             Token.marked_as_bad != True
         ).order_by(
@@ -192,14 +206,19 @@ def record_session(collection_id):
         )
 
     if tokens.count() == 0:
-        flash("Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun",
+        flash(
+            "Engar ólesnar eða ómerkar setningar eru eftir í þessari söfnun",
             category="warning")
         return redirect(url_for("collection", id=collection_id))
 
-    return render_template('record.jinja', section='record',
-        collection=collection, token=tokens,
+    return render_template(
+        'record.jinja',
+        section='record',
+        collection=collection,
+        token=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
-        user=user, manager=current_user,
+        user=user,
+        manager=current_user,
         application=(not collection.is_closed),
         tal_api_token=app.config['TAL_API_TOKEN'])
 
@@ -247,8 +266,8 @@ def cut_recording(id):
     end = float(request.form['end'])
 
     if start == -1 and end == -1:
-        recording.start = None;
-        recording.end = None;
+        recording.start = None
+        recording.end = None
     else:
         recording.start = start
         recording.end = end
@@ -261,8 +280,12 @@ def cut_recording(id):
 @roles_accepted('admin', 'Notandi')
 def record_single(tok_id):
     token = Token.query.get(tok_id)
-    return render_template('record.jinja', tokens=token, section='record',
-        single=True, json_tokens=json.dumps([token.get_dict()]),
+    return render_template(
+        'record.jinja',
+        tokens=token,
+        section='record',
+        single=True,
+        json_tokens=json.dumps([token.get_dict()]),
         tal_api_token=app.config['TAL_API_TOKEN'])
 
 
@@ -279,8 +302,13 @@ def create_collection():
             return redirect(url_for('collection', id=collection.id))
         except Exception as error:
             flash("Error creating collection.", category="danger")
-            app.logger.error("Error creating collection {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form, type='create',
+            app.logger.error(
+                "Error creating collection {}\n{}".format(
+                    error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        type='create',
         section='collection')
 
 
@@ -289,13 +317,15 @@ def create_collection():
 @roles_accepted('admin', 'Notandi')
 def collection_list():
     page = int(request.args.get('page', 1))
-    # TODO: sort_by not currently supported
-    sort_by = request.args.get('sort_by', 'name')
-    collections = Collection.query.order_by(resolve_order(Collection,
-            request.args.get('sort_by', default='name'),
-            order=request.args.get('order', default='desc')))\
-            .paginate(page,per_page=app.config['COLLECTION_PAGINATION'])
-    return render_template('lists/collections.jinja', collections=collections,
+    collections = Collection.query.order_by(
+            resolve_order(
+                Collection,
+                request.args.get('sort_by', default='name'),
+                order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['COLLECTION_PAGINATION'])
+    return render_template(
+        'lists/collections.jinja',
+        collections=collections,
         section='collection')
 
 
@@ -304,11 +334,11 @@ def collection_list():
 @roles_accepted('admin')
 def collection_zip_list():
     page = int(request.args.get('page', 1))
-    # TODO: sort_by not currently supported
-    sort_by = request.args.get('sort_by', 'name')
-    collections = db.session.query(Collection).filter_by(has_zip=True).paginate(page,
-        per_page=app.config['COLLECTION_PAGINATION'], )
-    return render_template('lists/zips.jinja', zips=collections,
+    collections = db.session.query(Collection).filter_by(has_zip=True)\
+        .paginate(page, per_page=app.config['COLLECTION_PAGINATION'])
+    return render_template(
+        'lists/zips.jinja',
+        zips=collections,
         section='collection')
 
 
@@ -318,20 +348,29 @@ def collection_zip_list():
 def collection(id):
     token_form = BulkTokenForm(request.form)
     if request.method == 'POST':
-        tokens = create_tokens(id, request.files.getlist('files'),
+        tokens = create_tokens(
+            id,
+            request.files.getlist('files'),
             token_form.is_g2p.data)
 
     collection = Collection.query.get(id)
 
-    tokens = Token.query.filter(Token.collection_id==collection.id)\
-            .order_by(resolve_order(Token,
-                request.args.get('sort_by', default='created_at'),
-                order=request.args.get('order', default='desc')))\
-            .paginate(int(request.args.get('page', 1)) ,per_page=app.config['TOKEN_PAGINATION'])
+    tokens = Token.query.filter(Token.collection_id == collection.id)\
+        .order_by(resolve_order(
+            Token,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc')))\
+        .paginate(
+            int(request.args.get('page', 1)),
+            per_page=app.config['TOKEN_PAGINATION'])
 
-    return render_template('collection.jinja',
-        collection=collection, token_form=token_form, tokens=tokens,
-        users=User.query.all(), section='collection')
+    return render_template(
+        'collection.jinja',
+        collection=collection,
+        token_form=token_form,
+        tokens=tokens,
+        users=User.query.all(),
+        section='collection')
 
 
 @app.route('/collections/<int:id>/sessions', methods=['GET'])
@@ -341,9 +380,12 @@ def collection_sessions(id):
     page = int(request.args.get('page', 1))
     collection = Collection.query.get(id)
     rec_sessions = ListPagination(collection.sessions, page,
-        app.config['SESSION_PAGINATION'])
-    return render_template('lists/collection_sessions.jinja',
-        collection=collection, sessions=rec_sessions, section='collection')
+                                  app.config['SESSION_PAGINATION'])
+    return render_template(
+        'lists/collection_sessions.jinja',
+        collection=collection,
+        sessions=rec_sessions,
+        section='collection')
 
 
 @app.route('/collections/<int:id>/trim', methods=['GET'])
@@ -381,8 +423,8 @@ def stream_collection_zip(id):
         mimetype='application/octet-stream',
         headers=[
             ('Content-Length', str(file_size)),
-            ('Content-Disposition', "attachment; filename=\"%s\"" % '{}'.format(collection.zip_fname))
-        ],
+            ('Content-Disposition',
+                f"attachment; filename=\"{collection.zip_fname}\"")],
         direct_passthrough=True)
 
 
@@ -405,8 +447,12 @@ def edit_collection(id):
             app.logger.error('Error updating a collection : {}\n{}'.format(
                 error, traceback.format_exc()))
 
-    return render_template('forms/model.jinja', collection=collection,
-        form=form, type='edit', action=url_for('edit_collection', id=id),
+    return render_template(
+        'forms/model.jinja',
+        collection=collection,
+        form=form,
+        type='edit',
+        action=url_for('edit_collection', id=id),
         section='collection')
 
 
@@ -424,10 +470,13 @@ def delete_collection(id):
         shutil.rmtree(collection.get_record_dir())
         shutil.rmtree(collection.get_token_dir())
         shutil.rmtree(collection.get_video_dir())
-        if has_zip: os.remove(zip_path)
+        if has_zip:
+            os.remove(zip_path)
         flash("{} var eytt".format(name), category='success')
     except Exception as error:
-        flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
+        flash(
+            "Villa kom upp. Hafið samband við kerfisstjóra",
+            category="danger")
         app.logger.error('Error updating a collection : {}\n{}'.format(
             error, traceback.format_exc()))
     return redirect(url_for('collection_list'))
@@ -445,7 +494,9 @@ def delete_collection_archive(id):
         except FileNotFoundError:
             pass
         except Exception as error:
-            flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
+            flash(
+                "Villa kom upp. Hafið samband við kerfisstjóra",
+                category="danger")
             app.logger.error('Error deleting an archive : {}\n{}'.format(
                 error, traceback.format_exc()))
             do_delete = False
@@ -465,7 +516,9 @@ def delete_collection_archive(id):
 @login_required
 @roles_accepted('admin', 'Notandi')
 def token(id):
-    return render_template('token.jinja', token=Token.query.get(id),
+    return render_template(
+        'token.jinja',
+        token=Token.query.get(id),
         section='token')
 
 
@@ -474,12 +527,16 @@ def token(id):
 @roles_accepted('admin', 'Notandi')
 def token_list():
     page = int(request.args.get('page', default=1))
-    tokens = Token.query.order_by(resolve_order(Token,
+    tokens = Token.query.order_by(resolve_order(
+            Token,
             request.args.get('sort_by', default='created_at'),
-            order=request.args.get('order', default='desc'))).paginate(page,
-        per_page=app.config['TOKEN_PAGINATION'])
+            order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['TOKEN_PAGINATION'])
 
-    return render_template('lists/tokens.jinja', tokens=tokens, section='token')
+    return render_template(
+        'lists/tokens.jinja',
+        tokens=tokens,
+        section='token')
 
 
 @app.route('/tokens/<int:id>/download/')
@@ -488,11 +545,14 @@ def token_list():
 def download_token(id):
     token = Token.query.get(id)
     try:
-        return send_from_directory(token.get_directory(), token.fname,
+        return send_from_directory(
+            token.get_directory(),
+            token.fname,
             as_attachment=True)
     except Exception as error:
         app.logger.error(
-            "Error downloading a token : {}\n{}".format(error,traceback.format_exc()))
+            "Error downloading a token : {}\n{}".format(
+                error, traceback.format_exc()))
 
 
 @app.route('/tokens/<int:id>/delete/', methods=['GET'])
@@ -528,15 +588,19 @@ def recording_list():
     only_bad = bool(request.args.get('only_bad', False))
 
     if only_bad:
-        recordings = db.session.query(Recording).filter_by(marked_as_bad=True).paginate(page,
-            per_page=app.config['RECORDING_PAGINATION'])
+        recordings = db.session.query(Recording).filter_by(marked_as_bad=True)\
+            .paginate(page, per_page=app.config['RECORDING_PAGINATION'])
     else:
-        recordings = Recording.query.order_by(resolve_order(Recording,
+        recordings = Recording.query.order_by(resolve_order(
+            Recording,
             request.args.get('sort_by', default='created_at'),
             order=request.args.get('order', default='desc')))\
             .paginate(page, per_page=app.config['RECORDING_PAGINATION'])
 
-    return render_template('lists/recordings.jinja', recordings=recordings, only_bad=only_bad,
+    return render_template(
+        'lists/recordings.jinja',
+        recordings=recordings,
+        only_bad=only_bad,
         section='recording')
 
 
@@ -545,7 +609,10 @@ def recording_list():
 @roles_accepted('admin', 'Notandi')
 def recording(id):
     recording = Recording.query.get(id)
-    return render_template('recording.jinja', recording=recording, section='recording')
+    return render_template(
+        'recording.jinja',
+        recording=recording,
+        section='recording')
 
 
 @app.route('/recordings/<int:id>/delete/', methods=['GET'])
@@ -588,11 +655,14 @@ def toggle_recording_bad_ajax(id):
 def download_recording(id):
     recording = Recording.query.get(id)
     try:
-        return send_from_directory(recording.get_directory(), recording.fname,
+        return send_from_directory(
+            recording.get_directory(),
+            recording.fname,
             as_attachment=True)
     except Exception as error:
         app.logger.error(
-            "Error downloading a recording : {}\n{}".format(error,traceback.format_exc()))
+            "Error downloading a recording : {}\n{}".format(
+                error, traceback.format_exc()))
 
 
 # CONFIGURATION ROUTES
@@ -601,11 +671,16 @@ def download_recording(id):
 @roles_accepted('admin', 'Notandi')
 def conf_list():
     page = int(request.args.get('page', 1))
-    confs = Configuration.query.order_by(resolve_order(Configuration,
-        request.args.get('sort_by', default='created_at'),
-        order=request.args.get('order', default='desc'))).paginate(page,
-        per_page=app.config['CONF_PAGINATION'])
-    return render_template('lists/confs.jinja', confs=confs, section='other')
+    confs = Configuration.query.order_by(resolve_order(
+            Configuration,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['CONF_PAGINATION'])
+
+    return render_template(
+        'lists/confs.jinja',
+        confs=confs,
+        section='other')
 
 
 @app.route('/confs/<int:id>/')
@@ -613,8 +688,12 @@ def conf_list():
 @roles_accepted('admin', 'Notandi')
 def conf(id):
     conf = Configuration.query.get(id)
-    collections = Collection.query.filter(Collection.configuration_id==id)
-    return render_template('conf.jinja', conf=conf, collections=collections,
+    collections = Collection.query.filter(
+        Collection.configuration_id == id)
+    return render_template(
+        'conf.jinja',
+        conf=conf,
+        collections=collections,
         section='other')
 
 
@@ -633,9 +712,15 @@ def edit_conf(id):
                 flash("Stillingum var breytt", category='success')
                 return redirect(url_for("conf", id=conf.id))
         except Exception as error:
-            app.logger.error('Error updating a configuration : {}\n{}'.format(error, traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form, type='edit',
-        action=url_for('edit_conf', id=id), section='other')
+            app.logger.error('Error updating a configuration : {}\n{}'.format(
+                error, traceback.format_exc()))
+
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        type='edit',
+        action=url_for('edit_conf', id=id),
+        section='other')
 
 
 @app.route('/confs/create/', methods=['GET', 'POST'])
@@ -652,9 +737,14 @@ def create_conf():
             return redirect(url_for('conf', id=configuration.id))
         except Exception as error:
             flash("Error creating configuration.", category="danger")
-            app.logger.error("Error creating configuration {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form,
-        action=url_for('create_conf'), section='other')
+            app.logger.error("Error creating configuration {}\n{}".format(
+                error, traceback.format_exc()))
+
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        action=url_for('create_conf'),
+        section='other')
 
 
 @app.route('/confs/<int:id>/delete/', methods=['GET'])
@@ -671,7 +761,8 @@ def delete_conf(id):
         db.session.commit()
         flash(f"{name} var eytt", category='success')
     except Exception as error:
-        app.logger.error('Error deleting a configuration : {}\n{}'.format(error, traceback.format_exc()))
+        app.logger.error('Error deleting a configuration : {}\n{}'.format(
+            error, traceback.format_exc()))
     return redirect(url_for('rec_session_list'))
 
 
@@ -681,11 +772,15 @@ def delete_conf(id):
 @roles_accepted('admin', 'Notandi')
 def rec_session_list():
     page = int(request.args.get('page', 1))
-    sessions = Session.query.order_by(resolve_order(Session,
-        request.args.get('sort_by', default='created_at'),
-        order=request.args.get('order', default='desc'))).paginate(page,
-        per_page=app.config['SESSION_PAGINATION'])
-    return render_template('lists/sessions.jinja', sessions=sessions,
+    sessions = Session.query.order_by(resolve_order(
+            Session,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['SESSION_PAGINATION'])
+
+    return render_template(
+        'lists/sessions.jinja',
+        sessions=sessions,
         section='session')
 
 
@@ -694,7 +789,9 @@ def rec_session_list():
 @roles_accepted('admin', 'Notandi')
 def rec_session(id):
     session = Session.query.get(id)
-    return render_template('session.jinja', session=session,
+    return render_template(
+        'session.jinja',
+        session=session,
         section='session')
 
 
@@ -716,12 +813,15 @@ def verify_queue():
     '''
 
     unverified_sessions = Session.query.filter(and_(
-        Session.is_verified==False, Session.is_dev==False))
+        Session.is_verified == False, Session.is_dev == False))
     chosen_session = None
     is_secondary = False
     if unverified_sessions.count() > 0:
         available_sessions = unverified_sessions.filter(
-            or_(Session.verified_by==None, Session.verified_by==current_user.id)).order_by(
+            or_(
+                Session.verified_by == None,
+                Session.verified_by == current_user.id))\
+            .order_by(
                 Session.verified_by)
 
         if available_sessions.count() > 0:
@@ -732,14 +832,15 @@ def verify_queue():
     else:
         # check if we can secondarily verify any sesssions
         secondarily_unverified_sessions = Session.query.filter(and_(
-            Session.is_secondarily_verified==False, Session.verified_by!=current_user.id,
-            Session.is_dev==False))
+                Session.is_secondarily_verified == False,
+                Session.verified_by != current_user.id,
+                Session.is_dev == False))
 
         if secondarily_unverified_sessions.count() > 0:
-            available_sessions = secondarily_unverified_sessions.filter(
-                or_(Session.secondarily_verified_by==None,
-                    Session.secondarily_verified_by==current_user.id)).order_by(
-                        Session.verified_by)
+            available_sessions = secondarily_unverified_sessions.filter(or_(
+                    Session.secondarily_verified_by == None,
+                    Session.secondarily_verified_by == current_user.id))\
+                .order_by(Session.verified_by)
 
             if available_sessions.count() > 0:
                 # we have an available session
@@ -760,6 +861,7 @@ def verify_queue():
         url = url + '?is_secondary={}'.format(is_secondary)
     return redirect(url)
 
+
 @app.route('/sessions/<int:id>/verify/')
 @login_required
 def verify_session(id):
@@ -776,7 +878,7 @@ def verify_session(id):
         # make sure we only verify recordings that haven't been verified
         # two times
         if (not recording.is_verified and not is_secondary) \
-            or (not recording.is_secondarily_verified and is_secondary):
+                or (not recording.is_secondarily_verified and is_secondary):
             session_dict['recordings'].append({
                 'rec_id': recording.id,
                 'rec_fname': recording.fname,
@@ -789,33 +891,47 @@ def verify_session(id):
 
             if recording.is_verified:
                 # add the verification object
-                session_dict['recordings'][-1]['verification'] = recording.verifications[0].dict
+                session_dict['recordings'][-1]['verification'] =\
+                    recording.verifications[0].dict
 
-    return render_template('verify_session.jinja', session=session, form=form,
-        delete_form=DeleteVerificationForm(), json_session=json.dumps(session_dict),
-        is_secondary=is_secondary, progression_view=True)
+    return render_template(
+        'verify_session.jinja',
+        session=session,
+        form=form,
+        delete_form=DeleteVerificationForm(),
+        json_session=json.dumps(session_dict),
+        is_secondary=is_secondary,
+        progression_view=True)
+
 
 @app.route('/verifications', methods=['GET'])
 @login_required
 def verification_list():
     page = int(request.args.get('page', 1))
 
-    verifications = Verification.query.order_by(resolve_order(Verification,
-        request.args.get('sort_by', default='created_at'),
-        order=request.args.get('order', default='desc')))\
+    verifications = Verification.query.order_by(resolve_order(
+            Verification,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc')))\
         .paginate(page, per_page=app.config['VERIFICATION_PAGINATION'])
 
-    return render_template('lists/verifications.jinja', verifications=verifications,
+    return render_template(
+        'lists/verifications.jinja',
+        verifications=verifications,
         section='verificatioon')
+
 
 @app.route('/verifications/<int:id>/')
 @login_required
 def verification(id):
     verification = Verification.query.get(id)
-    delete_form=DeleteVerificationForm()
-    return render_template('verification.jinja', verification=verification,
-        delete_form=delete_form, section='verification',)
+    delete_form = DeleteVerificationForm()
 
+    return render_template(
+        'verification.jinja',
+        verification=verification,
+        delete_form=delete_form,
+        section='verification',)
 
 
 @app.route('/verifications/create/', methods=['POST'])
@@ -847,34 +963,29 @@ def create_verification():
 
             # check if this was the final recording to be verified and update
             session = Session.query.get(int(form.data['session']))
-            recordings = Recording.query.filter(Recording.session_id==session.id)
+            recordings = Recording.query.filter(
+                Recording.session_id == session.id)
             num_recordings = recordings.count()
             achievements = []
-            if is_secondary and num_recordings ==\
-                recordings.filter(Recording.is_secondarily_verified==True).count():
+            if is_secondary and num_recordings == recordings.filter(
+                    Recording.is_secondarily_verified == True).count():
                 session.is_secondarily_verified = True
                 db.session.commit()
-            elif num_recordings == recordings.filter(Recording.is_verified==True).count():
+            elif num_recordings == recordings.filter(
+                    Recording.is_verified == True).count():
                 session.is_verified = True
                 progression.num_session_verifies += 1
-                progression.lobe_coins += app.config['ECONOMY']['session']['coin_reward']
-                progression.experience += app.config['ECONOMY']['session']['experience_reward']
-
-                ## check for streak
-                #if not progression.has_streaked_today:
-                #    num_verifies_today = Verification.query.filter(Verification.verified_by==current_user.id,
-                #        (Verification.created_at+datetime.timedelta(days=1))>datetime.now())
-                #    if num_verifies_today >= app.config['ECONOMY']['achievement']['streak_minimum']:
-                #        progression.num_streak_days += 1
-                #        if progression.num_streak_days >= app.config['ECONOMY']['achievement']['streak'][str(progression.streak_level)]:
-                #            progression.streak_level += 1
-                #            progression.has_streaked_today = True
-                #            achievements.append('streak')
+                progression.lobe_coins += \
+                    app.config['ECONOMY']['session']['coin_reward']
+                progression.experience += \
+                    app.config['ECONOMY']['session']['experience_reward']
                 db.session.commit()
 
             # update progression on user
-            progression.lobe_coins += app.config['ECONOMY']['verification']['coin_reward']
-            progression.experience += app.config['ECONOMY']['verification']['experience_reward']
+            progression.lobe_coins += \
+                app.config['ECONOMY']['verification']['coin_reward']
+            progression.experience += \
+                app.config['ECONOMY']['verification']['experience_reward']
             progression.num_verifies += 1
             progression.weekly_verifies += 1
             if not verification.recording_is_good:
@@ -882,14 +993,17 @@ def create_verification():
 
             # check for achivement updates:
             # 1. verification:
-            verification_info = app.config['ECONOMY']['achievements']['verification'][str(progression.verification_level)]
+            verification_info = app.config['ECONOMY']['achievements'][
+                'verification'][str(progression.verification_level)]
             if progression.num_verifies >= verification_info['goal']:
                 progression.verification_level += 1
                 progression.lobe_coins += verification_info['coin_reward']
-                progression.experience += verification_info['experience_reward']
+                progression.experience += \
+                    verification_info['experience_reward']
                 achievements.append('verification')
             # 2. bad verifications
-            spy_info = app.config['ECONOMY']['achievements']['spy'][str(progression.spy_level)]
+            spy_info = app.config['ECONOMY']['achievements']['spy'][
+                str(progression.spy_level)]
             if progression.num_invalid >= spy_info['goal']:
                 progression.spy_level += 1
                 progression.lobe_coins += spy_info['coin_reward']
@@ -899,24 +1013,28 @@ def create_verification():
             db.session.commit()
 
             response = {
-                'id':verification_id,
+                'id': verification_id,
                 'coins': progression.lobe_coins,
                 'experience': progression.experience,
                 'achievements': achievements}
 
             return Response(json.dumps(response), status=200)
         else:
-            errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
+            errorMessage = "<br>".join(list("{}: {}".format(
+                key, ", ".join(value)) for key, value in form.errors.items()))
             return Response(errorMessage, status=500)
     except Exception as error:
-        app.logger.error('Error creating a verification : {}\n{}'.format(error, traceback.format_exc()))
+        app.logger.error('Error creating a verification : {}\n{}'.format(
+            error, traceback.format_exc()))
+
 
 @app.route('/verifications/delete', methods=['POST'])
 @login_required
 def delete_verification():
     form = DeleteVerificationForm(request.form)
     if form.validate():
-        verification = Verification.query.get(int(form.data['verification_id']))
+        verification = Verification.query.get(
+            int(form.data['verification_id']))
         verified_by = verification.verified_by
         is_secondary = verification.is_secondary
         recording = Recording.query.get(verification.recording_id)
@@ -931,8 +1049,10 @@ def delete_verification():
             recording.is_verified = False
             session.is_verified = False
             if session_was_verified:
-                progression.lobe_coins -= app.config['ECONOMY']['session']['coin_reward']
-                progression.experience -= app.config['ECONOMY']['session']['experience_reward']
+                progression.lobe_coins -= app.config['ECONOMY']['session'][
+                    'coin_reward']
+                progression.experience -= app.config['ECONOMY']['session'][
+                    'experience_reward']
 
         progression.num_verifies -= 1
         progression.weekly_verifies -= 1
@@ -942,22 +1062,27 @@ def delete_verification():
         # check for achivement updates:
         # 1. verification:
         if progression.verification_level > 0:
-            verification_info = app.config['ECONOMY']['achievements']['verification'][str(progression.verification_level-1)]
+            verification_info = app.config['ECONOMY']['achievements'][
+                'verification'][str(progression.verification_level-1)]
             if progression.num_verifies < verification_info['goal']:
                 progression.verification_level -= 1
                 progression.lobe_coins -= verification_info['coin_reward']
-                progression.experience -= verification_info['experience_reward']
+                progression.experience -= \
+                    verification_info['experience_reward']
         # 2. bad verifications
         if progression.spy_level > 0:
-            spy_info = app.config['ECONOMY']['achievements']['spy'][str(progression.spy_level - 1)]
+            spy_info = app.config['ECONOMY']['achievements']['spy'][
+                str(progression.spy_level - 1)]
             if progression.num_invalid < spy_info['goal']:
                 progression.spy_level -= 1
                 progression.lobe_coins -= spy_info['coin_reward']
                 progression.experience -= spy_info['experience_reward']
 
         # update progression on user
-        progression.lobe_coins = max(0, progression.lobe_coins - app.config['ECONOMY']['verification']['coin_reward'])
-        progression.experience = max(0, progression.experience - app.config['ECONOMY']['verification']['experience_reward'])
+        progression.lobe_coins = max(0, progression.lobe_coins - app.config[
+            'ECONOMY']['verification']['coin_reward'])
+        progression.experience = max(0, progression.experience - app.config[
+            'ECONOMY']['verification']['experience_reward'])
 
         db.session.delete(verification)
         db.session.commit()
@@ -968,7 +1093,8 @@ def delete_verification():
 
         return Response(json.dumps(response), status=200)
     else:
-        errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
+        errorMessage = "<br>".join(list("{}: {}".format(
+            key, ", ".join(value)) for key, value in form.errors.items()))
         return Response(errorMessage, status=500)
 
 
@@ -978,29 +1104,41 @@ def verify_index():
     '''
     Home screen of the verifiers
     '''
-    verifiers = sorted(get_verifiers(), key=lambda v: -v.progression.weekly_verifies)
+    verifiers = sorted(
+        get_verifiers(),
+        key=lambda v: -v.progression.weekly_verifies)
     weekly_verifies = sum([v.progression.weekly_verifies for v in verifiers])
     if weekly_verifies < app.config['ECONOMY']['weekly_challenge']['goal']:
-        weekly_progress = 100*((weekly_verifies-current_user.progression.weekly_verifies)/\
-            app.config['ECONOMY']['weekly_challenge']['goal'])
+        weekly_progress = 100 *\
+            ((weekly_verifies-current_user.progression.weekly_verifies) /
+                app.config['ECONOMY']['weekly_challenge']['goal'])
     else:
-        weekly_progress = 100*((weekly_verifies - app.config['ECONOMY']['weekly_challenge']['goal'])%\
-            app.config['ECONOMY']['weekly_challenge']['extra_interval']/\
-            app.config['ECONOMY']['weekly_challenge']['extra_interval'])
-    user_weekly_progress = 100*(current_user.progression.weekly_verifies/app.config['ECONOMY']['weekly_challenge']['goal'])
+        weekly_progress = 100 * (
+                (weekly_verifies -
+                    app.config['ECONOMY']['weekly_challenge']['goal']) %
+                app.config['ECONOMY']['weekly_challenge']['extra_interval'] /
+                app.config['ECONOMY']['weekly_challenge']['extra_interval'])
+    user_weekly_progress = 100 * (
+        current_user.progression.weekly_verifies /
+        app.config['ECONOMY']['weekly_challenge']['goal'])
 
     verification_progress = 0
-    if current_user.progression.verification_level < len(app.config['ECONOMY']['achievements']['verification'].keys()):
-        verification_progress = 100*(current_user.progression.num_verifies/\
-            app.config['ECONOMY']['achievements']['verification'][str(current_user.progression.verification_level)]['goal'])
+    if current_user.progression.verification_level < \
+            len(app.config['ECONOMY']['achievements']['verification'].keys()):
+        verification_progress = 100 * (
+            current_user.progression.num_verifies /
+            app.config['ECONOMY']['achievements']['verification'][
+                str(current_user.progression.verification_level)]['goal'])
 
     spy_progress = 0
-    if current_user.progression.spy_level < len(app.config['ECONOMY']['achievements']['spy'].keys()):
-        spy_progress = 100*(current_user.progression.num_invalid/\
-            app.config['ECONOMY']['achievements']['spy'][str(current_user.progression.spy_level)]['goal'])
+    if current_user.progression.spy_level < \
+            len(app.config['ECONOMY']['achievements']['spy'].keys()):
+        spy_progress = 100 * (
+            current_user.progression.num_invalid /
+            app.config['ECONOMY']['achievements']['spy'][
+                str(current_user.progression.spy_level)]['goal'])
 
     streak_progress = 0
-
 
     show_weekly_prices, show_daily_spin = False, False
     daily_spin_form = DailySpinForm()
@@ -1009,7 +1147,8 @@ def verify_index():
         progression.has_seen_weekly_prices = True
         db.session.commit()
         show_weekly_prices = True
-    elif current_user.progression.last_spin < datetime.combine(date.today(), datetime.min.time()):
+    elif current_user.progression.last_spin < datetime.combine(
+            date.today(), datetime.min.time()):
         # we dont want to show weekly prizes and spins at the same time
         # last spin was not today
         show_daily_spin = True
@@ -1017,12 +1156,21 @@ def verify_index():
     activity_days, activity_counts = activity(Verification)
 
     # get the number of verifications per user
-    return render_template('verify_index.jinja', verifiers=verifiers, weekly_verifies=weekly_verifies,
-        weekly_progress=weekly_progress, user_weekly_progress=user_weekly_progress,
-        verification_progress=verification_progress, spy_progress=spy_progress,
-        streak_progress=streak_progress, daily_spin_form=daily_spin_form,
-        progression_view=True, show_weekly_prices=show_weekly_prices, show_daily_spin=show_daily_spin,
-        activity_days=activity_days, activity_counts=activity_counts)
+    return render_template(
+        'verify_index.jinja',
+        verifiers=verifiers,
+        weekly_verifies=weekly_verifies,
+        weekly_progress=weekly_progress,
+        user_weekly_progress=user_weekly_progress,
+        verification_progress=verification_progress,
+        spy_progress=spy_progress,
+        streak_progress=streak_progress,
+        daily_spin_form=daily_spin_form,
+        progression_view=True,
+        show_weekly_prices=show_weekly_prices,
+        show_daily_spin=show_daily_spin,
+        activity_days=activity_days,
+        activity_counts=activity_counts)
 
 
 @app.route('/shop/claim_daily_prize', methods=['POST'])
@@ -1032,24 +1180,31 @@ def claim_daily_prize():
     form = DailySpinForm(request.form)
     progression = current_user.progression
 
-    if current_user.progression.last_spin < datetime.combine(date.today(), datetime.min.time()):
+    if current_user.progression.last_spin < datetime.combine(
+            date.today(), datetime.min.time()):
         progression.last_spin = datetime.now()
         if form.prize_type.data == 'coin':
             progression.lobe_coins += int(form.prize_value.data)
-            flash(f"Þú fékkst {form.prize_value.data} aura", category='success')
+            flash(
+                f"Þú fékkst {form.prize_value.data} aura",
+                category='success')
         elif form.prize_type.data == 'experience':
             progression.experience += int(form.prize_value.data)
-            flash(f"Þú fékkst {form.prize_value.data} demanta", category='success')
+            flash(
+                f"Þú fékkst {form.prize_value.data} demanta",
+                category='success')
         elif form.prize_type.data == 'lootbox':
-            # add the prize of epic loot box to user's lobe coins which is then
-            # withdrawn in the loot box view
-            progression.lobe_coins += app.config['ECONOMY']['loot_boxes']['prices']['2']
+            # add the prize of epic loot box to user's lobe coins
+            # which is then withdrawn in the loot box view
+            progression.lobe_coins += \
+                app.config['ECONOMY']['loot_boxes']['prices']['2']
             db.session.commit()
             return redirect(url_for('loot_box', rarity=2))
         db.session.commit()
     else:
         flash("Þú ert búinn að snúa í dag", category='danger')
     return redirect(url_for('verify_index'))
+
 
 @app.route('/shop/', methods=['GET'])
 @login_required
@@ -1072,27 +1227,38 @@ def lobe_shop():
             if item['type'] == 'quote':
                 loot_box_items.append(VerifierQuote.query.get(item['id']))
 
-    return render_template('lobe_shop.jinja',
-        icons=icons,titles=titles, quotes=quotes, loot_boxes=loot_boxes,
-        fonts=fonts, loot_box_items=loot_box_items, progression_view=True,
+    return render_template(
+        'lobe_shop.jinja',
+        icons=icons,
+        titles=titles,
+        quotes=quotes,
+        loot_boxes=loot_boxes,
+        fonts=fonts,
+        loot_box_items=loot_box_items,
+        progression_view=True,
         full_width=True,)
+
 
 @app.route('/shop/random_equip', methods=['GET'])
 @login_required
 @roles_accepted('Greinir', 'admin')
 def random_equip():
     progression = current_user.progression
-    if all(len(o) > 1 for o in [progression.owned_icons,
-        progression.owned_titles, progression.owned_quotes]):
+    if all(len(o) > 1 for o in [
+            progression.owned_icons,
+            progression.owned_titles,
+            progression.owned_quotes]):
         progression.equip_random_icon()
         progression.equip_random_title()
         progression.equip_random_quote()
         db.session.commit()
         flash("Stíl var breytt", category="success")
     else:
-        flash('Þú verður að eiga a.m.k. tvö stykki af hverri tegund',
+        flash(
+            'Þú verður að eiga a.m.k. tvö stykki af hverri tegund',
             category='warning')
     return redirect(url_for('lobe_shop'))
+
 
 @app.route('/shop/loot_box/<int:rarity>', methods=['GET'])
 @login_required
@@ -1135,9 +1301,12 @@ def loot_box(rarity):
             guaranteed_item = random.choice(common_items)
 
         all_items = common_items + rare_items + epic_items + legendary_items
-        probabilities = [app.config['ECONOMY']['loot_boxes']['rarity_weights'][str(item.rarity)] for item in all_items]
-        norm_probabilities = [p_val/np.sum(probabilities) for p_val in probabilities]
-        selected_items = list(np.random.choice(all_items, app.config['ECONOMY']['loot_boxes']['num_items']-1,
+        probabilities = [app.config['ECONOMY']['loot_boxes'][
+            'rarity_weights'][str(item.rarity)] for item in all_items]
+        norm_probabilities = [
+            p_val/np.sum(probabilities) for p_val in probabilities]
+        selected_items = list(np.random.choice(
+            all_items, app.config['ECONOMY']['loot_boxes']['num_items']-1,
             p=norm_probabilities))
         selected_items.append(guaranteed_item)
 
@@ -1156,14 +1325,19 @@ def loot_box(rarity):
                 types.append('icon')
         db.session.commit()
 
-        loot_box_message = json.dumps({str(i):{'type': types[i], 'id': item.id} for i,item in enumerate(selected_items)})
+        loot_box_message = json.dumps({str(i): {
+            'type': types[i], 'id': item.id} for i, item
+                in enumerate(selected_items)})
         flash("Kaup samþykkt", category='success')
         return redirect(url_for('lobe_shop', messages=loot_box_message))
 
     flash("Þú átt ekki nóg fyrir þessum lukkukassa", category='warning')
     return redirect(url_for('lobe_shop'))
 
-@app.route('/shop/icons/<int:icon_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+
+@app.route(
+    '/shop/icons/<int:icon_id>/buy/<int:user_id>',
+    methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
 def icon_buy(icon_id, user_id):
@@ -1172,7 +1346,7 @@ def icon_buy(icon_id, user_id):
     progression = VerifierProgression.query.get(user.progression_id)
 
     if progression.fire_sale:
-        price = int(icon.price*(1-progression.fire_sale_discount))
+        price = int(icon.price * (1 - progression.fire_sale_discount))
     else:
         price = icon.price
 
@@ -1186,6 +1360,7 @@ def icon_buy(icon_id, user_id):
         flash("Kaup ekki samþykkt", category="warning")
     return redirect(url_for('lobe_shop'))
 
+
 @app.route('/shop/icons/disable/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
@@ -1197,7 +1372,10 @@ def icon_disable(user_id):
     flash("Kveikt á venjulegu merki.", category="success")
     return redirect(url_for('lobe_shop'))
 
-@app.route('/shop/icons/<int:icon_id>/equip/<int:user_id>', methods=['GET', 'POST'])
+
+@app.route(
+    '/shop/icons/<int:icon_id>/equip/<int:user_id>',
+    methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
 def icon_equip(icon_id, user_id):
@@ -1211,6 +1389,7 @@ def icon_equip(icon_id, user_id):
     else:
         flash("Val ekki samþykkt", category="warning")
     return redirect(url_for('lobe_shop'))
+
 
 @app.route('/shop/icons/create', methods=['GET', 'POST'])
 @login_required
@@ -1230,9 +1409,15 @@ def icon_create():
             return redirect(url_for('lobe_shop'))
         except Exception as error:
             flash("Error creating verifier icon.", category="danger")
-            app.logger.error("Error creating verifier icon {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form,
-        action=url_for('icon_create'), section='verification', type='create')
+            app.logger.error("Error creating verifier icon {}\n{}".format(
+                error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        action=url_for('icon_create'),
+        section='verification',
+        type='create')
+
 
 @app.route('/shop/icons/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
@@ -1250,12 +1435,19 @@ def icon_edit(id):
             return redirect(url_for('lobe_shop'))
     except Exception as error:
         flash("Error updating icon.", category="danger")
-        app.logger.error("Error updating icon {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form,
-        action=url_for('icon_edit', id=id), section='verification', type='edit')
+        app.logger.error("Error updating icon {}\n{}".format(
+            error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        action=url_for('icon_edit', id=id),
+        section='verification',
+        type='edit')
 
 
-@app.route('/shop/titles/<int:title_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@app.route(
+    '/shop/titles/<int:title_id>/buy/<int:user_id>',
+    methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
 def title_buy(title_id, user_id):
@@ -1268,7 +1460,8 @@ def title_buy(title_id, user_id):
     else:
         price = title.price
 
-    if progression.lobe_coins >= price and title not in progression.owned_titles:
+    if progression.lobe_coins >= price \
+            and title not in progression.owned_titles:
         progression.owned_titles.append(title)
         progression.equipped_title_id = title.id
         progression.lobe_coins -= price
@@ -1277,6 +1470,7 @@ def title_buy(title_id, user_id):
     else:
         flash("Kaup ekki samþykkt", category="warning")
     return redirect(url_for('lobe_shop'))
+
 
 @app.route('/shop/titles/disable/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -1289,7 +1483,10 @@ def title_disable(user_id):
     flash("Kveikt á venjulegum titil.", category="success")
     return redirect(url_for('lobe_shop'))
 
-@app.route('/shop/titles/<int:title_id>/equip/<int:user_id>', methods=['GET', 'POST'])
+
+@app.route(
+    '/shop/titles/<int:title_id>/equip/<int:user_id>',
+    methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
 def title_equip(title_id, user_id):
@@ -1303,6 +1500,7 @@ def title_equip(title_id, user_id):
     else:
         flash("Val ekki samþykkt", category="warning")
     return redirect(url_for('lobe_shop'))
+
 
 @app.route('/shop/titles/create', methods=['GET', 'POST'])
 @login_required
@@ -1319,9 +1517,15 @@ def title_create():
             return redirect(url_for('lobe_shop'))
         except Exception as error:
             flash("Error creating verifier title.", category="danger")
-            app.logger.error("Error creating title {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form,
-        action=url_for('title_create'), section='verification', type='create')
+            app.logger.error("Error creating title {}\n{}".format(
+                error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        action=url_for('title_create'),
+        section='verification',
+        type='create')
+
 
 @app.route('/shop/titles/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
@@ -1338,12 +1542,19 @@ def title_edit(id):
             return redirect(url_for('lobe_shop'))
     except Exception as error:
         flash("Error updating title.", category="danger")
-        app.logger.error("Error updating title {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form,
-        action=url_for('title_edit', id=id), section='verification', type='edit')
+        app.logger.error("Error updating title {}\n{}".format(
+            error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        action=url_for('title_edit', id=id),
+        section='verification',
+        type='edit')
 
 
-@app.route('/shop/quotes/<int:quote_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@app.route(
+    '/shop/quotes/<int:quote_id>/buy/<int:user_id>',
+    methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
 def quote_buy(quote_id, user_id):
@@ -1356,7 +1567,8 @@ def quote_buy(quote_id, user_id):
     else:
         price = quote.price
 
-    if progression.lobe_coins >= price and quote not in progression.owned_quotes:
+    if progression.lobe_coins >= price and \
+            quote not in progression.owned_quotes:
         progression.owned_quotes.append(quote)
         progression.equipped_quote_id = quote.id
         progression.lobe_coins -= price
@@ -1365,6 +1577,7 @@ def quote_buy(quote_id, user_id):
     else:
         flash("Kaup ekki samþykkt", category="warning")
     return redirect(url_for('lobe_shop'))
+
 
 @app.route('/shop/quotes/disable/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -1377,7 +1590,10 @@ def quote_disable(user_id):
     flash("Kveikt á venjulegu slagorði.", category="success")
     return redirect(url_for('lobe_shop'))
 
-@app.route('/shop/quotes/<int:quote_id>/equip/<int:user_id>', methods=['GET', 'POST'])
+
+@app.route(
+    '/shop/quotes/<int:quote_id>/equip/<int:user_id>',
+    methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
 def quote_equip(quote_id, user_id):
@@ -1408,9 +1624,14 @@ def quote_create():
             return redirect(url_for('lobe_shop'))
         except Exception as error:
             flash("Error creating verifier quote.", category="danger")
-            app.logger.error("Error creating quote {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form,
-        action=url_for('quote_create'), section='verification', type='create')
+            app.logger.error("Error creating quote {}\n{}".format(
+                error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        action=url_for('quote_create'),
+        section='verification',
+        type='create')
 
 
 @app.route('/shop/quotes/<int:id>/edit/', methods=['GET', 'POST'])
@@ -1428,12 +1649,19 @@ def quote_edit(id):
             return redirect(url_for('lobe_shop'))
     except Exception as error:
         flash("Error updating quote.", category="danger")
-        app.logger.error("Error updating quote {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form,
-        action=url_for('quote_edit', id=id), section='verification', type='edit')
+        app.logger.error("Error updating quote {}\n{}".format(
+            error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        action=url_for('quote_edit', id=id),
+        section='verification',
+        type='edit')
 
 
-@app.route('/shop/fonts/<int:font_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@app.route(
+    '/shop/fonts/<int:font_id>/buy/<int:user_id>',
+    methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
 def font_buy(font_id, user_id):
@@ -1456,6 +1684,7 @@ def font_buy(font_id, user_id):
         flash("Kaup ekki samþykkt", category="warning")
     return redirect(url_for('lobe_shop'))
 
+
 @app.route('/shop/fonts/disable/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
@@ -1467,7 +1696,10 @@ def font_disable(user_id):
     flash("Kveikt á venjulegum font.", category="success")
     return redirect(url_for('lobe_shop'))
 
-@app.route('/shop/fonts/<int:font_id>/equip/<int:user_id>', methods=['GET', 'POST'])
+
+@app.route(
+    '/shop/fonts/<int:font_id>/equip/<int:user_id>',
+    methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
 def font_equip(font_id, user_id):
@@ -1481,6 +1713,7 @@ def font_equip(font_id, user_id):
     else:
         flash("Val ekki samþykkt", category="warning")
     return redirect(url_for('lobe_shop'))
+
 
 @app.route('/shop/fonts/create', methods=['GET', 'POST'])
 @login_required
@@ -1497,9 +1730,15 @@ def font_create():
             return redirect(url_for('lobe_shop'))
         except Exception as error:
             flash("Error creating verifier font.", category="danger")
-            app.logger.error("Error creating verifier font {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form,
-        action=url_for('font_create'), section='verification', type='create')
+            app.logger.error("Error creating verifier font {}\n{}".format(
+                error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        action=url_for('font_create'),
+        section='verification',
+        type='create')
+
 
 @app.route('/shop/fonts/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
@@ -1516,9 +1755,14 @@ def font_edit(id):
             return redirect(url_for('lobe_shop'))
     except Exception as error:
         flash("Error updating font.", category="danger")
-        app.logger.error("Error updating font {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form,
-        action=url_for('font_edit', id=id), section='verification', type='edit')
+        app.logger.error("Error updating font {}\n{}".format(
+            error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        action=url_for('font_edit', id=id),
+        section='verification',
+        type='edit')
 
 
 @app.route('/sessions/<int:id>/edit/', methods=['GET', 'POST'])
@@ -1533,9 +1777,14 @@ def session_edit(id):
             db.session.commit()
             flash("Lotu var breytt", category='success')
     except Exception as error:
-        app.logger.error('Error updating a session : {}\n{}'.format(error, traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form, type='edit',
-        action=url_for('session_edit', id=id), section='session')
+        app.logger.error('Error updating a session : {}\n{}'.format(
+            error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        type='edit',
+        action=url_for('session_edit', id=id),
+        section='session')
 
 
 @app.route('/sessions/<int:id>/delete/', methods=['GET'])
@@ -1550,17 +1799,22 @@ def delete_session(id):
         flash("Ekki gekk að eyða lotu", category='warning')
     return redirect(url_for('rec_session_list'))
 
+
 # USER ROUTES
 @app.route('/users/')
 @login_required
 @roles_accepted('admin')
 def user_list():
     page = int(request.args.get('page', 1))
-    users = User.query.order_by(resolve_order(User,
-            request.args.get('sort_by', default='name'),
-            order=request.args.get('order', default='desc')))\
-            .paginate(page, app.config['USER_PAGINATION'])
-    return render_template('lists/users.jinja', users=users, section='user')
+    users = User.query.order_by(resolve_order(
+                User,
+                request.args.get('sort_by', default='name'),
+                order=request.args.get('order', default='desc')))\
+        .paginate(page, app.config['USER_PAGINATION'])
+    return render_template(
+        'lists/users.jinja',
+        users=users,
+        section='user')
 
 
 @app.route('/users/<int:id>/')
@@ -1569,11 +1823,16 @@ def user_list():
 def user(id):
     page = int(request.args.get('page', 1))
     user = User.query.get(id)
-    recordings = Recording.query.filter(Recording.user_id==id).order_by(resolve_order(Recording,
+    recordings = Recording.query.filter(Recording.user_id == id).order_by(
+        resolve_order(
+            Recording,
             request.args.get('sort_by', default='created_at'),
             order=request.args.get('order', default='desc')))\
-            .paginate(page, app.config['RECORDING_PAGINATION'])
-    return render_template("user.jinja", user=user, recordings=recordings,
+        .paginate(page, app.config['RECORDING_PAGINATION'])
+    return render_template(
+        "user.jinja",
+        user=user,
+        recordings=recordings,
         section='user')
 
 
@@ -1583,12 +1842,20 @@ def user(id):
 def user_time_info(id):
     user = User.query.get(id)
     sessions = Session.query.filter(
-        or_(Session.user_id==user.id, Session.manager_id==user.id)).order_by(Session.created_at)
+        or_(
+            Session.user_id == user.id,
+            Session.manager_id == user.id))\
+        .order_by(Session.created_at)
 
-    day_info, total_est_work_time, total_session_duration = sessions_day_info(sessions, user)
+    day_info, total_est_work_time, total_session_duration = \
+        sessions_day_info(sessions, user)
 
-    return render_template('user_time.jinja', user=user, sessions=sessions,
-        day_info=day_info, total_est_work_time=total_est_work_time,
+    return render_template(
+        'user_time.jinja',
+        user=user,
+        sessions=sessions,
+        day_info=day_info,
+        total_est_work_time=total_est_work_time,
         total_session_duration=total_session_duration)
 
 
@@ -1598,7 +1865,7 @@ def user_time_info(id):
 def user_edit(id):
     user = User.query.get(id)
     form = UserEditForm(obj=user)
-    if request.method == 'POST' :
+    if request.method == 'POST':
         try:
             form = UserEditForm(request.form, obj=user)
             if form.validate():
@@ -1606,17 +1873,22 @@ def user_edit(id):
                 db.session.commit()
                 flash("Notanda var breytt", category='success')
         except Exception as error:
-            app.logger.error('Error updating a user : {}\n{}'.format(error, traceback.format_exc()))
+            app.logger.error('Error updating a user : {}\n{}'.format(
+                error, traceback.format_exc()))
 
-    return render_template('forms/model.jinja', user=user, form=form, type='edit',
-        action=url_for('user_edit', id=id), section='user')
+    return render_template(
+        'forms/model.jinja',
+        user=user,
+        form=form,
+        type='edit',
+        action=url_for('user_edit', id=id),
+        section='user')
 
 
 @app.route('/users/<int:id>/toggle_admin/', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
 def user_toggle_admin(id):
-    user = User.query.get(id)
     ds_user = user_datastore.get_user(id)
     if ds_user.has_role('admin'):
         user_datastore.remove_role_from_user(ds_user, 'admin')
@@ -1634,7 +1906,6 @@ def user_toggle_admin(id):
 @login_required
 @roles_accepted('admin')
 def user_make_verifier(id):
-    user = User.query.get(id)
     ds_user = user_datastore.get_user(id)
     user_datastore.add_role_to_user(ds_user, 'Greinir')
     flash("Notandi er nú greinandi", category='success')
@@ -1649,19 +1920,28 @@ def user_create():
     form = ExtendedRegisterForm(request.form)
     if request.method == 'POST' and form.validate():
         try:
-            new_user = user_datastore.create_user(name=form.name.data, email=form.email.data,
-                password=hash_password(form.password.data), roles=['admin' if form.is_admin.data else 'Notandi'])
+            new_user = user_datastore.create_user(
+                name=form.name.data,
+                email=form.email.data,
+                password=hash_password(form.password.data),
+                roles=['admin' if form.is_admin.data else 'Notandi'])
             form.populate_obj(new_user)
             db.session.commit()
-
             flash("Nýr notandi var búinn til", category='success')
             return redirect(url_for('user_list'))
         except Exception as error:
-            app.logger.error('Error creating a user : {}\n{}'.format(error,traceback.format_exc()))
-            flash("Villa kom upp við að búa til nýjan notanda", category='warning')
+            app.logger.error('Error creating a user : {}\n{}'.format(
+                error, traceback.format_exc()))
+            flash(
+                "Villa kom upp við að búa til nýjan notanda",
+                category='warning')
 
-    return render_template('forms/model.jinja', form=form, type='create',
-        action=url_for('user_create'), section='user')
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        type='create',
+        action=url_for('user_create'),
+        section='user')
 
 
 @app.route('/users/create_verifier', methods=['GET', 'POST'])
@@ -1671,19 +1951,29 @@ def verifier_create():
     form = VerifierRegisterForm(request.form)
     if request.method == 'POST' and form.validate():
         try:
-            new_user = user_datastore.create_user(name=form.name.data, email=form.email.data,
-                password=hash_password(form.password.data), roles=['Greinir'])
+            new_user = user_datastore.create_user(
+                name=form.name.data,
+                email=form.email.data,
+                password=hash_password(form.password.data),
+                roles=['Greinir'])
             form.populate_obj(new_user)
             db.session.commit()
             flash("Nýr greinir var búinn til", category='success')
             return redirect(url_for('user_list'))
 
         except Exception as error:
-            app.logger.error('Error creating a user : {}\n{}'.format(error,traceback.format_exc()))
-            flash("Villa kom upp við að búa til nýjan greini", category='warning')
+            app.logger.error('Error creating a user : {}\n{}'.format(
+                error, traceback.format_exc()))
+            flash(
+                "Villa kom upp við að búa til nýjan greini",
+                category='warning')
 
-    return render_template('forms/model.jinja', form=form, type='create',
-        action=url_for('verifier_create'), section='user')
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        type='create',
+        action=url_for('verifier_create'),
+        section='user')
 
 
 @app.route('/users/<int:id>/delete/')
@@ -1710,9 +2000,14 @@ def role_create():
             db.session.add(role)
             db.session.commit()
         except Exception as error:
-            app.logger.error('Error creating a role : {}\n{}'.format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form, type='create',
-        action=url_for('role_create'), section='role')
+            app.logger.error('Error creating a role : {}\n{}'.format(
+                error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        type='create',
+        action=url_for('role_create'),
+        section='role')
 
 
 @app.route('/roles/<int:id>/edit/', methods=['GET', 'POST'])
@@ -1728,9 +2023,15 @@ def role_edit(id):
             db.session.commit()
             flash("Hlutverki var breytt", category='success')
         except Exception as error:
-            app.logger.error('Error updating a role : {}\n{}'.format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', role=role, form=form, type='edit',
-        action=url_for('role_edit', id=id), section='role')
+            app.logger.error('Error updating a role : {}\n{}'.format(
+                error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        role=role,
+        form=form,
+        type='edit',
+        action=url_for('role_edit', id=id),
+        section='role')
 
 
 # POSTING AND APPLICATION ROUTES
@@ -1739,11 +2040,14 @@ def role_edit(id):
 @roles_accepted("admin")
 def applications():
     page = int(request.args.get('page', 1))
-    applications = Application.query.order_by(resolve_order(Application,
-        request.args.get('sort_by', default='created_at'),
-        order=request.args.get('order', default='desc'))).paginate(page,
-        per_page=50)
-    return render_template('lists/applications.jinja', applications=applications,
+    applications = Application.query.order_by(resolve_order(
+            Application,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=50)
+    return render_template(
+        'lists/applications.jinja',
+        applications=applications,
         section='application')
 
 
@@ -1754,13 +2058,17 @@ def application(id):
     page = int(request.args.get('page', 1))
     application = Application.query.get(id)
     recordings = Recording.query.filter(
-        Recording.user_id == application.user_id
-    ).order_by(
-        resolve_order(Recording, request.args.get('sort_by', default='created_at'),
-            order=request.args.get('order', default='desc'))
-    ).paginate(page, app.config['RECORDING_PAGINATION'])
-    return render_template('application.jinja', application=application,
-                           recordings=recordings, section='application')
+        Recording.user_id == application.user_id).order_by(
+        resolve_order(
+            Recording,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc')))\
+        .paginate(page, app.config['RECORDING_PAGINATION'])
+    return render_template(
+        'application.jinja',
+        application=application,
+        recordings=recordings,
+        section='application')
 
 
 @app.route('/applications/<int:id>/delete/', methods=['GET'])
@@ -1782,11 +2090,14 @@ def delete_application(id):
 @roles_accepted("admin")
 def postings():
     page = int(request.args.get('page', 1))
-    postings = Posting.query.order_by(resolve_order(Posting,
-        request.args.get('sort_by', default='created_at'),
-        order=request.args.get('order', default='desc'))).paginate(page,
-        per_page=20)
-    return render_template('lists/postings.jinja', postings=postings,
+    postings = Posting.query.order_by(resolve_order(
+            Posting,
+            request.args.get('sort_by', default='created_at'),
+            order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=20)
+    return render_template(
+        'lists/postings.jinja',
+        postings=postings,
         section='posting')
 
 
@@ -1794,7 +2105,9 @@ def postings():
 @login_required
 @roles_accepted('admin')
 def posting(id):
-    return render_template('posting.jinja', posting=Posting.query.get(id),
+    return render_template(
+        'posting.jinja',
+        posting=Posting.query.get(id),
         section='posting')
 
 
@@ -1819,8 +2132,11 @@ def edit_posting(id):
             db.session.commit()
             return redirect(url_for("posting", id=posting.id))
 
-    return render_template('forms/model.jinja', form=form, type='edit',
-                           action=url_for('edit_posting', id=id))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        type='edit',
+        action=url_for('edit_posting', id=id))
 
 
 @app.route('/posting/<int:id>/delete/', methods=['GET'])
@@ -1855,18 +2171,26 @@ def new_application(posting_uuid):
                 )
                 form.populate_obj(new_user)
                 db.session.commit()
-            except IntegrityError as e:
-                app.logger.error("Could not create user for application, email already in use")
+            except IntegrityError:
+                app.logger.error(
+                    "Could not create user for application, " +
+                    "email already in use")
                 flash("Þetta netfang er nú þegar í notkun", category='error')
                 return redirect(
                     url_for("new_application", posting_uuid=posting_uuid))
             application.user_id = new_user.id
             db.session.add(application)
             db.session.commit()
-            return redirect(url_for("record_session", collection_id=posting.collection) + f"?user_id={new_user.id}")
+            return redirect(url_for(
+                "record_session",
+                collection_id=posting.collection) + f"?user_id={new_user.id}")
 
-    return render_template('apply.jinja', form=form, type='create', posting=posting,
-                           action=url_for('new_application', posting_uuid=posting_uuid))
+    return render_template(
+        'apply.jinja',
+        form=form,
+        type='create',
+        posting=posting,
+        action=url_for('new_application', posting_uuid=posting_uuid))
 
 
 @app.route('/application-success/', methods=['GET'])
@@ -1899,7 +2223,10 @@ def create_posting():
 
             tokens = []
             for utterance in posting.utterances.split("\n"):
-                token = Token(text=utterance, original_fname="", collection_id=collection.id)
+                token = Token(
+                    text=utterance,
+                    original_fname="",
+                    collection_id=collection.id)
                 db.session.add(token)
                 tokens.append(token)
 
@@ -1911,20 +2238,26 @@ def create_posting():
 
             return redirect(url_for("posting", id=posting.id))
 
-    return render_template('forms/model.jinja', form=form, type='create',
-                           action=url_for('create_posting'))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        type='create',
+        action=url_for('create_posting'))
+
 
 # OTHER ROUTES
 @app.route('/other/lobe_manual/')
 @login_required
 def download_manual():
     try:
-        return send_from_directory(app.config['OTHER_PATH'], app.config['MANUAL_FNAME'],
+        return send_from_directory(
+            app.config['OTHER_PATH'],
+            app.config['MANUAL_FNAME'],
             as_attachment=True)
     except Exception as error:
         flash("Error downloading manual", category="danger")
-        app.logger.error(
-            "Error downloading manual : {}\n{}".format(error,traceback.format_exc()))
+        app.logger.error("Error downloading manual : {}\n{}".format(
+                error, traceback.format_exc()))
 
 
 @app.route('/other/test_media_device')
@@ -1945,6 +2278,9 @@ def internal_server_error(error):
     app.logger.error('Server Error: %s', (error))
     return redirect(url_for('index'))
 
+
 @app.route('/not-in-chrome/')
 def not_in_chrome():
-    return render_template('not_in_chrome.jinja', previous=request.args.get('previous'))
+    return render_template(
+        'not_in_chrome.jinja',
+        previous=request.args.get('previous'))

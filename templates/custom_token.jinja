@@ -3,6 +3,12 @@
     <div class='row mb-3'>
         <div class='col-12 mb-3'>
             <h1 class='font-weight-bold'>{{token.get_printable_id()}}</h1>
+            <div class='mt-10' style="margin-bottom:10px;">
+                <audio id="audio-{{token.custom_recording.id}}" src={{token.custom_recording.get_download_url()}} type="audio/wav"></audio>
+                <button type='button' class='btn btn-link btn-sm' onClick="play({{token.custom_recording.id}})">
+                    <i id='playButtonIcon-{{token.custom_recording.id}}' class='fa fa-play fa-3x'></i>
+                </button>
+            </div>
             <p class='mb-0'>
                 <span class='font-weight-bold'>Texti: </span>
                 <span class='font-italic'>{{token.text}}</span>
@@ -83,8 +89,12 @@
                 {{macros.btn_icon('download', 'r')}} Sækja
             </a>
         </div>
+    
     </div>
+
+    
 {% endblock %}
 {% block scripts %}
     {{super()}}
+    <script src='{{url_for("static", filename="js/listControls.js")}}'></script>
 {% endblock %}

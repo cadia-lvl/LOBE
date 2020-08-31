@@ -37,7 +37,17 @@
                 Hefja MOS próf
             </a>
         {% endif %}
-
+        {% if mos.number_selected > 0%}
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2' id='get-link-button' href='{{url_for("take_mos_test", mos_uuid=mos.uuid)}}'>
+                {{macros.btn_icon('link', 'r')}}
+                Hlekkur á próf
+            </a>
+        {% else %}
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled' id='get-link-button' href='{{url_for("take_mos_test", mos_uuid=mos.uuid)}}'>
+                {{macros.btn_icon('link', 'r')}}
+                Hlekkur á próf
+            </a>
+        {% endif %}
         {% if ratings | length  > 0%}
             <a class='btn btn-secondary btn-sm text-success float-right mr-2' href='{{url_for("mos_results", id=mos.id)}}'>
                 {{macros.btn_icon('chart-bar', 'r')}}
@@ -49,6 +59,7 @@
                 Skoða niðurstöður
             </a>
         {% endif %}
+        
     {% endif %}
 {% endblock %}
 
@@ -183,10 +194,13 @@
             if(none_checked){
                 $("#start-button").addClass( "disabled" );
                 $("#additional-info").removeClass( "d-none" );
+                $("#get-link-button").addClass( "disabled" );
             }
             else{
                 $("#start-button").removeClass( "disabled" );
                 $("#additional-info").addClass( "d-none" );
+                $("#get-link-button").removeClass( "disabled" );
+
             }
         }
 

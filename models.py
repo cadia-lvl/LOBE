@@ -506,8 +506,8 @@ class CustomToken(BaseModel, db.Model):
 
 
     @property
-    def customRecording(self):
-        return CustomRecording.query.get(self.customRecording.id)
+    def custom_recording(self):
+        return MosInstance.query.get(self.mos_instance_id).custom_recording
 
     @property
     def mos_id(self):
@@ -1365,6 +1365,7 @@ class Mos(BaseModel, db.Model):
     __tablename__ = 'Mos'
     id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    uuid = db.Column(db.String, default=str(uuid.uuid4()))
     collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
     collection = db.relationship(Collection, info={
         'label': 'Söfnun',

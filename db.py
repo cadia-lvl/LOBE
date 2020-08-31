@@ -449,15 +449,22 @@ def delete_token_db(token):
     return True
 
 def delete_mos_instance_db(instance):
+    errors = []
     try:
         os.remove(instance.custom_token.get_path())
         os.remove(instance.custom_recording.get_path())
     except Exception as error:
+        errors.append("Remove from disk error")
         print(f'{error}\n{traceback.format_exc()}')
-        return False
-    db.session.delete(instance)
-    db.session.commit()
-    return True
+    try:    
+        db.session.delete(instance)
+        db.session.commit()
+    except Exception as error:
+        errors.append("Remove from database error")
+        print(f'{error}\n{traceback.format_exc()}')
+    if errors:
+        return False, errors
+    return True, errors
 
 
 def delete_session_db(record_session):

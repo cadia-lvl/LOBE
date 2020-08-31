@@ -76,6 +76,7 @@ class MosForm(ModelForm):
 
     class Meta:
         model = Mos
+        exclude = ['uuid']
         num_samples = IntegerField('Fjöldi setnimmnga', [validators.required()])
     
     def __init__(self, max_available, *args, **kwargs):
@@ -97,7 +98,11 @@ class MosItemSelectionForm(ModelForm):
         model = MosInstance
         exclude = ['is_synth']
 
-
+class MosTestForm(Form):
+    name = StringField("Nafn", [validators.required()])
+    age = IntegerField("Aldur", [validators.required(),
+                       validators.NumberRange(min=10, max=120)])
+    email = EmailField("Netfang", [validators.required()])
 
 class UploadCollectionForm(FlaskForm):
     name = TextField('Nafn', validators=[validators.required()])

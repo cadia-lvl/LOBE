@@ -35,7 +35,7 @@ from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
                    collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
                    ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm, MosSelectAllForm,
-                   VerifierFontForm, DailySpinForm, MosForm, MosItemSelectionForm, MosUploadForm, UploadCollectionForm)
+                   VerifierFontForm, DailySpinForm, MosForm, MosItemSelectionForm, MosUploadForm, MosTestForm, UploadCollectionForm)
 from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
     VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, Mos, MosInstance, CustomRecording, CustomToken, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
@@ -844,11 +844,38 @@ def mos(id):
     ground_truths=ground_truths, synths=synths, mos_form=form,
     ratings=ratings, section='mos')
 
-@app.route('/mos/<int:id>/mostest', methods=['GET', 'POST'])
-@login_required
-@roles_accepted('admin', 'Notandi')
+@app.route('/mos/take_test/<uuid:mos_uuid>/', methods=['GET', 'POST'])
+def take_mos_test(mos_uuid):
+    mos = Mos.query.filter(Mos.uuid == str(mos_uuid)).first()
+    form = MosTestForm(request.form)
+    if request.method == "POST":
+        if form.validate():
+            try:
+                new_user = user_datastore.create_user(
+                    name=form.data["name"],
+                    email=form.data["email"],
+                    password=None,
+                    roles=[]
+                )
+                form.populate_obj(new_user)
+                db.session.commit()
+            except IntegrityError as e:
+                app.logger.error("Could not create user for application, email already in use")
+                flash("Þetta netfang er nú þegar í notkun", category='error')
+                return redirect(
+                    url_for("take_mos_test", mos_uuid=mos_uuid))
+            return redirect(url_for("mos_test", id=mos.id) + f"?user_id={new_user.id}")
+
+    return render_template('take_mos_test.jinja', form=form, type='create', mos=mos,
+                           action=url_for('take_mos_test', mos_uuid=mos_uuid))
+
+@app.route('/mos/<int:id>/mostest/', methods=['GET', 'POST'])
+#@login_required
+#@roles_accepted('admin', 'Notandi')
 def mos_test(id):
-    user_id = int(current_user.id)
+    user_id = request.args.get('user_id')
+    if not user_id:
+        user_id = int(current_user.id)
     user = User.query.get(user_id)
     mos = Mos.query.get(id)
     mos_list = MosInstance.query.filter(MosInstance.mos_id == id).all()
@@ -1025,7 +1052,6 @@ def mos_select_all(id):
         mos = Mos.query.get(id)
         is_synth = True if form.data['is_synth']=='True' else False
         select = True if form.data['select']=='True' else False
-
         mos_list = MosInstance.query.filter(MosInstance.mos_id == id).filter(MosInstance.is_synth == is_synth).all()
         for m in mos_list:
             m.selected = select
@@ -1043,11 +1069,12 @@ def mos_select_all(id):
 def delete_mos_instance(id):
     instance = MosInstance.query.get(id)
     mos_id = instance.mos_id
-    did_delete = delete_mos_instance_db(instance)
+    did_delete, errors = delete_mos_instance_db(instance)
     if did_delete:
         flash("Línu var eytt", category='success')
     else:
-        flash("Ekki gekk að eyða línu", category='warning')
+        flash("Ekki gekk að eyða línu rétt", category='warning')
+        print(errors)
     return redirect(url_for('mos', id=mos_id))
 
 @app.route('/mos/create', methods=['GET', 'POST'])

@@ -14,5 +14,5 @@ tmux_session.sh
 .DS_Store
 .idea/
 
-lobe/settings/*
-
+lobe/settings/my_development.py
+lobe/settings/production.py

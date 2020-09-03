@@ -34,6 +34,8 @@ RECAPTCHA_DATA_ATTRS = {'theme': 'dark'}
 
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+SECURITY_LOGIN_USER_TEMPLATE = 'login_user.jinja'
+
 # The default configuration id stored in database
 DEFAULT_CONFIGURATION_ID = 1
 

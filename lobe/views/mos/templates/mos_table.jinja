@@ -2,7 +2,7 @@
     <table class='table'>
         <thead>
             <th>
-            
+
             </th>
             <th>
                 Auðkenni setningar
@@ -15,8 +15,8 @@
             </th>
             <th>
                 <div class="btn-group" style="margin-bottom: -8px;">
-                
-                    <form id='selectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
+
+                    <form id='selectAllForm' method="POST" action="{{url_for('mos.mos_select_all', id=mos.id)}}">
                         {% for f in selectAllForm %}
                             {{f}}
                         {% endfor%}
@@ -24,7 +24,7 @@
                             <span class=''><i class="far fa-check-square text-success"></i></span>
                         </button>
                     </form>
-                    <form id='deselectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
+                    <form id='deselectAllForm' method="POST" action="{{url_for('mos.mos_select_all', id=mos.id)}}">
                         {% for f in deselectAllForm %}
                             {{f}}
                         {% endfor%}
@@ -39,7 +39,7 @@
         </thead>
         <tbody>
             {% for mos in mos_list %}
-                <tr>      
+                <tr>
                     <td>
                         <audio id="audio-{{mos.custom_recording.id}}" src={{mos.custom_recording.get_download_url()}} type="audio/wav"></audio>
                         <button type='button' class='btn btn-link btn-sm' onClick="play({{mos.custom_recording.id}})">
@@ -51,7 +51,7 @@
                     {% else %}
                         <td>-</td>
                     {% endif %}
-                    
+
                     <td>{{mos.text}}</td>
                     <td>{{mos.average_rating}}</td>
                     <td>
@@ -76,5 +76,5 @@
     </table>
 </div>
 
-<script src='{{url_for("static", filename="js/listControls.js")}}'></script>
+<script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>
 

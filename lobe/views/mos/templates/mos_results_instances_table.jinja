@@ -1,7 +1,6 @@
 <table class='table'>
     <thead>
         <th>
-        
         </th>
         <th>
             Auðkenni setningar
@@ -22,7 +21,7 @@
     </thead>
     <tbody>
         {% for mos in mos_list %}
-            <tr>      
+            <tr>
                 <td>
                     <audio id="audio-{{mos.custom_recording.id}}" src={{mos.custom_recording.get_download_url()}} type="audio/wav"></audio>
                     <button type='button' class='btn btn-link btn-sm' onClick="play({{mos.custom_recording.id}})">
@@ -34,7 +33,7 @@
                 {% else %}
                     <td>-</td>
                 {% endif %}
-                
+
                 <td>{{mos.text}}</td>
                 <td>
                     {{mos.number_of_ratings}}
@@ -46,4 +45,4 @@
     </tbody>
 </table>
 
-<script src='{{url_for("static", filename="js/listControls.js")}}'></script>
+<script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>

@@ -690,7 +690,7 @@ manager.add_command('change_pass', changePass)
 manager.add_command('change_dataroot', changeDataRoot)
 manager.add_command('add_default_roles', AddDefaultRoles)
 manager.add_command('add_default_configuration', AddDefaultConfiguration)
-manager.add_command('add_column_defults', AddColumnDefaults)
+manager.add_command('add_column_defaults', AddColumnDefaults)
 
 
 if __name__ == '__main__':

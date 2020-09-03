@@ -1,4 +1,4 @@
-{% extends "lists/_list.jinja" %}
+{% extends "_list.jinja" %}
 {% block title %}{{mos.printable_id}}{% endblock %}
 {% block total %}{{mos_list|length}}{% endblock %}
 
@@ -22,44 +22,44 @@
             {{macros.btn_icon('upload', 'r')}}
             Hlaða upp
         </button>
-        <a href='{{url_for("stream_MOS_zip", id=mos.id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
+        <a href='{{url_for("mos.stream_MOS_zip", id=mos.id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
             {{macros.btn_icon('download', 'r')}}
             Sækja upptökur
         </a>
         {% if mos.number_selected > 0%}
-            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='start-button' href='{{url_for("mos_test", id=mos.id, uuid=current_user.uuid)}}'>
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='start-button' href='{{url_for("mos.mos_test", id=mos.id, uuid=current_user.uuid)}}'>
                 {{macros.btn_icon('play', 'r')}}
                 Hefja MOS próf
             </a>
         {% else %}
-            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled mt-2' id='start-button' href='{{url_for("mos_test", id=mos.id, uuid=current_user.uuid)}}'>
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled mt-2' id='start-button' href='{{url_for("mos.mos_test", id=mos.id, uuid=current_user.uuid)}}'>
                 {{macros.btn_icon('play', 'r')}}
                 Hefja MOS próf
             </a>
         {% endif %}
         {% if mos.number_selected > 0%}
-            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='get-link-button' href='{{url_for("take_mos_test", mos_uuid=mos.uuid)}}'>
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='get-link-button' href='{{url_for("mos.take_mos_test", mos_uuid=mos.uuid)}}'>
                 {{macros.btn_icon('link', 'r')}}
                 Hlekkur á próf
             </a>
         {% else %}
-            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2 disabled' id='get-link-button' href='{{url_for("take_mos_test", mos_uuid=mos.uuid)}}'>
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2 disabled' id='get-link-button' href='{{url_for("mos.take_mos_test", mos_uuid=mos.uuid)}}'>
                 {{macros.btn_icon('link', 'r')}}
                 Hlekkur á próf
             </a>
         {% endif %}
         {% if ratings | length  > 0%}
-            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("mos_results", id=mos.id)}}'>
+            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("mos.mos_results", id=mos.id)}}'>
                 {{macros.btn_icon('chart-bar', 'r')}}
                 Skoða niðurstöður
             </a>
         {% else %}
-            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2 disabled' href='{{url_for("mos_results", id=mos.id)}}'>
+            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2 disabled' href='{{url_for("mos.mos_results", id=mos.id)}}'>
                 {{macros.btn_icon('chart-bar', 'r')}}
                 Skoða niðurstöður
             </a>
         {% endif %}
-        
+
     {% endif %}
 {% endblock %}
 
@@ -70,9 +70,9 @@
                 <h3>Talgervingar sem búnar voru til</h3>
                 <p>Hljóðklippur sem búnar voru til með hjálp talgervils</p>
             </div>
-            
+
             {% with mos=mos, mos_list=synths, isSynthTable=true, selectAllForm=select_all_forms[0], deselectAllForm=select_all_forms[1] %}
-                {% include 'tables/mos.jinja'%}
+                {% include 'mos_table.jinja'%}
             {% endwith %}
         </div>
 
@@ -81,9 +81,9 @@
                 <h3 class="">Upptökur sem teknar voru upp</h3>
                 <p>Upptökur sem teknar voru upp af alvöru fólki</p>
             </div>
-            
+
             {% with mos=mos, mos_list=ground_truths, isSynthTable=false, selectAllForm=select_all_forms[2], deselectAllForm=select_all_forms[3]%}
-                {% include 'tables/mos.jinja'%}
+                {% include 'mos_table.jinja'%}
             {% endwith %}
         </div>
     {% endif %}
@@ -110,7 +110,7 @@
                 </div>
                 <div class="modal-body">
                     <p>
-                        Athugaðu að hlaða þarf upp <code>.zip</code> skrá sem inniheldur möppu sem heitir <code>audio</code> og skrá sem heitir <code>index.tsv</code>. 
+                        Athugaðu að hlaða þarf upp <code>.zip</code> skrá sem inniheldur möppu sem heitir <code>audio</code> og skrá sem heitir <code>index.tsv</code>.
                         <code>Audio</code> mappan inniheldur allar talgervingarnar á <code>.wav</code> formi og <code>index.tsv</code> tengir auðkenni hverrar MOS-setningar við nafn
                         talgervingarinnar í audio möppunni. <br> <br>
                         Í <code>index.tsv</code> eru eftirfarandi dálkar:
@@ -125,7 +125,7 @@
                     {% endwith %}
                 </div>
                 <div class="modal-footer">
-                    <a href='{{url_for("stream_MOS_index_demo")}}' class='btn btn-primary float-left mr-2'>
+                    <a href='{{url_for("mos.stream_MOS_index_demo")}}' class='btn btn-primary float-left mr-2'>
                         {{macros.btn_icon('download', 'r')}}
                         Sýnidæmi
                     </a>
@@ -134,7 +134,7 @@
                         Klára
                         <span class='ml-1'><i class='fa fa-check'></i></span>
                     </button>
-                    
+
                 </div>
                 </div>
             </div>
@@ -158,7 +158,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
-                <a id='confirmationButton' href='{{url_for("delete_mos_instance", id=1)}}' class='btn btn-danger'>
+                <a id='confirmationButton' href='{{url_for("mos.delete_mos_instance", id=1)}}' class='btn btn-danger'>
                     Eyða
                     {{macros.btn_icon('trash', 'l')}}
                 </a>
@@ -173,7 +173,7 @@
     {{super()}}
     <script>
         function deletebutton(id){
-            $('#deleteModal #confirmationButton').attr('href', '{{url_for("delete_mos_instance", id=1)}}'.replace("1", id));
+            $('#deleteModal #confirmationButton').attr('href', '{{url_for("mos.delete_mos_instance", id=1)}}'.replace("1", id));
         }
 
 
@@ -226,7 +226,7 @@
             xhr.open("POST", form.action, true);
             xhr.send(formData);
         }
-    
+
         $('#files').on('change',function(){
             //get the file name
             var fileName = $(this).val();

@@ -70,11 +70,11 @@
 
 {% block scripts %}
     {{super()}}
-    <script src='{{url_for("static", filename="js/error.js")}}'></script>
+    <script src='{{url_for("main.static", filename="js/error.js")}}'></script>
     <script src='{{url_for("static", filename="js/volume-meter.js")}}'></script>
     <script src='{{url_for("static", filename="js/meter.js")}}'></script>
     <script type='text/javascript'>
-        var postRatingsRoute = "{{url_for('post_mos_rating', id=mos.id)}}";
+        var postRatingsRoute = "{{url_for('mos.post_mos_rating', id=mos.id)}}";
         var user_id = {{user.id}};
         var mos_id = {{mos.id}}
         var recordings = {{recordings}}
@@ -123,7 +123,7 @@
         //radio
         const ratingButtons = document.getElementById('ratingButtons')
 
-        //audio 
+        //audio
         let recordingAudio = document.querySelector('audio#audio-recording');
         let playButtonIcon = $('#playButtonIcon');
 

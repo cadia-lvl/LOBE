@@ -43,7 +43,7 @@
         <div class="collapse" id="collapse-users">
             {% if users|length > 0 %}
                 {% with users=users %}
-                    {% include 'tables/mos_users.jinja'%}
+                    {% include 'mos_users_table.jinja'%}
                 {% endwith %}
             {% endif %}
         </div>
@@ -56,12 +56,12 @@
         <div class="collapse" id="collapse-ratings">
             {% if mos_list|length > 0 %}
                 {% with mos_list=mos_list %}
-                    {% include 'tables/mos_results_instances.jinja'%}
+                    {% include 'mos_results_instances_table.jinja'%}
                 {% endwith %}
             {% endif %}
         </div>
     </div>
-    
+
     <div class='col-12' style="margin-top: 50px;">
         <h3 class='font-weight-bold'>Notendahegðun</h3>
         <p>Hver lína sýnir einkunnagjöf ákveðins notenda fyrir þær upptökur sem sem hlustandi hefur hlýtt á</p>
@@ -98,7 +98,7 @@
     <div class='col-12' style="margin-top: 50px;">
         <h3 class='font-weight-bold'>Röð einkunna</h3>
         <p>
-            Hver stöpull sýnir meðaleinkunn eftir því hvenær einkunn er gefin. Þannig sýnir fyrsti 
+            Hver stöpull sýnir meðaleinkunn eftir því hvenær einkunn er gefin. Þannig sýnir fyrsti
             stöpull meðaleinkunn þeirra einkunna sem gefnar voru fyrst og svo koll af kolli.
         </p>
         <div class='card'>
@@ -275,7 +275,7 @@
             //}
         }
 
-       
+
         console.log(mos_stats['names'])
         console.log(width)
         var trace1 = {
@@ -288,7 +288,7 @@
             },
             width:width
         };
-        
+
         var data = [trace1];
 
         Plotly.newPlot(container_bar, data, layout_bar, config);
@@ -346,5 +346,5 @@
 
         Plotly.newPlot(container_bar_placement, data, layout_bar, config);
 
-    </script> 
+    </script>
 {% endblock %}

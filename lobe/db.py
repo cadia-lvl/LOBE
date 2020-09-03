@@ -14,8 +14,8 @@ from flask import flash
 from sqlalchemy import func
 from flask_security import current_user
 from lobe.models import (Collection, Recording, Session, Token, Trim,
-                         User, db, Mos, MosInstance, CustomRecording,
-                         CustomToken, MosRating, Verification)
+                         User, db, MosInstance, CustomRecording,
+                         CustomToken, MosRating)
 
 
 def create_tokens(collection_id, files, is_g2p):

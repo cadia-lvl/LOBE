@@ -226,7 +226,8 @@ class Collection(BaseModel, db.Model):
 
     @property
     def mos_url(self):
-        return url_for('mos_collection', id=self.id)
+        return url_for('mos.mos_collection', id=self.id)
+
 
 class Configuration(BaseModel, db.Model):
     __tablename__ = 'Configuration'
@@ -535,7 +536,7 @@ class CustomToken(BaseModel, db.Model):
             self.source = source
 
     def get_url(self):
-        return url_for('custom_token', id=self.id)
+        return url_for('mos.custom_token', id=self.id)
 
     def get_path(self):
         return self.path
@@ -893,7 +894,7 @@ class CustomRecording(BaseModel, db.Model):
         return self.fname
 
     def get_download_url(self):
-        return url_for('download_custom_recording', id=self.id)
+        return url_for('mos.download_custom_recording', id=self.id)
 
     def get_directory(self):
         return os.path.dirname(self.path)
@@ -1797,7 +1798,7 @@ class Mos(BaseModel, db.Model):
 
     @property
     def url(self):
-        return url_for('mos', id=self.id)
+        return url_for('mos.mos_detail', id=self.id)
 
     @property
     def printable_id(self):
@@ -1805,7 +1806,7 @@ class Mos(BaseModel, db.Model):
 
     @property
     def edit_url(self):
-        return url_for('mos_edit', id=self.id)
+        return url_for('mos.mos_edit', id=self.id)
 
     @property
     def number_selected(self):
@@ -1886,7 +1887,7 @@ class MosInstance(BaseModel, db.Model):
 
     @property
     def ajax_edit_action(self):
-        return url_for('mos_instance_edit', id=self.id)
+        return url_for('mos.mos_instance_edit', id=self.id)
 
     @property
     def average_rating(self):

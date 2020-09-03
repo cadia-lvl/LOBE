@@ -23,6 +23,7 @@ from lobe.views.session import session
 from lobe.views.user import user
 from lobe.views.application import application
 from lobe.views.configuration import configuration
+from lobe.views.mos import mos
 from lobe.views.shop import shop
 
 
@@ -61,6 +62,7 @@ def create_app():
     app.register_blueprint(application)
     app.register_blueprint(configuration)
     app.register_blueprint(shop)
+    app.register_blueprint(mos)
 
     app.executor = Executor(app)
     app.user_datastore = user_datastore

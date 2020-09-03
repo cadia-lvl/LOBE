@@ -1120,10 +1120,12 @@ def post_mos_rating(id):
         app.logger.error("Error posting recordings: {}\n{}".format(
             error, traceback.format_exc()))
         return Response(str(error), status=500)
+    if mos_id is None:
+        flash("Engar einkunnir í MOS prófi.", category='warning')
     if(not current_user.is_admin()):
+        flash("MOS próf klárað", category='success')
         return Response(url_for('user', id=current_user.id), status=200)
     if mos_id is None:
-        flash("Engar einkunnir í MOS prófi.", category='success')
         return Response(url_for('mos_list'), status=200)
     else:
         flash("MOS próf klárað", category='success')

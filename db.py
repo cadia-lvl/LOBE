@@ -1,14 +1,12 @@
 import datetime
 import json
 import math
-import multiprocessing
 import os
 import traceback
 from flask import current_app as app
 import csv
 from pydub import AudioSegment
 from pydub.utils import mediainfo
-from zipfile import ZipFile
 import pathlib
 from pathlib import Path
 from werkzeug import secure_filename
@@ -98,6 +96,7 @@ def insert_collection(form):
     db.session.commit()
     return collection
 
+
 def save_custom_wav(zip, zip_name, tsv_name, mos, id):
     with zip.open(tsv_name) as tsvfile:
         wav_path_dir = app.config["WAV_CUSTOM_AUDIO_DIR"]+"{}".format(id)
@@ -106,11 +105,11 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
         c = csv.StringIO(mc.decode())
         rd = csv.reader(c, delimiter="\t")
         pathlib.Path(wav_path_dir).mkdir(exist_ok=True)
-        pathlib.Path(webm_path).mkdir(exist_ok=True) 
+        pathlib.Path(webm_path).mkdir(exist_ok=True)
         custom_tokens = []
         for row in rd:
-            if row[0] and len(row) == 3:     
-                if (row[1].lower()=='s' or row[1].lower()=='r') and row[2]:
+            if row[0] and len(row) == 3:
+                if (row[1].lower() == 's' or row[1].lower() == 'r') and row[2]:
                     for zip_info in zip.infolist():
                         if zip_info.filename[-1] == '/':
                             continue
@@ -119,26 +118,32 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                             custom_token_name = '{}_m{:09d}'.format(
                                 zip_name, id)
                             custom_recording = CustomRecording()
-                            custom_token = CustomToken(row[2], custom_token_name)
-                            mos_instance = MosInstance(custom_token=custom_token, custom_recording=custom_recording)
+                            custom_token = CustomToken(
+                                row[2], custom_token_name)
+                            mos_instance = MosInstance(
+                                custom_token=custom_token,
+                                custom_recording=custom_recording)
                             db.session.add(custom_token)
                             db.session.add(custom_recording)
                             db.session.add(mos_instance)
                             db.session.flush()
                             file_id = '{}_s{:09d}_m{:09d}'.format(
-                                os.path.splitext(os.path.basename(zip_info.filename))[0], custom_recording.id, id)
+                                os.path.splitext(
+                                    os.path.basename(zip_info.filename))[0],
+                                custom_recording.id, id)
                             fname = secure_filename(f'{file_id}.webm')
-                            path = os.path.join(app.config['CUSTOM_RECORDING_DIR'],
+                            path = os.path.join(
+                                app.config['CUSTOM_RECORDING_DIR'],
                                 str(id), fname)
-                            wav_path = os.path.join(app.config['WAV_CUSTOM_AUDIO_DIR'],
+                            wav_path = os.path.join(
+                                app.config['WAV_CUSTOM_AUDIO_DIR'],
                                 str(id),
                                 secure_filename(f'{file_id}.wav'))
-
-                            zip_info.filename = secure_filename(f'{file_id}.wav')
+                            zip_info.filename = secure_filename(
+                                f'{file_id}.wav')
                             zip.extract(zip_info, wav_path_dir)
                             sound = AudioSegment.from_wav(wav_path)
                             sound.export(path, format="webm")
-                            
                             custom_recording.original_fname = row[0]
                             custom_recording.user_id = current_user.id
                             custom_recording.file_id = file_id
@@ -149,201 +154,197 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                                 mos_instance.is_synth = True
                             else:
                                 mos_instance.is_synth = False
-
-                            mos.mos_objects.append(mos_instance)  
+                            mos.mos_objects.append(mos_instance)
                             custom_tokens.append(custom_token)
                 else:
                     pass
-        #db.session.commit()
         if len(custom_tokens) > 0:
             custom_token_dir = app.config["CUSTOM_TOKEN_DIR"]+"{}".format(id)
             pathlib.Path(custom_token_dir).mkdir(exist_ok=True)
             for token in custom_tokens:
                 token.save_to_disk()
             db.session.commit()
-        return len(custom_tokens)
-        
+        return custom_tokens
+
 
 def save_uploaded_collection(zip, zip_name, tsv_name, form):
-    #creating new collection
+    # creating new collection
     collection = Collection()
-    #print(form.data)
-    
     form.populate_obj(collection)
-   
     db.session.add(collection)
     db.session.flush()
 
-    dirs = [collection.get_record_dir(), collection.get_token_dir(),
-        collection.get_video_dir(), collection.get_wav_audio_dir()]
+    dirs = [
+            collection.get_record_dir(),
+            collection.get_token_dir(),
+            collection.get_video_dir(),
+            collection.get_wav_audio_dir()]
+
     # create dirs for tokens and records
     for dir in dirs:
-        if not os.path.exists(dir): os.makedirs(dir)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
         else:
             raise ValueError("""
                 For some reason, we are about to create a collection with the
                 same primary key as a previous collection. This could happen
                 for example if 2 databases are used on the same machine. If
                 this error occurs, the current environment has to change the
-                DATA_BASE_DIR, TOKEN_DIR, RECORD_DIR flask environment variables
-                to point to some other place.
+                DATA_BASE_DIR, TOKEN_DIR, RECORD_DIR flask environment
+                variables to point to some other place.
 
                 Folder that already exists: {}
 
-                Perhaps some of the source folders have never been created before.
+                Perhaps some of the source folders have never been created
+                before.
                 """.format(dir))
-                
+
     with zip.open(tsv_name) as tsvfile:
         mc = tsvfile.read()
         c = csv.StringIO(mc.decode())
         rd = csv.reader(c, delimiter="\t")
-        custom_tokens = []
         tokens = []
-        num_errors = 0
-        error_line, error_file = None, None
-        #creating session
         duration = 0
         user_id = int(form.data['assigned_user_id'])
         manager_id = current_user.id
         collection_id = collection.id
         has_video = False
 
-        
-        record_session = Session(user_id, collection_id, manager_id,
+        # creating session
+        record_session = Session(
+            user_id, collection_id, manager_id,
             duration=duration, has_video=has_video, is_dev=collection.is_dev)
         db.session.add(record_session)
         db.session.flush()
 
         for row in rd:
-            if row[0] and len(row) >= 2:     
-                    for zip_info in zip.infolist():
-                        if zip_info.filename[-1] == '/':
-                            continue
-                        zip_info.filename = os.path.basename(zip_info.filename)
-                        if zip_info.filename == row[0]:
-                            try:
-                                #create a new token
-                                if not row[1]:
-                                    continue
-                                text = row[1]
-                                src = row[2] if row[2] else None
-                                scr = row[3] if row[3] else None
-                                pron = row[4] if row[4] else None
-                                #text, src, scr, pron = row[1], row[2], row[3], row[4]
-                                token = Token(text, zip_name, collection.id, score=scr,
-                                    pron=pron, source=src)
-                                tokens.append(token)
-                                db.session.add(token)
-                                db.session.flush()
-
-                            except ValueError as error:
-                                num_errors += 1
-                                error_line = idx + 1
-                                error_file = file.filename
+            if row[0] and len(row) >= 2:
+                for zip_info in zip.infolist():
+                    if zip_info.filename[-1] == '/':
+                        continue
+                    zip_info.filename = os.path.basename(zip_info.filename)
+                    if zip_info.filename == row[0]:
+                        try:
+                            # create a new token
+                            if not row[1]:
                                 continue
-
-                            recording = Recording(int(token.id), row[0], user_id,
-                                session_id=record_session.id, has_video=has_video)
-                            
-                            db.session.add(recording)
+                            text = row[1]
+                            src = row[2] if row[2] else None
+                            scr = row[3] if row[3] else None
+                            pron = row[4] if row[4] else None
+                            token = Token(
+                                text, zip_name, collection.id, score=scr,
+                                pron=pron, source=src)
+                            tokens.append(token)
+                            db.session.add(token)
                             db.session.flush()
-                            recording._set_path()
 
-                            wav_path = os.path.join(dirs[3], secure_filename(row[0]))
-                   
-                            zip_info.filename = '{}.wav'.format(os.path.splitext(os.path.basename(recording.fname))[0])#secure_filename(row[0])
-                            export_to_path = secure_filename('{}.webm'.format(os.path.splitext(os.path.basename(row[0]))[0]))
-                            export_to_path = os.path.join(dirs[0], export_to_path)
-                           
-                            zip.extract(zip_info, dirs[3])
-                            sound = AudioSegment.from_wav(recording.wav_path)
-                            sound.export(recording.path, format="webm")
-                            fpath_info = os.path.join(dirs[0],secure_filename(row[0]))
-                      
-                            info = mediainfo(recording.path)
+                        except ValueError as error:
+                            print(error)
+                            continue
 
-                            recorder_settings = {
-                                'sampleRate': info['sample_rate'],
-                                'sampleSize': 16,
-                                'channelCount': info['channels'],
-                                'latency': 0,
-                                'autoGainControl': False,
-                                'echoCancellation': False,
-                                'noiseSuppression': False,
-                            }
+                        recording = Recording(
+                            int(token.id), row[0], user_id,
+                            session_id=record_session.id, has_video=has_video)
 
-                            recording._set_wave_params(recorder_settings)
+                        db.session.add(recording)
+                        db.session.flush()
+                        recording._set_path()
+
+                        zip_info.filename = '{}.wav'.format(os.path.splitext(
+                            os.path.basename(recording.fname))[0])
+                        export_to_path = secure_filename('{}.webm'.format(
+                            os.path.splitext(os.path.basename(row[0]))[0]))
+                        export_to_path = os.path.join(dirs[0], export_to_path)
+
+                        zip.extract(zip_info, dirs[3])
+                        sound = AudioSegment.from_wav(recording.wav_path)
+                        sound.export(recording.path, format="webm")
+
+                        info = mediainfo(recording.path)
+
+                        recorder_settings = {
+                            'sampleRate': info['sample_rate'],
+                            'sampleSize': 16,
+                            'channelCount': info['channels'],
+                            'latency': 0,
+                            'autoGainControl': False,
+                            'echoCancellation': False,
+                            'noiseSuppression': False,
+                        }
+
+                        recording._set_wave_params(recorder_settings)
+
         db.session.commit()
 
         for t in tokens:
             t.save_to_disk()
             t.update_numbers()
         db.session.commit()
-        
+
         # then update the numbers of the collection
         collection.update_numbers()
         db.session.commit()
-                    
+
     return collection
+
 
 def is_valid_info(data):
     if 'collection_info' in data and \
-    'text_info' in data and \
-    'recording_info' in data and \
-    'other' in data:
+            'text_info' in data and \
+            'recording_info' in data and \
+            'other' in data:
         if 'text' in data['text_info'] and \
-            "session_id" in data["collection_info"] and \
-            "recording_fname" in data["recording_info"] and \
-            "text_marked_bad" in data["other"] and \
-            "recording_marked_bad" in data["other"] and\
-            "duration" in data["recording_info"]:
+                "session_id" in data["collection_info"] and \
+                "recording_fname" in data["recording_info"] and \
+                "text_marked_bad" in data["other"] and \
+                "recording_marked_bad" in data["other"] and\
+                "duration" in data["recording_info"]:
             return True
     return False
-
 
 
 def save_uploaded_lobe_collection(zip, zip_name, json_name, form):
     # creating new collection
     collection = Collection()
-    
     form.populate_obj(collection)
-   
     db.session.add(collection)
     db.session.flush()
 
-    dirs = [collection.get_record_dir(), collection.get_token_dir(),
-        collection.get_video_dir(), collection.get_wav_audio_dir()]
+    dirs = [
+        collection.get_record_dir(),
+        collection.get_token_dir(),
+        collection.get_video_dir(),
+        collection.get_wav_audio_dir()]
     # create dirs for tokens and records
     for dir in dirs:
-        if not os.path.exists(dir): os.makedirs(dir)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
         else:
             raise ValueError("""
                 For some reason, we are about to create a collection with the
                 same primary key as a previous collection. This could happen
                 for example if 2 databases are used on the same machine. If
                 this error occurs, the current environment has to change the
-                DATA_BASE_DIR, TOKEN_DIR, RECORD_DIR flask environment variables
-                to point to some other place.
+                DATA_BASE_DIR, TOKEN_DIR, RECORD_DIR flask environment
+                variables to point to some other place.
 
                 Folder that already exists: {}
 
-                Perhaps some of the source folders have never been created before.
+                Perhaps some of the source folders have never been created
+                before.
                 """.format(dir))
-                
+
     with zip.open(json_name) as json_file:
         data = json_file.read()
         info = json.loads(data.decode("utf-8"))
-        custom_tokens = []
         tokens = []
-        num_errors = 0
-        error_line, error_file = None, None
         # creating session
         duration = 0
         user_id = int(form.data['assigned_user_id'])
         manager_id = current_user.id
         collection_id = collection.id
         has_video = False
-        
         sessions = {}
         for key in info:
             if is_valid_info(info[key]):
@@ -352,11 +353,15 @@ def save_uploaded_lobe_collection(zip, zip_name, json_name, form):
                     session_id = row["collection_info"]["session_id"]
                     duration = row["recording_info"]["duration"]
                     if session_id not in sessions:
-                        new_record_session = Session(user_id, collection_id, manager_id,
-                            duration=duration, has_video=has_video, is_dev=collection.is_dev)
+                        new_record_session = Session(
+                            user_id, collection_id, manager_id,
+                            duration=duration, has_video=has_video,
+                            is_dev=collection.is_dev)
                         db.session.add(new_record_session)
                         db.session.flush()
-                        sessions[session_id]={'session': new_record_session, 'duration': []}
+                        sessions[session_id] = {
+                            'session': new_record_session,
+                            'duration': []}
                         record_session = new_record_session
                     else:
                         record_session = sessions[session_id]['session']
@@ -365,10 +370,12 @@ def save_uploaded_lobe_collection(zip, zip_name, json_name, form):
                     if zip_info.filename == info_filename:
                         try:
                             text = row["text_info"]["text"]
-                            src = row["text_info"]["fname"] if row["text_info"]["fname"] else None
+                            src = row["text_info"]["fname"] if \
+                                row["text_info"]["fname"] else None
                             scr = row["text_info"]["score"]
-                            pron = row["text_info"]["pron"] 
-                            token = Token(text, zip_name, collection.id, score=scr,
+                            pron = row["text_info"]["pron"]
+                            token = Token(
+                                text, zip_name, collection.id, score=scr,
                                 pron=pron, source=src)
                             tokens.append(token)
                             db.session.add(token)
@@ -377,33 +384,29 @@ def save_uploaded_lobe_collection(zip, zip_name, json_name, form):
                                 token.marked_as_bad = True
 
                         except ValueError as error:
-                            num_errors += 1
-                            error_line = idx + 1
-                            error_file = file.filename
-                            continue
+                            print(error)
 
-                        recording = Recording(int(token.id), info_filename, user_id,
+                        recording = Recording(
+                            int(token.id), info_filename, user_id,
                             session_id=record_session.id, has_video=has_video)
-                        
+
                         db.session.add(recording)
                         db.session.flush()
                         recording._set_path()
-
-                        wav_path = os.path.join(dirs[3], secure_filename(info_filename))
-                
-                        zip_info.filename = '{}.wav'.format(os.path.splitext(os.path.basename(recording.fname))[0])#secure_filename(row[0])
-                        export_to_path = secure_filename('{}.webm'.format(os.path.splitext(os.path.basename(info_filename))[0]))
+                        zip_info.filename = '{}.wav'.format(os.path.splitext(
+                            os.path.basename(recording.fname))[0])
+                        export_to_path = secure_filename('{}.webm'.format(
+                            os.path.splitext(
+                                os.path.basename(info_filename))[0]))
                         export_to_path = os.path.join(dirs[0], export_to_path)
-                        
                         zip.extract(zip_info, dirs[3])
                         sound = AudioSegment.from_wav(recording.wav_path)
                         sound.export(recording.path, format="webm")
-                        fpath_info = os.path.join(dirs[0],secure_filename(info_filename))
-                    
                         recorder_settings = {
                             'sampleRate': row["recording_info"]["sr"],
                             'sampleSize': row["recording_info"]["bit_depth"],
-                            'channelCount': row["recording_info"]["num_channels"],
+                            'channelCount':
+                                row["recording_info"]["num_channels"],
                             'latency': 0,
                             'autoGainControl': False,
                             'echoCancellation': False,
@@ -411,10 +414,11 @@ def save_uploaded_lobe_collection(zip, zip_name, json_name, form):
                         }
                         recording._set_wave_params(recorder_settings)
                         if row['other']['recording_marked_bad'] == 'true':
-                                recording.marked_as_bad = True
+                            recording.marked_as_bad = True
                         sessions[session_id]['duration'].append(duration)
         for key in sessions:
-            sessions[session_id]['session'].duration = sum(sessions[session_id]['duration'])
+            sessions[session_id]['session'].duration = sum(
+                sessions[session_id]['duration'])
         db.session.commit()
 
         for t in tokens:
@@ -426,14 +430,17 @@ def save_uploaded_lobe_collection(zip, zip_name, json_name, form):
         db.session.commit()
     return collection
 
+
 def is_valid_rating(rating):
     if int(rating) > 0 and int(rating) <= 5:
         return True
     return False
 
+
 def delete_rating_if_exists(mos_instance_id, user_id):
-    rating = MosRating.query.filter(MosRating.mos_instance_id == mos_instance_id) \
-            .filter(MosRating.user_id == user_id).all()
+    rating = MosRating.query\
+        .filter(MosRating.mos_instance_id == mos_instance_id) \
+        .filter(MosRating.user_id == user_id).all()
     exists = False
     for r in rating:
         exists = True
@@ -441,13 +448,13 @@ def delete_rating_if_exists(mos_instance_id, user_id):
     db.session.commit()
     return exists
 
+
 def save_MOS_ratings(form, files):
-    #duration = float(form['duration'])
     user_id = int(form['user_id'])
     mos_id = int(form['mos_id'])
-    mos = Mos.query.get(mos_id)
-
     mos_list = json.loads(form['mos_list'])
+    if len(mos_list) == 0:
+        return None
     for i in mos_list:
         if "rating" in i:
             if is_valid_rating(i['rating']):
@@ -585,6 +592,7 @@ def delete_token_db(token):
     db.session.commit()
     return True
 
+
 def delete_mos_instance_db(instance):
     errors = []
     try:
@@ -593,7 +601,7 @@ def delete_mos_instance_db(instance):
     except Exception as error:
         errors.append("Remove from disk error")
         print(f'{error}\n{traceback.format_exc()}')
-    try:    
+    try:
         db.session.delete(instance)
         db.session.commit()
     except Exception as error:

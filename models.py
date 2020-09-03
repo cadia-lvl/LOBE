@@ -418,8 +418,9 @@ class Token(BaseModel, db.Model):
 class CustomToken(BaseModel, db.Model):
     __tablename__ = 'CustomToken'
 
-    def __init__(self, text, original_fname, copied_token=False, 
-        pron="Óþekkt", score=None, source="Óþekkt"):
+    def __init__(
+            self, text, original_fname, copied_token=False,
+            pron="Óþekkt", score=None, source="Óþekkt"):
         self.text = text
         self.original_fname = original_fname
         self.marked_as_bad = False
@@ -433,7 +434,6 @@ class CustomToken(BaseModel, db.Model):
 
     def get_url(self):
         return url_for('custom_token', id=self.id)
-
 
     def get_path(self):
         return self.path
@@ -457,7 +457,6 @@ class CustomToken(BaseModel, db.Model):
         f.write(self.text)
         f.close()
 
-
     def set_path(self):
         self.fname = secure_filename("{}_u{:09d}.token".format(
             os.path.splitext(self.original_fname)[0], self.id))
@@ -470,20 +469,19 @@ class CustomToken(BaseModel, db.Model):
         w.r.t. the current TOKEN_DIR environment variable
         '''
         if self.copied_token:
-            fname = secure_filename("{}_{:09d}.token".format(
-                os.path.splitext(self.original_fname)[0], self.id))
             path = os.path.join(
                 app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
             return path
-        fname = secure_filename("{}_{:09d}.token".format(
-            os.path.splitext(self.original_fname)[0], self.id))
         path = os.path.join(
             app.config['CUSTOM_TOKEN_DIR'], str(self.mos_id), self.fname)
         return path
 
     def get_dict(self):
-        return {'id':self.id, 'text':self.text, 'file_id':self.get_file_id(),
-        'url':self.get_url()}
+        return {
+            'id': self.id,
+            'text': self.text,
+            'file_id': self.get_file_id(),
+            'url': self.get_url()}
 
     def get_file_id(self):
         return os.path.splitext(self.fname)[0]
@@ -501,9 +499,8 @@ class CustomToken(BaseModel, db.Model):
         self.fname = token.fname
         self.path = token.path
         self.pron = token.pron
-        self.score = token.score 
+        self.score = token.score
         self.source = token.source
-
 
     @property
     def custom_recording(self):
@@ -517,7 +514,8 @@ class CustomToken(BaseModel, db.Model):
     def mos(self):
         return self.mosInstance.mos
 
-    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
     text = db.Column(db.String)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     mos_instance_id = db.Column(db.Integer, db.ForeignKey("MosInstance.id"))
@@ -529,7 +527,7 @@ class CustomToken(BaseModel, db.Model):
     pron = db.Column(db.String)
     score = db.Column(db.Float, default=-1)
     source = db.Column(db.String)
-    
+
 
 class Rating(BaseModel, db.Model):
     __tablename__ = 'Rating'
@@ -745,6 +743,7 @@ class Recording(BaseModel, db.Model):
     is_verified = db.Column(db.Boolean, default=False)
     is_secondarily_verified = db.Column(db.Boolean, default=False)
 
+
 class CustomRecording(BaseModel, db.Model):
     __tablename__ = 'CustomRecording'
 
@@ -756,7 +755,6 @@ class CustomRecording(BaseModel, db.Model):
 
     def get_download_url(self):
         return url_for('download_custom_recording', id=self.id)
-
 
     def get_directory(self):
         return os.path.dirname(self.path)
@@ -778,13 +776,13 @@ class CustomRecording(BaseModel, db.Model):
         return self.path
 
     def copyRecording(self, recording):
-            self.original_fname = recording.original_fname
-            self.user_id = recording.user_id
-            self.duration = recording.duration
-            self.fname = recording.fname
-            self.file_id = recording.file_id
-            self.path = recording.path
-            self.wav_path = recording.wav_path
+        self.original_fname = recording.original_fname
+        self.user_id = recording.user_id
+        self.duration = recording.duration
+        self.fname = recording.fname
+        self.file_id = recording.file_id
+        self.path = recording.path
+        self.wav_path = recording.wav_path
 
     def get_configured_path(self):
         '''
@@ -792,14 +790,12 @@ class CustomRecording(BaseModel, db.Model):
         w.r.t. the current TOKEN_DIR environment variable
         '''
         if self.copied_recording:
-            file_id = '{}_r{:09d}'.format(os.path.splitext(self.original_fname)[0], self.id)
-            fname = secure_filename('{}.wav'.format(self.file_id))
-            path = os.path.join(app.config['RECORD_DIR'],
+            path = os.path.join(
+                app.config['RECORD_DIR'],
                 str(self.token.collection_id), self.fname)
             return path
-        file_id = '{}_r{:09d}'.format(os.path.splitext(self.original_fname)[0], self.id)
-        fname = secure_filename('{}.wav'.format(self.file_id))
-        path = os.path.join(app.config['CUSTOM_RECORDING_DIR'],
+        path = os.path.join(
+            app.config['CUSTOM_RECORDING_DIR'],
             str(self.token.collection_id), self.fname)
         return path
 
@@ -822,15 +818,16 @@ class CustomRecording(BaseModel, db.Model):
         else:
             return "n/a"
 
-
     def _set_path(self):
         # TODO: deal with file endings
         self.file_id = '{}_s{:09d}_m{:09d}'.format(
             os.path.splitext(self.original_fname)[0], self.id, self.token_id)
         self.fname = secure_filename(f'{self.file_id}.webm')
-        self.path = os.path.join(app.config['CUSTOM_RECORDING_DIR'],
+        self.path = os.path.join(
+            app.config['CUSTOM_RECORDING_DIR'],
             str(self.mosInstance.id), self.fname)
-        self.wav_path = os.path.join(app.config['WAV_CUSTOM_AUDIO_DIR'],
+        self.wav_path = os.path.join(
+            app.config['WAV_CUSTOM_AUDIO_DIR'],
             str(self.mosInstance.id),
             secure_filename(f'{self.file_id}.wav'))
 
@@ -1364,7 +1361,8 @@ class Application(BaseModel, db.Model):
 
 class Mos(BaseModel, db.Model):
     __tablename__ = 'Mos'
-    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     uuid = db.Column(db.String, default=str(uuid.uuid4()))
     collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
@@ -1374,7 +1372,8 @@ class Mos(BaseModel, db.Model):
     num_samples = db.Column(db.Integer, default=0, info={
         'label': 'Fjöldi setninga'
     })
-    mos_objects = db.relationship("MosInstance", lazy='joined', backref="mos",
+    mos_objects = db.relationship(
+        "MosInstance", lazy='joined', backref="mos",
         cascade='all, delete, delete-orphan')
 
     def getAllRatings(self):
@@ -1407,7 +1406,6 @@ class Mos(BaseModel, db.Model):
             tokens.append(m.custom_token)
         return tokens
 
-
     @property
     def url(self):
         return url_for('mos', id=self.id)
@@ -1424,15 +1422,22 @@ class Mos(BaseModel, db.Model):
     def number_selected(self):
         return sum(r.selected == True for r in self.mos_objects)
 
+
 class MosInstance(BaseModel, db.Model):
     __tablename__ = 'MosInstance'
-    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
     mos_id = db.Column(db.Integer, db.ForeignKey('Mos.id'))
-    custom_token = db.relationship("CustomToken", lazy="joined", backref=db.backref("mosInstance", uselist=False), uselist=False,
+    custom_token = db.relationship(
+        "CustomToken", lazy="joined",
+        backref=db.backref("mosInstance", uselist=False), uselist=False,
         cascade='all, delete, delete-orphan')
-    custom_recording = db.relationship("CustomRecording", lazy="joined", backref=db.backref("mosInstance", uselist=False), uselist=False,
+    custom_recording = db.relationship(
+        "CustomRecording", lazy="joined",
+        backref=db.backref("mosInstance", uselist=False), uselist=False,
         cascade='all, delete, delete-orphan')
-    ratings = db.relationship("MosRating", lazy="joined", backref='mosInstance',
+    ratings = db.relationship(
+        "MosRating", lazy="joined", backref='mosInstance',
         cascade='all, delete, delete-orphan')
     is_synth = db.Column(db.Boolean, default=False)
     selected = db.Column(db.Boolean, default=False, info={
@@ -1461,13 +1466,13 @@ class MosInstance(BaseModel, db.Model):
         if self.custom_token is not None:
             token = self.custom_token.get_dict()
         return {
-            'id':self.id, 
+            'id': self.id,
             'token': token,
-            'mos_id':self.mos_id, 
+            'mos_id': self.mos_id,
             'path': self.path,
-            'text':self.text, 
+            'text': self.text,
             'is_synth': self.is_synth,
-            'selected':self.selected, 
+            'selected': self.selected,
         }
 
     @property
@@ -1512,20 +1517,19 @@ class MosInstance(BaseModel, db.Model):
             return "-"
         ratings = np.array(ratings)
         return round(np.std(ratings), 2)
-        
+
     @property
     def number_of_ratings(self):
         return len(self.ratings)
 
-
-    
 
 class MosRating(BaseModel, db.Model):
     __tablename__ = 'MosRating'
     __table_args__ = (
         db.UniqueConstraint('mos_instance_id', 'user_id'),
       )
-    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
     rating = db.Column(db.Integer, default=0, info={
         'label': 'Einkunn',
         'min': 0,
@@ -1541,5 +1545,4 @@ class MosRating(BaseModel, db.Model):
 
     @property
     def get_instance(self):
-        return MosInstance.query.get(self.mos_instance_id) 
-
+        return MosInstance.query.get(self.mos_instance_id)

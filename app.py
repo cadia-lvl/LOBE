@@ -837,38 +837,42 @@ def mos(id):
                     with ZipFile(zip_file, 'r') as zip:
                         zip_name = zip_file.filename[:-4]
                         tsv_name = '{}/index.tsv'.format(zip_name)
-                        successfully_uploaded = save_custom_wav(zip,
-                                                                zip_name,
-                                                                tsv_name,
-                                                                mos,
-                                                                id)
+                        successfully_uploaded = save_custom_wav(
+                            zip, zip_name, tsv_name, mos, id)
                         if successfully_uploaded > 0:
-                            flash("Tókst að hlaða upp {} setningum.".format(successfully_uploaded),category="success")
+                            flash("Tókst að hlaða upp {} setningum.".format(
+                                successfully_uploaded), category="success")
                         else:
-                            flash("Ekki tókst að hlaða upp neinum setningum.".format(successfully_uploaded),category="warning")
-                    return redirect(url_for('mos', id=id))   
+                            flash(
+                                "Ekki tókst að hlaða upp neinum setningum.",
+                                category="warning")
+                    return redirect(url_for('mos', id=id))
                 else:
-                    flash("Ekki tókst að hlaða upp skrá, vinsamlegast lestu leiðbeiningar og reyndu aftur.",
-                        category="danger")                 
-            except Exception as e: 
+                    flash(
+                        "Ekki tókst að hlaða upp skrá, vinsamlegast" +
+                        "lestu leiðbeiningar og reyndu aftur.",
+                        category="danger")
+            except Exception as e:
                 print(e)
-                flash("Ekki tókst að hlaða upp skrá.",
-                            category="danger")   
+                flash(
+                    "Ekki tókst að hlaða upp skrá.",
+                    category="danger")
         else:
-            flash("Ekki tókst að hlaða upp skrá, vinsamlegast lestu leiðbeiningar og reyndu aftur.",
-                        category="danger")   
-  
+            flash(
+                "Ekki tókst að hlaða upp skrá, vinsamlegast lestu" +
+                " leiðbeiningar og reyndu aftur.",
+                category="danger")
 
-    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
-        request.args.get('sort_by', default='id'),
-        order=request.args.get('order', default='desc'))).all()
-    
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(
+            resolve_order(
+                MosInstance,
+                request.args.get('sort_by', default='id'),
+                order=request.args.get('order', default='desc'))).all()
 
     if mos.collection is not None:
         collection = mos.collection
     else:
-        collection=json.dumps({'name': 'Óháð söfnun', 'id': 0})
-
+        collection = json.dumps({'name': 'Óháð söfnun', 'id': 0})
 
     ground_truths = []
     synths = []
@@ -880,10 +884,18 @@ def mos(id):
             ground_truths.append(m)
     ratings = mos.getAllRatings()
 
-    return render_template('mos.jinja', mos=mos, 
-    mos_list=mos_list, collection=collection, select_all_forms=select_all_forms,
-    ground_truths=ground_truths, synths=synths, mos_form=form,
-    ratings=ratings, section='mos')
+    return render_template(
+        'mos.jinja',
+        mos=mos,
+        mos_list=mos_list,
+        collection=collection,
+        select_all_forms=select_all_forms,
+        ground_truths=ground_truths,
+        synths=synths,
+        mos_form=form,
+        ratings=ratings,
+        section='mos')
+
 
 @app.route('/mos/take_test/<uuid:mos_uuid>/', methods=['GET', 'POST'])
 def take_mos_test(mos_uuid):
@@ -901,14 +913,19 @@ def take_mos_test(mos_uuid):
                 form.populate_obj(new_user)
                 db.session.commit()
             except IntegrityError as e:
-                app.logger.error("Could not create user for application, email already in use")
+                print(e)
+                app.logger.error(
+                    "Could not create user for application," +
+                    " email already in use")
                 flash("Þetta netfang er nú þegar í notkun", category='error')
                 return redirect(
                     url_for("take_mos_test", mos_uuid=mos_uuid))
             return redirect(url_for("mos_test", id=mos.id, uuid=new_user.uuid))
 
-    return render_template('take_mos_test.jinja', form=form, type='create', mos=mos,
+    return render_template('take_mos_test.jinja',
+                           form=form, type='create', mos=mos,
                            action=url_for('take_mos_test', mos_uuid=mos_uuid))
+
 
 @app.route('/mos/<int:id>/mostest/<string:uuid>', methods=['GET', 'POST'])
 def mos_test(id, uuid):
@@ -925,8 +942,8 @@ def mos_test(id, uuid):
             mos_list_to_use.append(i)
     random.seed(1)
     random.shuffle(mos_list_to_use)
-    audio=[]
-    audio_url=[]
+    audio = []
+    audio_url = []
     info = {'paths': [], 'texts': []}
     for i in mos_list_to_use:
         if i.custom_recording:
@@ -936,23 +953,25 @@ def mos_test(id, uuid):
             continue
         info['paths'].append(i.path)
         info['texts'].append(i.text)
-    info_json = json.dumps(info)
     audio_json = json.dumps([r.get_dict() for r in audio])
     mos_list_json = json.dumps([r.get_dict() for r in mos_list_to_use])
 
     return render_template('mos_test.jinja', mos=mos, mos_list=mos_list_to_use,
-        user=user, recordings=audio_json, 
-        recordings_url=audio_url, json_mos=mos_list_json,
-        section='mos')
+                           user=user, recordings=audio_json,
+                           recordings_url=audio_url, json_mos=mos_list_json,
+                           section='mos')
+
 
 @app.route('/mos/<int:id>/mos_results', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
 def mos_results(id):
     mos = Mos.query.get(id)
-    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(resolve_order(MosInstance,
-        request.args.get('sort_by', default='id'),
-        order=request.args.get('order', default='desc'))).all()
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(
+            resolve_order(
+                MosInstance,
+                request.args.get('sort_by', default='id'),
+                order=request.args.get('order', default='desc'))).all()
     ratings = mos.getAllRatings()
     max_placement = 1
     for j in ratings:
@@ -960,7 +979,7 @@ def mos_results(id):
             max_placement = j.placement
 
     if len(ratings) == 0:
-        return redirect(url_for('mos', id=mos.id))  
+        return redirect(url_for('mos', id=mos.id))
     user_ids = mos.getAllUsers()
     users = User.query.filter(User.id.in_(user_ids)).all()
     rating_json = {}
@@ -975,9 +994,19 @@ def mos_results(id):
     for i in range(len(placement)):
         if p_counter[i] != 0 and placement[i] != 0:
             placement[i] = placement[i]/p_counter[i]
-    placement_info = {'placement': placement, 'p_nums': list(range(1, len(mos_list)))}
-    rating_json = {'average': round(np.mean(all_rating_stats), 2), 'std': round(np.std(all_rating_stats), 2)}
-    mos_stats = {'names': [], 'means': [], 'total_amount': []}
+    placement_info = {
+                      'placement': placement,
+                      'p_nums': list(range(1, len(mos_list)))
+                    }
+    rating_json = {
+                  'average': round(np.mean(all_rating_stats), 2),
+                  'std': round(np.std(all_rating_stats), 2)
+                  }
+    mos_stats = {
+                'names': [],
+                'means': [],
+                'total_amount': []
+                }
     for m in mos_list:
         mos_stats['names'].append(str(m.id))
         mos_stats['means'].append(m.average_rating)
@@ -997,39 +1026,71 @@ def mos_results(id):
                 mos_ratings_per_user.append('')
             else:
                 mos_ratings_per_user.append(m.getUserRating(u.id))
-        user_ratings = {"username": u.get_printable_name(), "ratings": mos_ratings_per_user}
-        temp = {'user': u, 'mean': round(np.mean(ratings_stats),2), 'std': round(np.std(ratings_stats), 2), 'total': len(ratings_stats), 'user_ratings': mos_ratings_per_user}
-        temp2 = {'user_ratings': user_ratings}
+        user_ratings = {
+                        "username": u.get_printable_name(),
+                        "ratings": mos_ratings_per_user
+                        }
+        temp = {
+                'user': u,
+                'mean': round(np.mean(ratings_stats), 2),
+                'std': round(np.std(ratings_stats), 2),
+                'total': len(ratings_stats),
+                'user_ratings': mos_ratings_per_user
+                }
+        temp2 = {
+                'user_ratings': user_ratings
+                }
         users_list.append(temp)
         users_graph_json.append(temp2)
 
-    users_list = sorted(users_list, key=itemgetter('mean')) 
+    users_list = sorted(users_list, key=itemgetter('mean'))
 
-    return render_template('mos_results.jinja', mos=mos, mos_stats=mos_stats,
-        ratings=ratings, placement_info=placement_info, users=users_list, 
-        rating_json=rating_json, users_graph_json=users_graph_json,
-        mos_list=mos_list, section='mos')
+    return render_template(
+                          'mos_results.jinja',
+                          mos=mos,
+                          mos_stats=mos_stats,
+                          ratings=ratings,
+                          placement_info=placement_info,
+                          users=users_list,
+                          rating_json=rating_json,
+                          users_graph_json=users_graph_json,
+                          mos_list=mos_list,
+                          section='mos'
+                          )
+
 
 @app.route('/mos/<int:id>/stream_zip')
 @login_required
 @roles_accepted('admin')
 def stream_MOS_zip(id):
     mos = Mos.query.get(id)
-    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).filter(MosInstance.is_synth == False).order_by(resolve_order(MosInstance,
-        request.args.get('sort_by', default='id'),
-        order=request.args.get('order', default='desc'))).all()
+    mos_list = MosInstance.query\
+        .filter(MosInstance.mos_id == id)\
+        .filter(MosInstance.is_synth == False).order_by(
+            resolve_order(
+                MosInstance,
+                request.args.get('sort_by', default='id'),
+                order=request.args.get('order', default='desc'))).all()
 
-    results ='mos_instance_id\tcustom_token_id\ttoken_text\n'
+    results = 'mos_instance_id\tcustom_token_id\ttoken_text\n'
     for i in mos_list:
-        results += "{}\t{}\t{}\n".format(str(i.id), str(i.custom_token.id), i.custom_token.text)
+        results += "{}\t{}\t{}\n".format(
+                                        str(i.id),
+                                        str(i.custom_token.id),
+                                        i.custom_token.text
+                                        )
 
-    generator = (cell for row in results
-                    for cell in row)
+    generator = (cell for row in results for cell in row)
 
-    return Response(generator,
-                       mimetype="text/plain",
-                       headers={"Content-Disposition":
-                                    "attachment;filename={}_tokens.txt".format(mos.printable_id)})
+    return Response(
+                    generator,
+                    mimetype="text/plain",
+                    headers={
+                            "Content-Disposition":
+                            "attachment;filename={}_tokens.txt".format(
+                                mos.printable_id)
+                            }
+                    )
 
 
 @app.route('/mos/stream_mos_demo')
@@ -1038,13 +1099,12 @@ def stream_MOS_zip(id):
 def stream_MOS_index_demo():
     other_dir = app.config["OTHER_PATH"]
     try:
-        return send_from_directory(other_dir, 'synidaemi_mos.zip',
-            as_attachment=True)
+        return send_from_directory(
+            other_dir, 'synidaemi_mos.zip', as_attachment=True)
     except Exception as error:
         app.logger.error(
-            "Error downloading a custom recording : {}\n{}".format(error,traceback.format_exc()))
-
-
+            "Error downloading a custom recording : {}\n{}".format(
+                error, traceback.format_exc()))
 
 
 @app.route('/mos/post_mos_rating/<int:id>', methods=['POST'])
@@ -1054,8 +1114,11 @@ def post_mos_rating(id):
     try:
         mos_id = save_MOS_ratings(request.form, request.files)
     except Exception as error:
-        flash("Villa kom upp. Hafið samband við kerfisstjóra", category="danger")
-        app.logger.error("Error posting recordings: {}\n{}".format(error,   traceback.format_exc()))
+        flash(
+            "Villa kom upp. Hafið samband við kerfisstjóra",
+            category="danger")
+        app.logger.error("Error posting recordings: {}\n{}".format(
+            error, traceback.format_exc()))
         return Response(str(error), status=500)
     if(not current_user.is_admin()):
         return Response(url_for('user', id=current_user.id), status=200)
@@ -1079,9 +1142,12 @@ def mos_instance_edit(id):
         response = {}
         return Response(json.dumps(response), status=200)
     except Exception as error:
-        app.logger.error('Error creating a verification : {}\n{}'.format(error, traceback.format_exc()))
-        errorMessage = "<br>".join(list("{}: {}".format(key, ", ".join(value)) for key, value in form.errors.items()))
+        app.logger.error('Error creating a verification : {}\n{}'.format(
+            error, traceback.format_exc()))
+        errorMessage = "<br>".join(list("{}: {}".format(
+            key, ", ".join(value)) for key, value in form.errors.items()))
         return Response(errorMessage, status=500)
+
 
 @app.route('/mos/<int:id>/select_all', methods=['POST'])
 @login_required
@@ -1089,10 +1155,11 @@ def mos_instance_edit(id):
 def mos_select_all(id):
     try:
         form = MosSelectAllForm(request.form)
-        mos = Mos.query.get(id)
-        is_synth = True if form.data['is_synth']=='True' else False
-        select = True if form.data['select']=='True' else False
-        mos_list = MosInstance.query.filter(MosInstance.mos_id == id).filter(MosInstance.is_synth == is_synth).all()
+        is_synth = True if form.data['is_synth'] == 'True' else False
+        select = True if form.data['select'] == 'True' else False
+        mos_list = MosInstance.query\
+            .filter(MosInstance.mos_id == id)\
+            .filter(MosInstance.is_synth == is_synth).all()
         for m in mos_list:
             m.selected = select
         db.session.commit()
@@ -1117,10 +1184,11 @@ def delete_mos_instance(id):
         print(errors)
     return redirect(url_for('mos', id=mos_id))
 
+
 @app.route('/mos/create', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
-def mos_create():    
+def mos_create():
     try:
         mos = Mos()
         db.session.add(mos)
@@ -1129,16 +1197,20 @@ def mos_create():
         return redirect(url_for('mos', id=mos.id))
     except Exception as error:
         flash("Error creating MOS.", category="danger")
-        app.logger.error("Error creating MOS {}\n{}".format(error,traceback.format_exc()))
+        app.logger.error("Error creating MOS {}\n{}".format(
+            error, traceback.format_exc()))
     return redirect(url_for('mos_collection_none'))
+
 
 @app.route('/mos/collection/<int:id>/create', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
-def mos_create_collection(id):    
+def mos_create_collection(id):
     max_num_recorded = Collection.query.get(id).num_recorded_tokens
     form = MosForm(max_num_recorded, request.form)
-    tokens = Token.query.filter(Token.num_recordings > 0).filter(Token.collection_id == id).all()
+    tokens = Token.query\
+        .filter(Token.num_recordings > 0)\
+        .filter(Token.collection_id == id).all()
     if request.method == 'POST' and form.validate():
         try:
             mos = Mos()
@@ -1153,18 +1225,26 @@ def mos_create_collection(id):
                 custom_token = CustomToken(i.text, i.original_fname, True)
                 custom_token.copyToken(i)
                 custom_recording = CustomRecording(True)
-                custom_recording.copyRecording(i.recordings[rand_recording_num])
-                mos_instance = MosInstance(custom_token=custom_token, custom_recording=custom_recording)
-                mos.mos_objects.append(mos_instance)            
+                custom_recording.copyRecording(
+                    i.recordings[rand_recording_num])
+                mos_instance = MosInstance(
+                    custom_token=custom_token,
+                    custom_recording=custom_recording)
+                mos.mos_objects.append(mos_instance)
             db.session.add(mos)
             db.session.commit()
             flash("Nýrri MOS prufu bætt við", category="success")
             return redirect(url_for('mos', id=mos.id))
         except Exception as error:
             flash("Error creating MOS.", category="danger")
-            app.logger.error("Error creating MOS {}\n{}".format(error,traceback.format_exc()))
-    return render_template('forms/model.jinja', form=form,
-        action=url_for('mos_create_collection', id=id), section='mos', type='create')
+            app.logger.error("Error creating MOS {}\n{}".format(
+                error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        action=url_for('mos_create_collection', id=id),
+        section='mos',
+        type='create')
 
 
 

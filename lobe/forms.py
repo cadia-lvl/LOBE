@@ -13,8 +13,9 @@ from wtforms.validators import InputRequired
 from wtforms_alchemy import ModelForm
 from wtforms_components import IntegerField
 
-from models import (Configuration, Role, User, VerifierIcon, VerifierQuote,
-                    VerifierTitle, VerifierFont, db, Posting)
+from lobe.models import (Configuration, Role, User, VerifierIcon,
+                         VerifierQuote, VerifierTitle, VerifierFont,
+                         Posting, db)
 
 
 class MultiCheckboxField(SelectMultipleField):

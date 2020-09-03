@@ -1,4 +1,6 @@
 import json
+import traceback
+import shutil
 import logging
 import os
 import random
@@ -7,8 +9,11 @@ import traceback
 from datetime import date, datetime
 from functools import wraps
 from logging.handlers import RotatingFileHandler
+from operator import itemgetter
 
 import numpy as np
+from zipfile import ZipFile
+
 from flask import (Flask, Response, flash, jsonify, redirect, render_template,
                    request, send_from_directory, url_for)
 from flask_executor import Executor
@@ -18,11 +23,14 @@ from flask_security import (Security, SQLAlchemyUserDatastore, current_user,
 from flask_security.utils import hash_password
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
-
+from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
 from db import (activity, create_tokens, delete_recording_db,
                 delete_session_db, delete_token_db, get_verifiers,
                 insert_collection, insert_trims, resolve_order,
-                save_recording_session, sessions_day_info)
+                save_recording_session, sessions_day_info,
+                delete_mos_instance_db, save_MOS_ratings,
+                save_custom_wav, save_uploaded_collection,
+                save_uploaded_lobe_collection)
 from filters import format_date
 from forms import (ApplicationForm, BulkTokenForm, CollectionForm,
                    ConfigurationForm, DailySpinForm, DeleteVerificationForm,
@@ -30,13 +38,16 @@ from forms import (ApplicationForm, BulkTokenForm, CollectionForm,
                    RoleForm, SessionEditForm, SessionVerifyForm, UserEditForm,
                    VerifierFontForm, VerifierIconForm, VerifierQuoteForm,
                    VerifierRegisterForm, VerifierTitleForm,
-                   collection_edit_form, PremiumItemForm)
+                   collection_edit_form, PremiumItemForm,
+                   MosSelectAllForm, MosForm, MosItemSelectionForm,
+                   MosUploadForm, MosTestForm, UploadCollectionForm)
 from ListPagination import ListPagination
 from managers import create_collection_zip, create_collection_info
 from models import (Application, Collection, Configuration, Posting, Recording,
                     Role, Session, Token, User, Verification, VerifierFont,
                     VerifierIcon, VerifierProgression, VerifierQuote,
-                    VerifierTitle, PremiumItem, db)
+                    VerifierTitle, PremiumItem, db, Mos, MosInstance,
+                    CustomRecording, CustomToken)
 from tools.analyze import (find_segment, load_sample, signal_is_too_high,
                            signal_is_too_low)
 from tools.date import last_day
@@ -126,7 +137,6 @@ def require_login_if_closed_collection(func):
         return app.login_manager.unauthorized()
 
     return wrapper
-
 
 @app.route('/post_recording/', methods=['POST'])
 @require_login_if_closed_collection
@@ -284,10 +294,54 @@ def create_collection():
         section='collection')
 
 
-@app.route('/collections/')
+@app.route('/collections/', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin', 'Notandi')
 def collection_list():
+    form = UploadCollectionForm()
+    if request.method == 'POST':
+        if form.validate():
+            if form.is_g2p.data:
+                try:
+                    zip_file = request.files.get('files')
+                    with ZipFile(zip_file, 'r') as zip:
+                        zip_name = zip_file.filename[:-4]
+                        tsv_name = '{}/index.tsv'.format(zip_name)
+                        collection = save_uploaded_collection(
+                            zip, zip_name, tsv_name, form)
+                    return redirect(url_for('collection', id=collection.id))
+                except Exception as e:
+                    print(e)
+                    flash(
+                        'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +
+                        ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                        category='warning')
+            elif form.is_lobe_collection:
+                try:
+                    zip_file = request.files.get('files')
+                    with ZipFile(zip_file, 'r') as zip:
+                        zip_name = zip_file.filename[:-4]
+                        json_name = 'info.json'
+                        collection = save_uploaded_lobe_collection(
+                            zip, zip_name, json_name, form)
+                    return redirect(url_for('collection', id=collection.id))      
+                except Exception as e:
+                    print(e)
+                    flash(
+                        'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +
+                        ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                        category='warning')
+            else:
+                flash(
+                    'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +
+                    ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                    category='warning')
+        else:
+            flash(
+                'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' + 
+                ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                category='warning')
+
     page = int(request.args.get('page', 1))
     # TODO: sort_by not currently supported
     sort_by = request.args.get('sort_by', 'name')
@@ -295,9 +349,8 @@ def collection_list():
             request.args.get('sort_by', default='name'),
             order=request.args.get('order', default='desc')))\
             .paginate(page,per_page=app.config['COLLECTION_PAGINATION'])
-    return render_template('lists/collections.jinja', collections=collections,
+    return render_template('lists/collections.jinja', form=form, collections=collections,
         section='collection')
-
 
 @app.route('/collections/zip_list/')
 @login_required
@@ -475,6 +528,41 @@ def delete_collection_archive(id):
     return redirect(url_for('collection', id=id))
 
 
+@app.route('/mos/stream_collection_demo')
+@login_required
+@roles_accepted('admin')
+def stream_collection_index_demo():
+    other_dir = app.config["OTHER_PATH"]
+    try:
+        return send_from_directory(other_dir, 'synidaemi_collection.zip',
+            as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading a custom recording : {}\n{}".format(error,traceback.format_exc()))
+
+# CUSTOMTOKEN ROUTES
+@app.route('/custom_tokens/<int:id>/')
+@login_required
+@roles_accepted('admin', 'Notandi')
+def custom_token(id):
+    return render_template('custom_token.jinja', token=CustomToken.query.get(id),
+        section='token')
+
+
+@app.route('/custom_tokens/<int:id>/download/')
+@login_required
+@roles_accepted('admin', 'Notandi')
+def download_custom_token(id):
+    token = CustomToken.query.get(id)
+    try:
+        return send_from_directory(token.get_directory(), token.fname,
+            as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading a token : {}\n{}".format(error,traceback.format_exc()))
+
+
+
 # TOKEN ROUTES
 @app.route('/tokens/<int:id>/')
 @login_required
@@ -609,6 +697,16 @@ def download_recording(id):
         app.logger.error(
             "Error downloading a recording : {}\n{}".format(error,traceback.format_exc()))
 
+@app.route('/custom-recording/<int:id>/download/')
+@login_required
+def download_custom_recording(id):
+    custom_recording = CustomRecording.query.get(id)
+    try:
+        return send_from_directory(custom_recording.get_directory(), custom_recording.fname,
+            as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading a custom recording : {}\n{}".format(error,traceback.format_exc()))
 
 # CONFIGURATION ROUTES
 @app.route('/confs/')
@@ -688,6 +786,504 @@ def delete_conf(id):
     except Exception as error:
         app.logger.error('Error deleting a configuration : {}\n{}'.format(error, traceback.format_exc()))
     return redirect(url_for('rec_session_list'))
+
+
+# MOS ROUTES
+
+@app.route('/mos/')
+@login_required
+@roles_accepted('admin')
+def mos_list():
+    page = int(request.args.get('page', 1))
+    mos_list = Mos.query.order_by(
+            resolve_order(
+                Mos,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    collections = Collection.query.order_by(
+            resolve_order(
+                Collection,
+                request.args.get('sort_by', default='name'),
+                order=request.args.get('order', default='desc')))
+    return render_template(
+        'lists/mos.jinja',
+        mos_list=mos_list,
+        collections=collections,
+        section='mos')
+
+
+@app.route('/mos/collection/<int:id>')
+@login_required
+@roles_accepted('admin')
+def mos_collection(id):
+    page = int(request.args.get('page', 1))
+    collection = Collection.query.get(id)
+    mos_list = Mos.query.filter(Mos.collection_id == id).order_by(
+            resolve_order(
+                Mos,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    return render_template(
+        'lists/mos_collection.jinja',
+        mos_list=mos_list,
+        collection=collection,
+        section='mos')
+
+
+@app.route('/mos/collection/none')
+@login_required
+@roles_accepted('admin')
+def mos_collection_none():
+    page = int(request.args.get('page', 1))
+    collection = json.dumps({'name': 'Óháð söfnun', 'id': 0})
+    mos_list = Mos.query.filter(Mos.collection_id == None).order_by(
+            resolve_order(
+                Mos,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    return render_template(
+        'lists/mos_no_collection.jinja',
+        mos_list=mos_list,
+        collection=collection,
+        section='mos')
+
+
+@app.route('/mos/<int:id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def mos(id):
+    print(current_user.uuid)
+    mos = Mos.query.get(id)
+    form = MosUploadForm()
+    select_all_forms = [
+        MosSelectAllForm(is_synth=True, select=True),
+        MosSelectAllForm(is_synth=True, select=False),
+        MosSelectAllForm(is_synth=False, select=True),
+        MosSelectAllForm(is_synth=False, select=False),
+    ]
+
+    if request.method == 'POST':
+        if form.validate():
+            try:
+                if(form.is_g2p.data):
+                    zip_file = request.files.get('files')
+                    with ZipFile(zip_file, 'r') as zip:
+                        zip_name = zip_file.filename[:-4]
+                        tsv_name = '{}/index.tsv'.format(zip_name)
+                        successfully_uploaded = save_custom_wav(
+                            zip, zip_name, tsv_name, mos, id)
+                        if len(successfully_uploaded) > 0:
+                            flash("Tókst að hlaða upp {} setningum.".format(
+                                len(successfully_uploaded)), category="success")
+                        else:
+                            flash(
+                                "Ekki tókst að hlaða upp neinum setningum.",
+                                category="warning")
+                    return redirect(url_for('mos', id=id))
+                else:
+                    flash(
+                        "Ekki tókst að hlaða upp skrá, vinsamlegast" +
+                        "lestu leiðbeiningar og reyndu aftur.",
+                        category="danger")
+            except Exception as e:
+                print(e)
+                flash(
+                    "Ekki tókst að hlaða upp skrá.",
+                    category="danger")
+        else:
+            flash(
+                "Ekki tókst að hlaða upp skrá, vinsamlegast lestu" +
+                " leiðbeiningar og reyndu aftur.",
+                category="danger")
+
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(
+            resolve_order(
+                MosInstance,
+                request.args.get('sort_by', default='id'),
+                order=request.args.get('order', default='desc'))).all()
+
+    if mos.collection is not None:
+        collection = mos.collection
+    else:
+        collection = json.dumps({'name': 'Óháð söfnun', 'id': 0})
+
+    ground_truths = []
+    synths = []
+    for m in mos_list:
+        m.selection_form = MosItemSelectionForm(obj=m)
+        if m.is_synth:
+            synths.append(m)
+        else:
+            ground_truths.append(m)
+    ratings = mos.getAllRatings()
+
+    return render_template(
+        'mos.jinja',
+        mos=mos,
+        mos_list=mos_list,
+        collection=collection,
+        select_all_forms=select_all_forms,
+        ground_truths=ground_truths,
+        synths=synths,
+        mos_form=form,
+        ratings=ratings,
+        section='mos')
+
+
+@app.route('/mos/take_test/<uuid:mos_uuid>/', methods=['GET', 'POST'])
+def take_mos_test(mos_uuid):
+    mos = Mos.query.filter(Mos.uuid == str(mos_uuid)).first()
+    form = MosTestForm(request.form)
+    if request.method == "POST":
+        if form.validate():
+            try:
+                new_user = user_datastore.create_user(
+                    name=form.data["name"],
+                    email=form.data["email"],
+                    password=None,
+                    roles=[]
+                )
+                form.populate_obj(new_user)
+                db.session.commit()
+            except IntegrityError as e:
+                print(e)
+                app.logger.error(
+                    "Could not create user for application," +
+                    " email already in use")
+                flash("Þetta netfang er nú þegar í notkun", category='error')
+                return redirect(
+                    url_for("take_mos_test", mos_uuid=mos_uuid))
+            return redirect(url_for("mos_test", id=mos.id, uuid=new_user.uuid))
+
+    return render_template('take_mos_test.jinja',
+                           form=form, type='create', mos=mos,
+                           action=url_for('take_mos_test', mos_uuid=mos_uuid))
+
+
+@app.route('/mos/<int:id>/mostest/<string:uuid>', methods=['GET', 'POST'])
+def mos_test(id, uuid):
+    user = User.query.filter(User.uuid == uuid).first()
+    if user.is_admin():
+        if user.id != current_user.id:
+            flash("Þú hefur ekki aðgang að þessari síðu", category='error')
+            return redirect(url_for("mos", id=id))
+    mos = Mos.query.get(id)
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).all()
+    mos_list_to_use = []
+    for i in mos_list:
+        if (i.selected and i.path):
+            mos_list_to_use.append(i)
+    random.seed(1)
+    random.shuffle(mos_list_to_use)
+    audio = []
+    audio_url = []
+    info = {'paths': [], 'texts': []}
+    for i in mos_list_to_use:
+        if i.custom_recording:
+            audio.append(i.custom_recording)
+            audio_url.append(i.custom_recording.get_download_url())
+        else:
+            continue
+        info['paths'].append(i.path)
+        info['texts'].append(i.text)
+    audio_json = json.dumps([r.get_dict() for r in audio])
+    mos_list_json = json.dumps([r.get_dict() for r in mos_list_to_use])
+
+    return render_template('mos_test.jinja', mos=mos, mos_list=mos_list_to_use,
+                           user=user, recordings=audio_json,
+                           recordings_url=audio_url, json_mos=mos_list_json,
+                           section='mos')
+
+
+@app.route('/mos/<int:id>/mos_results', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def mos_results(id):
+    mos = Mos.query.get(id)
+    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(
+            resolve_order(
+                MosInstance,
+                request.args.get('sort_by', default='id'),
+                order=request.args.get('order', default='desc'))).all()
+    ratings = mos.getAllRatings()
+    max_placement = 1
+    for j in ratings:
+        if j.placement > max_placement:
+            max_placement = j.placement
+
+    if len(ratings) == 0:
+        return redirect(url_for('mos', id=mos.id))
+    user_ids = mos.getAllUsers()
+    users = User.query.filter(User.id.in_(user_ids)).all()
+    rating_json = {}
+    all_rating_stats = []
+    placement = [0]*max_placement
+    p_counter = [0]*max_placement
+    for i in ratings:
+        all_rating_stats.append(i.rating)
+        placement[i.placement - 1] += i.rating
+        p_counter[i.placement - 1] += 1
+    all_rating_stats = np.array(all_rating_stats)
+    for i in range(len(placement)):
+        if p_counter[i] != 0 and placement[i] != 0:
+            placement[i] = placement[i]/p_counter[i]
+    placement_info = {
+                      'placement': placement,
+                      'p_nums': list(range(1, len(mos_list)))
+                    }
+    rating_json = {
+                  'average': round(np.mean(all_rating_stats), 2),
+                  'std': round(np.std(all_rating_stats), 2)
+                  }
+    mos_stats = {
+                'names': [],
+                'means': [],
+                'total_amount': []
+                }
+    for m in mos_list:
+        mos_stats['names'].append(str(m.id))
+        mos_stats['means'].append(m.average_rating)
+        mos_stats['total_amount'].append(m.number_of_ratings)
+    users_list = []
+    users_graph_json = []
+    for u in users:
+        user_ratings = mos.getAllUserRatings(u.id)
+        ratings_stats = []
+        for r in user_ratings:
+            ratings_stats.append(r.rating)
+        ratings_stats = np.array(ratings_stats)
+
+        mos_ratings_per_user = []
+        for m in mos_list:
+            if not m.getUserRating(u.id):
+                mos_ratings_per_user.append('')
+            else:
+                mos_ratings_per_user.append(m.getUserRating(u.id))
+        user_ratings = {
+                        "username": u.get_printable_name(),
+                        "ratings": mos_ratings_per_user
+                        }
+        temp = {
+                'user': u,
+                'mean': round(np.mean(ratings_stats), 2),
+                'std': round(np.std(ratings_stats), 2),
+                'total': len(ratings_stats),
+                'user_ratings': mos_ratings_per_user
+                }
+        temp2 = {
+                'user_ratings': user_ratings
+                }
+        users_list.append(temp)
+        users_graph_json.append(temp2)
+
+    users_list = sorted(users_list, key=itemgetter('mean'))
+
+    return render_template(
+                          'mos_results.jinja',
+                          mos=mos,
+                          mos_stats=mos_stats,
+                          ratings=ratings,
+                          placement_info=placement_info,
+                          users=users_list,
+                          rating_json=rating_json,
+                          users_graph_json=users_graph_json,
+                          mos_list=mos_list,
+                          section='mos'
+                          )
+
+
+@app.route('/mos/<int:id>/stream_zip')
+@login_required
+@roles_accepted('admin')
+def stream_MOS_zip(id):
+    mos = Mos.query.get(id)
+    mos_list = MosInstance.query\
+        .filter(MosInstance.mos_id == id)\
+        .filter(MosInstance.is_synth == False).order_by(
+            resolve_order(
+                MosInstance,
+                request.args.get('sort_by', default='id'),
+                order=request.args.get('order', default='desc'))).all()
+
+    results = 'mos_instance_id\tcustom_token_id\ttoken_text\n'
+    for i in mos_list:
+        results += "{}\t{}\t{}\n".format(
+                                        str(i.id),
+                                        str(i.custom_token.id),
+                                        i.custom_token.text
+                                        )
+
+    generator = (cell for row in results for cell in row)
+
+    return Response(
+                    generator,
+                    mimetype="text/plain",
+                    headers={
+                            "Content-Disposition":
+                            "attachment;filename={}_tokens.txt".format(
+                                mos.printable_id)
+                            }
+                    )
+
+
+@app.route('/mos/stream_mos_demo')
+@login_required
+@roles_accepted('admin')
+def stream_MOS_index_demo():
+    other_dir = app.config["OTHER_PATH"]
+    try:
+        return send_from_directory(
+            other_dir, 'synidaemi_mos.zip', as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading a custom recording : {}\n{}".format(
+                error, traceback.format_exc()))
+
+
+@app.route('/mos/post_mos_rating/<int:id>', methods=['POST'])
+@login_required
+def post_mos_rating(id):
+    mos_id = id
+    try:
+        mos_id = save_MOS_ratings(request.form, request.files)
+    except Exception as error:
+        flash(
+            "Villa kom upp. Hafið samband við kerfisstjóra",
+            category="danger")
+        app.logger.error("Error posting recordings: {}\n{}".format(
+            error, traceback.format_exc()))
+        return Response(str(error), status=500)
+    if mos_id is None:
+        flash("Engar einkunnir í MOS prófi.", category='warning')
+    if(not current_user.is_admin()):
+        flash("MOS próf klárað", category='success')
+        return Response(url_for('user', id=current_user.id), status=200)
+    if mos_id is None:
+        return Response(url_for('mos_list'), status=200)
+    else:
+        flash("MOS próf klárað", category='success')
+        return Response(url_for('mos', id=mos_id), status=200)
+
+
+@app.route('/mos/instances/<int:id>/edit', methods=['POST'])
+@login_required
+@roles_accepted('admin')
+def mos_instance_edit(id):
+    try:
+        instance = MosInstance.query.get(id)
+        form = MosItemSelectionForm(request.form, obj=instance)
+        form.populate_obj(instance)
+        db.session.commit()
+        response = {}
+        return Response(json.dumps(response), status=200)
+    except Exception as error:
+        app.logger.error('Error creating a verification : {}\n{}'.format(
+            error, traceback.format_exc()))
+        errorMessage = "<br>".join(list("{}: {}".format(
+            key, ", ".join(value)) for key, value in form.errors.items()))
+        return Response(errorMessage, status=500)
+
+
+@app.route('/mos/<int:id>/select_all', methods=['POST'])
+@login_required
+@roles_accepted('admin')
+def mos_select_all(id):
+    try:
+        form = MosSelectAllForm(request.form)
+        is_synth = True if form.data['is_synth'] == 'True' else False
+        select = True if form.data['select'] == 'True' else False
+        mos_list = MosInstance.query\
+            .filter(MosInstance.mos_id == id)\
+            .filter(MosInstance.is_synth == is_synth).all()
+        for m in mos_list:
+            m.selected = select
+        db.session.commit()
+        return redirect(url_for('mos', id=id))
+    except Exception as error:
+        print(error)
+        flash("Ekki gekk að merkja alla", category='warning')
+    return redirect(url_for('mos', id=id))
+
+
+@app.route('/mos/instances/<int:id>/delete/', methods=['GET'])
+@login_required
+@roles_accepted('admin')
+def delete_mos_instance(id):
+    instance = MosInstance.query.get(id)
+    mos_id = instance.mos_id
+    did_delete, errors = delete_mos_instance_db(instance)
+    if did_delete:
+        flash("Línu var eytt", category='success')
+    else:
+        flash("Ekki gekk að eyða línu rétt", category='warning')
+        print(errors)
+    return redirect(url_for('mos', id=mos_id))
+
+
+@app.route('/mos/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def mos_create():
+    try:
+        mos = Mos()
+        db.session.add(mos)
+        db.session.commit()
+        flash("Nýrri MOS prufu bætt við", category="success")
+        return redirect(url_for('mos', id=mos.id))
+    except Exception as error:
+        flash("Error creating MOS.", category="danger")
+        app.logger.error("Error creating MOS {}\n{}".format(
+            error, traceback.format_exc()))
+    return redirect(url_for('mos_collection_none'))
+
+
+@app.route('/mos/collection/<int:id>/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def mos_create_collection(id):
+    max_num_recorded = Collection.query.get(id).num_recorded_tokens
+    form = MosForm(max_num_recorded, request.form)
+    tokens = Token.query\
+        .filter(Token.num_recordings > 0)\
+        .filter(Token.collection_id == id).all()
+    if request.method == 'POST' and form.validate():
+        try:
+            mos = Mos()
+            form.populate_obj(mos)
+            mos.collection = Collection.query.get(id)
+            mos.collection_id = id
+            tokens = Token.query.filter(Token.num_recordings > 0) \
+                                .filter(Token.collection_id == id).all()
+            random_tokens = random.sample(tokens, form.num_samples.data)
+            for i in random_tokens:
+                rand_recording_num = random.randint(0, len(i.recordings)-1)
+                custom_token = CustomToken(i.text, i.original_fname, True)
+                custom_token.copyToken(i)
+                custom_recording = CustomRecording(True)
+                custom_recording.copyRecording(
+                    i.recordings[rand_recording_num])
+                mos_instance = MosInstance(
+                    custom_token=custom_token,
+                    custom_recording=custom_recording)
+                mos.mos_objects.append(mos_instance)
+            db.session.add(mos)
+            db.session.commit()
+            flash("Nýrri MOS prufu bætt við", category="success")
+            return redirect(url_for('mos', id=mos.id))
+        except Exception as error:
+            flash("Error creating MOS.", category="danger")
+            app.logger.error("Error creating MOS {}\n{}".format(
+                error, traceback.format_exc()))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        action=url_for('mos_create_collection', id=id),
+        section='mos',
+        type='create')
+
 
 
 # SESSION ROUTES

@@ -4,9 +4,11 @@ from flask import current_app as app
 from flask import url_for
 from flask_security.forms import LoginForm, RegisterForm
 from flask_wtf import RecaptchaField
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import (Form, HiddenField, MultipleFileField, SelectMultipleField,
                      SelectField, TextField, IntegerField, BooleanField,
-                     validators, ValidationError, FloatField, widgets, StringField)
+                     validators, ValidationError, FloatField, widgets, StringField, RadioField)
 
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms.ext.sqlalchemy.orm import model_form
@@ -15,8 +17,11 @@ from wtforms.validators import InputRequired
 from wtforms_alchemy import ModelForm
 from wtforms_components import ColorField
 
-from models import (Collection, Configuration, Role, User, PremiumItem, VerifierIcon,
-                    VerifierQuote, VerifierTitle, VerifierFont, db, Posting, Application)
+from models import (
+    Collection, Configuration, Role, User,
+    VerifierIcon, PremiumItem, VerifierQuote, VerifierTitle,
+    VerifierFont, db, Posting, Application, Mos, MosInstance)
+
 
 
 # TODO: move to app configuration
@@ -77,6 +82,96 @@ class PremiumItemForm(ModelForm):
         model = PremiumItem
 
 
+class MosForm(ModelForm):
+
+    class Meta:
+        model = Mos
+        exclude = ['uuid']
+        num_samples = IntegerField('Fjöldi setnimmnga', [validators.required()])
+    
+    def __init__(self, max_available, *args, **kwargs):
+        super(MosForm, self).__init__(*args, **kwargs)
+        self.max_available = max_available
+    
+    def validate_num_samples(form, field):
+        if field.data >= form.max_available or field.data < 0:
+            raise ValidationError("Ekki nógu markar upptökur til í safni. Sláðu inn tölu á milli 0 og {}".format(form.max_available))
+
+
+class MosSelectAllForm(Form):
+    is_synth = HiddenField()
+    select = HiddenField()
+
+
+class MosItemSelectionForm(ModelForm):
+    class Meta:
+        model = MosInstance
+        exclude = ['is_synth']
+
+class MosTestForm(Form):
+    name = StringField("Nafn", [validators.required()])
+    age = IntegerField("Aldur", [validators.required(),
+                       validators.NumberRange(min=10, max=120)])
+    email = EmailField("Netfang", [validators.required()])
+
+class UploadCollectionForm(FlaskForm):
+    is_g2p = BooleanField('Staðlað form.',
+        description='Hakið við ef uphleðslan er á stöðluðu formi samanber lýsingu hér að ofan',
+        default=False)
+    is_lobe_collection = BooleanField('LOBE söfnun.',
+        description='Hakið við ef uphleðslan er LOBE söfnun á sama formi og LOBE söfnun er hlaðið niður',
+        default=False)
+    name = TextField('Nafn', validators=[validators.required()])
+    assigned_user_id = QuerySelectField('Rödd', query_factory=lambda: User.query,
+                                        get_label='name', allow_blank=True)
+    configuration_id = QuerySelectField('Stilling', query_factory=lambda: Configuration.query,
+                                        get_label='printable_name', allow_blank=False)
+    sort_by = SelectField("Röðun", choices=[
+        ('score', 'Röðunarstuðull'),
+        ('same', 'Sömu röð og í skjali'),
+        ('random', 'Slembiröðun')])
+    is_dev = BooleanField('Tilraunarsöfnun')
+    is_multi_speaker = BooleanField("Margar raddir")
+    
+    files = FileField(validators=[FileAllowed(['zip'], 'Skrá verður að vera zip mappa'), FileRequired('Hladdu upp zip skrá')])
+
+    
+    def validate_assigned_user_id(self, field):
+        # HACK to user the QuerySelectField on User objects
+        # but then later populate the field with only the pk.
+        if field.data is not None:
+            field.data = field.data.id
+
+    def validate_configuration_id(self, field):
+        if field.data is not None:
+            field.data = field.data.id
+
+    def validate_is_g2p(self, field):
+        if field.data:
+            if not self.is_lobe_collection.data:
+                return True
+            else:
+                raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
+        else:
+            if self.is_lobe_collection.data:
+                return True
+            else:
+                raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
+        raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
+
+    def validate_is_lobe_collection(self, field):
+        if field.data:
+            if not self.is_g2p.data:
+                return True
+            else:
+                raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
+        else:
+            if self.is_g2p.data:
+                return True
+            else:
+                raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
+        raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
+        
 class CollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])
     assigned_user_id = QuerySelectField('Rödd', query_factory=lambda: User.query,
@@ -128,6 +223,10 @@ class BulkTokenForm(Form):
         return
     '''
 
+class MosUploadForm(FlaskForm):
+    is_g2p = BooleanField('Staðlað form.', description='Hakið við ef uphleðslan er á stöðluðu formi samanber lýsingu hér að ofan',
+                          default=False)
+    files = FileField(validators=[FileAllowed(['zip'], 'Skrá verður að vera zip mappa'), FileRequired('Hladdu upp zip skrá')])
 
 class RecordForm(Form):
     token = HiddenField('Texti')

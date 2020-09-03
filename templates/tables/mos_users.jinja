@@ -1,0 +1,27 @@
+<table class='table'>
+    <thead>
+        <th>
+            Nafn notanda
+        </th>
+        <th>
+            Fjöldi greininga
+        </th>
+        <th>
+            Meðaleinkunn
+        </th>
+        <th>
+            Staðalfrávik
+        </th>
+    </thead>
+    <tbody>
+        {% for user in users %}
+            <tr>
+                <td><a href={{user.user.get_url()}}>{{user.user.get_printable_name()}}</a></td>
+                <td>{{user.total}}</td>
+                <td>{{user.mean}}</td>
+                <td>{{user.std}}</td>
+
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

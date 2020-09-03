@@ -5,15 +5,18 @@ import wave
 import json
 import subprocess
 import random
+import numpy as np
 from datetime import datetime, timedelta
 
 from flask import current_app as app
 from flask import url_for
 from flask_security import RoleMixin, UserMixin
 from flask_sqlalchemy import SQLAlchemy
+
 from sqlalchemy import func
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug import secure_filename
+
 from wtforms_components import ColorField
 from wtforms import validators
 
@@ -221,6 +224,9 @@ class Collection(BaseModel, db.Model):
     def printable_id(self):
         return "T-{:04d}".format(self.id)
 
+    @property
+    def mos_url(self):
+        return url_for('mos_collection', id=self.id)
 
 class Configuration(BaseModel, db.Model):
     __tablename__ = 'Configuration'
@@ -511,6 +517,120 @@ class Token(BaseModel, db.Model):
         return Collection.query.get(self.collection_id)
 
 
+class CustomToken(BaseModel, db.Model):
+    __tablename__ = 'CustomToken'
+
+    def __init__(
+            self, text, original_fname, copied_token=False,
+            pron="Óþekkt", score=None, source="Óþekkt"):
+        self.text = text
+        self.original_fname = original_fname
+        self.marked_as_bad = False
+        self.copied_token = copied_token
+        self.pron = pron
+        self.score = score
+        if not copied_token:
+            self.source = "Upphleðsla"
+        else:
+            self.source = source
+
+    def get_url(self):
+        return url_for('custom_token', id=self.id)
+
+    def get_path(self):
+        return self.path
+
+    def get_fname(self):
+        return self.fname
+
+    @hybrid_property
+    def length(self):
+        return len(self.text)
+
+    def short_text(self, limit=20):
+        if self.length < limit:
+            return self.text
+        else:
+            return f'{self.text[:limit]}...'
+
+    def save_to_disk(self):
+        self.set_path()
+        f = open(self.path, 'w', encoding='utf-8')
+        f.write(self.text)
+        f.close()
+
+    def set_path(self):
+        self.fname = secure_filename("{}_u{:09d}.token".format(
+            os.path.splitext(self.original_fname)[0], self.id))
+        self.path = os.path.join(
+            app.config['CUSTOM_TOKEN_DIR'], str(self.mos_id), self.fname)
+
+    def get_configured_path(self):
+        '''
+        Get the path the program believes the token should be stored at
+        w.r.t. the current TOKEN_DIR environment variable
+        '''
+        if self.copied_token:
+            path = os.path.join(
+                app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
+            return path
+        path = os.path.join(
+            app.config['CUSTOM_TOKEN_DIR'], str(self.mos_id), self.fname)
+        return path
+
+    def get_dict(self):
+        return {
+            'id': self.id,
+            'text': self.text,
+            'file_id': self.get_file_id(),
+            'url': self.get_url()}
+
+    def get_file_id(self):
+        return os.path.splitext(self.fname)[0]
+
+    def get_printable_id(self):
+        return "U-{:09d}".format(self.id)
+
+    def get_directory(self):
+        return os.path.dirname(self.path)
+
+    def get_download_url(self):
+        return url_for('download_custom_token', id=self.id)
+
+    def copyToken(self, token):
+        self.fname = token.fname
+        self.path = token.path
+        self.pron = token.pron
+        self.score = token.score
+        self.source = token.source
+
+    @property
+    def custom_recording(self):
+        return MosInstance.query.get(self.mos_instance_id).custom_recording
+
+    @property
+    def mos_id(self):
+        return self.mosInstance.mos.id
+
+    @hybrid_property
+    def mos(self):
+        return self.mosInstance.mos
+
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    text = db.Column(db.String)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    mos_instance_id = db.Column(db.Integer, db.ForeignKey("MosInstance.id"))
+    original_fname = db.Column(db.String, default='Unknown')
+    copied_token = db.Column(db.Boolean, default=False)
+    fname = db.Column(db.String)
+    path = db.Column(db.String)
+    marked_as_bad = db.Column(db.Boolean, default=False)
+    pron = db.Column(db.String)
+    score = db.Column(db.Float, default=-1)
+    source = db.Column(db.String)
+
+
 class Rating(BaseModel, db.Model):
     __tablename__ = 'Rating'
 
@@ -763,6 +883,125 @@ class Recording(BaseModel, db.Model):
         self.set_trim(None, None)
 
 
+class CustomRecording(BaseModel, db.Model):
+    __tablename__ = 'CustomRecording'
+
+    def __init__(self, copied_recording=False):
+        self.copied_recording = copied_recording
+
+    def get_fname(self):
+        return self.fname
+
+    def get_download_url(self):
+        return url_for('download_custom_recording', id=self.id)
+
+    def get_directory(self):
+        return os.path.dirname(self.path)
+
+    def get_path(self):
+        return self.path
+
+    def get_wav_path(self):
+        return self.wav_path
+
+    def get_zip_fname(self):
+        if self.wav_path is not None:
+            return os.path.split(self.wav_path)[1]
+        return self.fname
+
+    def get_zip_path(self):
+        if self.wav_path is not None:
+            return self.wav_path
+        return self.path
+
+    def copyRecording(self, recording):
+        self.original_fname = recording.original_fname
+        self.user_id = recording.user_id
+        self.duration = recording.duration
+        self.fname = recording.fname
+        self.file_id = recording.file_id
+        self.path = recording.path
+        self.wav_path = recording.wav_path
+
+    def get_configured_path(self):
+        '''
+        Get the path the program believes the token should be stored at
+        w.r.t. the current TOKEN_DIR environment variable
+        '''
+        if self.copied_recording:
+            path = os.path.join(
+                app.config['RECORD_DIR'],
+                str(self.token.collection_id), self.fname)
+            return path
+        path = os.path.join(
+            app.config['CUSTOM_RECORDING_DIR'],
+            str(self.token.collection_id), self.fname)
+        return path
+
+    def get_file_id(self):
+        if self.fname is not None:
+            return os.path.splitext(self.fname)[0]
+        else:
+            # not registered, (using) primary key
+            return "nrpk_{:09d}".format(self.id)
+
+    def get_user(self):
+        return User.query.get(self.user_id)
+
+    def get_printable_id(self):
+        return "S-{:09d}".format(self.id)
+
+    def get_printable_duration(self):
+        if self.duration is not None:
+            return "{:2.2f}s".format(self.duration)
+        else:
+            return "n/a"
+
+    def _set_path(self):
+        # TODO: deal with file endings
+        self.file_id = '{}_s{:09d}_m{:09d}'.format(
+            os.path.splitext(self.original_fname)[0], self.id, self.token_id)
+        self.fname = secure_filename(f'{self.file_id}.webm')
+        self.path = os.path.join(
+            app.config['CUSTOM_RECORDING_DIR'],
+            str(self.mosInstance.id), self.fname)
+        self.wav_path = os.path.join(
+            app.config['WAV_CUSTOM_AUDIO_DIR'],
+            str(self.mosInstance.id),
+            secure_filename(f'{self.file_id}.wav'))
+
+    def get_dict(self):
+        if self.custom_token is not None:
+            return {'id': self.id, 'token': self.custom_token.get_dict()}
+        else:
+            return {'id': self.id, 'text': self.text, 'file_id': '', 'url': ''}
+
+    @property
+    def custom_token(self):
+        return self.mosInstance.custom_token
+
+    @property
+    def text(self):
+        return self.custom_token.text
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    original_fname = db.Column(db.String, default='Unknown')
+    mos_instance_id = db.Column(db.Integer, db.ForeignKey("MosInstance.id"))
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+
+    duration = db.Column(db.Float)
+    copied_recording = db.Column(db.Boolean, default=False)
+    fname = db.Column(db.String)
+    file_id = db.Column(db.String)
+    path = db.Column(db.String)
+    wav_path = db.Column(db.String)
+
+
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
 
@@ -989,6 +1228,9 @@ class User(db.Model, UserMixin):
         db.Integer,
         primary_key=True,
         autoincrement=True)
+    uuid = db.Column(
+        db.String,
+        default=str(uuid.uuid4()))
     name = db.Column(db.String(255))
     email = db.Column(
         db.String(255),
@@ -1101,9 +1343,14 @@ progression_font = db.Table(
         db.ForeignKey('verifier_font.id')))
 
 
-progression_premium_item = db.Table('progression_premium_item',
-    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
-    db.Column('premium_item_id', db.Integer(), db.ForeignKey('premium_item.id')))
+progression_premium_item = db.Table(
+    'progression_premium_item',
+    db.Column(
+        'progression_id', db.Integer(),
+        db.ForeignKey('verifier_progression.id')),
+    db.Column(
+        'premium_item_id',
+        db.Integer(), db.ForeignKey('premium_item.id')))
 
 
 class VerifierProgression(BaseModel, db.Model):
@@ -1401,6 +1648,7 @@ class VerifierFont(BaseModel, db.Model):
     def edit_url(self):
         return url_for('shop.font_edit', id=self.id)
 
+
 class PremiumItem(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     title = db.Column(db.String(255), info={
@@ -1419,6 +1667,7 @@ class PremiumItem(BaseModel, db.Model):
     @property
     def edit_url(self):
         return url_for('premium_item_edit', id=self.id)
+
 
 class Posting(BaseModel, db.Model):
     __tablename__ = 'Posting'
@@ -1497,3 +1746,192 @@ class Application(BaseModel, db.Model):
     @hybrid_property
     def user_url(self):
         return url_for("user.user_detail", id=self.user_id)
+
+
+class Mos(BaseModel, db.Model):
+    __tablename__ = 'Mos'
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    uuid = db.Column(db.String, default=str(uuid.uuid4()))
+    collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
+    collection = db.relationship(Collection, info={
+        'label': 'Söfnun',
+    })
+    num_samples = db.Column(db.Integer, default=0, info={
+        'label': 'Fjöldi setninga'
+    })
+    mos_objects = db.relationship(
+        "MosInstance", lazy='joined', backref="mos",
+        cascade='all, delete, delete-orphan')
+
+    def getAllRatings(self):
+        ratings = []
+        for m in self.mos_objects:
+            for r in m.ratings:
+                ratings.append(r)
+        return ratings
+
+    def getAllUserRatings(self, user_id):
+        ratings = []
+        for m in self.mos_objects:
+            for r in m.ratings:
+                if user_id == r.user_id:
+                    ratings.append(r)
+        return ratings
+
+    def getAllUsers(self):
+        ratings = self.getAllRatings()
+        user_ids = []
+        for i in ratings:
+            user_ids.append(i.user_id)
+        user_ids = list(set(user_ids))
+        return user_ids
+
+    @property
+    def custom_tokens(self):
+        tokens = []
+        for m in self.mos_objects:
+            tokens.append(m.custom_token)
+        return tokens
+
+    @property
+    def url(self):
+        return url_for('mos', id=self.id)
+
+    @property
+    def printable_id(self):
+        return "MOS-{:04d}".format(self.id)
+
+    @property
+    def edit_url(self):
+        return url_for('mos_edit', id=self.id)
+
+    @property
+    def number_selected(self):
+        return sum(r.selected == True for r in self.mos_objects)
+
+
+class MosInstance(BaseModel, db.Model):
+    __tablename__ = 'MosInstance'
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    mos_id = db.Column(db.Integer, db.ForeignKey('Mos.id'))
+    custom_token = db.relationship(
+        "CustomToken", lazy="joined",
+        backref=db.backref("mosInstance", uselist=False), uselist=False,
+        cascade='all, delete, delete-orphan')
+    custom_recording = db.relationship(
+        "CustomRecording", lazy="joined",
+        backref=db.backref("mosInstance", uselist=False), uselist=False,
+        cascade='all, delete, delete-orphan')
+    ratings = db.relationship(
+        "MosRating", lazy="joined", backref='mosInstance',
+        cascade='all, delete, delete-orphan')
+    is_synth = db.Column(db.Boolean, default=False)
+    selected = db.Column(db.Boolean, default=False, info={
+        'label': 'Hafa upptoku'})
+
+    def __init__(self, custom_token, custom_recording):
+        self.custom_token = custom_token
+        self.custom_recording = custom_recording
+
+    def getUserRating(self, user_id):
+        for r in self.ratings:
+            if r.user_id == user_id:
+                return r.rating
+        return None
+
+    def getAllUsers(self):
+        ratings = self.ratings
+        user_ids = []
+        for i in ratings:
+            user_ids.append(i.user_id)
+        user_ids = list(set(user_ids))
+        return user_ids
+
+    def get_dict(self):
+        token = None
+        if self.custom_token is not None:
+            token = self.custom_token.get_dict()
+        return {
+            'id': self.id,
+            'token': token,
+            'mos_id': self.mos_id,
+            'path': self.path,
+            'text': self.text,
+            'is_synth': self.is_synth,
+            'selected': self.selected,
+        }
+
+    @property
+    def path(self):
+        return self.custom_recording.path
+
+    @property
+    def text(self):
+        return self.custom_token.text
+
+    @property
+    def mos(self):
+        return Mos.query.get(self.mos_id)
+
+    @property
+    def get_printable_id(self):
+        return "MOS-Setning {}".format(self.id)
+
+    @property
+    def name(self):
+        return "MOS-Setning {}".format(self.id)
+
+    @property
+    def ajax_edit_action(self):
+        return url_for('mos_instance_edit', id=self.id)
+
+    @property
+    def average_rating(self):
+        if(len(self.ratings) > 0):
+            total_ratings = 0
+            for i in self.ratings:
+                total_ratings += i.rating
+            total_ratings = total_ratings/len(self.ratings)
+            return round(total_ratings, 2)
+        else:
+            return "-"
+
+    @property
+    def std_of_ratings(self):
+        ratings = [r.rating for r in self.ratings]
+        if len(ratings) == 0:
+            return "-"
+        ratings = np.array(ratings)
+        return round(np.std(ratings), 2)
+
+    @property
+    def number_of_ratings(self):
+        return len(self.ratings)
+
+
+class MosRating(BaseModel, db.Model):
+    __tablename__ = 'MosRating'
+    __table_args__ = (
+        db.UniqueConstraint('mos_instance_id', 'user_id'),
+      )
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    rating = db.Column(db.Integer, default=0, info={
+        'label': 'Einkunn',
+        'min': 0,
+        'max': 5,
+    })
+    mos_instance_id = db.Column(db.Integer, db.ForeignKey("MosInstance.id"))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    placement = db.Column(db.Integer)
+
+    @property
+    def get_user(self):
+        return User.query.get(self.user_id)
+
+    @property
+    def get_instance(self):
+        return MosInstance.query.get(self.mos_instance_id)

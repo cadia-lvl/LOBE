@@ -1,0 +1,27 @@
+<table class='table'>
+    <thead>
+        <th>
+            Notandi
+            {{macros.sort_th_a('name')}}
+        </th>
+        <th>
+            Texti
+        </th>
+        <th>
+            Röð einkunnargjafar
+        </th>
+        <th>
+            Einkunn
+        </th>
+    </thead>
+    <tbody>
+        {% for r in ratings %}
+            <tr>
+                <td><a href={{r.get_user.get_url()}}>{{r.get_user.get_printable_name()}}</a></td>
+                <td>{{r.get_instance.get_text}}</td>
+                <td>{{r.placement}}</td>
+                <td>{{r.rating}}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -1,0 +1,237 @@
+{% extends "lists/_list.jinja" %}
+{% block title %}{{mos.printable_id}}{% endblock %}
+{% block total %}{{mos_list|length}}{% endblock %}
+
+{% block header_content %}
+    <div class="float-left text-warning">
+        {% if not mos.number_selected > 0%}
+            {% if mos_list | length == 0%}
+                <span id="additional-info">Hladdu upp setningum til að búa til MOS próf</span>
+            {% else %}
+                <span id="additional-info">Veldu setningar til að nota í prófinu</span>
+            {% endif %}
+        {% else %}
+            <span class='d-none' id="additional-info">Veldu setningar til að nota í prófinu</span>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{%block buttons %}
+    {% if current_user.is_admin() %}
+        <button class="btn btn-secondary btn-sm float-right mr-2 mt-2" type="button" data-toggle='modal', data-target='#uploadMOSModal'>
+            {{macros.btn_icon('upload', 'r')}}
+            Hlaða upp
+        </button>
+        <a href='{{url_for("stream_MOS_zip", id=mos.id)}}' class='btn btn-primary btn-sm float-right mr-2 mt-2'>
+            {{macros.btn_icon('download', 'r')}}
+            Sækja upptökur
+        </a>
+        {% if mos.number_selected > 0%}
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='start-button' href='{{url_for("mos_test", id=mos.id, uuid=current_user.uuid)}}'>
+                {{macros.btn_icon('play', 'r')}}
+                Hefja MOS próf
+            </a>
+        {% else %}
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 disabled mt-2' id='start-button' href='{{url_for("mos_test", id=mos.id, uuid=current_user.uuid)}}'>
+                {{macros.btn_icon('play', 'r')}}
+                Hefja MOS próf
+            </a>
+        {% endif %}
+        {% if mos.number_selected > 0%}
+            <a class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2' id='get-link-button' href='{{url_for("take_mos_test", mos_uuid=mos.uuid)}}'>
+                {{macros.btn_icon('link', 'r')}}
+                Hlekkur á próf
+            </a>
+        {% else %}
+            <a disabled class='btn btn-secondary btn-sm text-success float-right mr-2 mt-2 disabled' id='get-link-button' href='{{url_for("take_mos_test", mos_uuid=mos.uuid)}}'>
+                {{macros.btn_icon('link', 'r')}}
+                Hlekkur á próf
+            </a>
+        {% endif %}
+        {% if ratings | length  > 0%}
+            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("mos_results", id=mos.id)}}'>
+                {{macros.btn_icon('chart-bar', 'r')}}
+                Skoða niðurstöður
+            </a>
+        {% else %}
+            <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2 disabled' href='{{url_for("mos_results", id=mos.id)}}'>
+                {{macros.btn_icon('chart-bar', 'r')}}
+                Skoða niðurstöður
+            </a>
+        {% endif %}
+        
+    {% endif %}
+{% endblock %}
+
+{% block table %}
+    {% if mos_list | length > 0%}
+        <div>
+            <div>
+                <h3>Talgervingar sem búnar voru til</h3>
+                <p>Hljóðklippur sem búnar voru til með hjálp talgervils</p>
+            </div>
+            
+            {% with mos=mos, mos_list=synths, isSynthTable=true, selectAllForm=select_all_forms[0], deselectAllForm=select_all_forms[1] %}
+                {% include 'tables/mos.jinja'%}
+            {% endwith %}
+        </div>
+
+        <div class="mt-4">
+            <div class="">
+                <h3 class="">Upptökur sem teknar voru upp</h3>
+                <p>Upptökur sem teknar voru upp af alvöru fólki</p>
+            </div>
+            
+            {% with mos=mos, mos_list=ground_truths, isSynthTable=false, selectAllForm=select_all_forms[2], deselectAllForm=select_all_forms[3]%}
+                {% include 'tables/mos.jinja'%}
+            {% endwith %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+
+    {% if mos_list | length == 0 %}
+        {{macros.no_results("Engar setningar í mos prufu",
+            "Til að sjá setningar þarf fyrst að hlaða þeim upp.")}}
+    {% endif %}
+{% endblock %}
+
+{% block modals %}
+    <div class="modal fade" id='uploadMOSModal' tabindex="-1">
+        <form method='POST' enctype="multipart/form-data">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hlaða upp talgervingum fyrir MOS próf</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        Athugaðu að hlaða þarf upp <code>.zip</code> skrá sem inniheldur möppu sem heitir <code>audio</code> og skrá sem heitir <code>index.tsv</code>. 
+                        <code>Audio</code> mappan inniheldur allar talgervingarnar á <code>.wav</code> formi og <code>index.tsv</code> tengir auðkenni hverrar MOS-setningar við nafn
+                        talgervingarinnar í audio möppunni. <br> <br>
+                        Í <code>index.tsv</code> eru eftirfarandi dálkar:
+                        <li>Dálkur 1 er nafn upptöku í <code>audio</code> möppunni.</li>
+                        <li>Dálkur 2 er <code>R</code> ef setningin er upptaka en <code>S</code> ef setningin er talgerving.</li>
+                        <li>Dálkur 3 er setningin sjálf. </li>
+                        <br>
+                        Sjá sýnidæmi
+                    </p>
+                    {% with form=mos_form %}
+                        {% include 'forms/_form.jinja' %}
+                    {% endwith %}
+                </div>
+                <div class="modal-footer">
+                    <a href='{{url_for("stream_MOS_index_demo")}}' class='btn btn-primary float-left mr-2'>
+                        {{macros.btn_icon('download', 'r')}}
+                        Sýnidæmi
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                    <button class='btn btn-primary' type='submit'>
+                        Klára
+                        <span class='ml-1'><i class='fa fa-check'></i></span>
+                    </button>
+                    
+                </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+     <div class="modal fade" id='deleteModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú ert við það að eyða línu!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Með því að eyða þessari lotu fremur þú alheimssglæp.
+                </p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a id='confirmationButton' href='{{url_for("delete_mos_instance", id=1)}}' class='btn btn-danger'>
+                    Eyða
+                    {{macros.btn_icon('trash', 'l')}}
+                </a>
+            </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script>
+        function deletebutton(id){
+            $('#deleteModal #confirmationButton').attr('href', '{{url_for("delete_mos_instance", id=1)}}'.replace("1", id));
+        }
+
+
+        $(".mos-check-button").on('change', function(){
+            var id = this.name.split('mos-')[1];
+            updateUI()
+            updateMOS(this)
+        });
+
+
+        function updateUI(){
+            var elements = document.getElementsByClassName("mos-check-button");
+            var ids = []
+            var none_checked = true;
+            for (var i = 0, len = elements.length; i < len; i++) {
+                var array = $( elements[i] ).serializeArray()
+                if (!(array === undefined || array.length == 0)) {
+                    none_checked = false;
+                }
+            }
+            if(none_checked){
+                $("#start-button").addClass( "disabled" );
+                $("#additional-info").removeClass( "d-none" );
+                $("#get-link-button").addClass( "disabled" );
+            }
+            else{
+                $("#start-button").removeClass( "disabled" );
+                $("#additional-info").addClass( "d-none" );
+                $("#get-link-button").removeClass( "disabled" );
+
+            }
+        }
+
+        function updateMOS(form) {
+            //console.log(form)
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function(e) {
+                if(this.readyState === XMLHttpRequest.DONE) {
+                    if(xhr.status == '200'){
+                        var response = JSON.parse(xhr.responseText);
+                        //console.log(response);
+                    } else{
+                        promptError("Villa koma upp:", xhr.responseText, "");
+                    }
+                }
+            }
+            let formData = new FormData(form);
+
+
+            xhr.open("POST", form.action, true);
+            xhr.send(formData);
+        }
+    
+        $('#files').on('change',function(){
+            //get the file name
+            var fileName = $(this).val();
+            //replace the "Choose a file" label
+            $(this).next('.custom-file-label').html(fileName);
+        });
+    </script>
+{% endblock %}

@@ -3,11 +3,20 @@
 {% block total %}{{collections.total}}{% endblock %}
 {% block buttons %}
     {% if current_user.is_admin() %}
-        <a class='btn btn-secondary text-success float-right' href='{{url_for("collection.create_collection")}}'>
-            {{macros.btn_icon('plus', 'r')}}
-            Búa til
+         <a href='{{url_for("user.user_create")}}' class='btn btn-success float-right dropdown-toggle' data-toggle='dropdown''>
+            Bæta við
         </a>
-        <a class='btn btn-secondary float-right mr-2' href='{{url_for("collection.collection_zip_list")}}'>
+        <div class='dropdown-menu'>
+            <a href='{{url_for("collection.create_collection")}}' class='dropdown-item'>
+                {{macros.btn_icon('plus', 'r')}}
+                Búa til
+            </a>
+            <a class='dropdown-item' type="button" data-toggle='modal', data-target='#uploadCollectionModal'>
+                {{macros.btn_icon('upload', 'r')}}
+                Hlaða upp söfnun
+            </a>
+        </div>
+        <a class='btn btn-secondary float-right mr-2' href='{{url_for("collection_zip_list")}}'>
             {{macros.btn_icon('archive', 'r')}}
             Skjalasöfn
         </a>
@@ -34,4 +43,59 @@
             url_for('collection.create_collection'),
             "Búa til")}}
     {% endif %}
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id='uploadCollectionModal' tabindex="-1">
+        <form method='POST' enctype="multipart/form-data">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hlaða upp söfnun</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        Athugaðu að hlaða þarf upp <code>.zip</code> skrá sem inniheldur möppu sem heitir <code>audio</code>
+                        og skrá sem heitir <code>index.tsv</code>. <code>Audio</code> mappan inniheldur allar upptökur á <code>.wav</code> formi og <code>index.tsv</code> tengir nafn hverrar upptöku við setningu. <br><br>
+                        Í <code>index.tsv</code> eru eftirfarandi dálkar:
+                        <li>Dálkur 1 er nafn upptöku í <code>audio</code> möppunni.</li>
+                        <li>Dálkur 2 er setningin sjálf.</li>
+                        <li>Dálkur 3 er hvaðan setningin kemur. (Valfrjálst)</li>
+                        <li>Dálkur 4 er röðunarstuðull. Fleytitala 0-1, hversu ofarlega sentningin raðast í listum. (Valfrjálst)</li>
+                        <li>Dálkur 5 er framburður setningarinnar. (Valfrjálst)</li>
+                    </p>
+                    {% with form=form %}
+                        {% include 'forms/_form.jinja' %}
+                    {% endwith %}
+                </div>
+                <div class="modal-footer">
+                    <a href='{{url_for("stream_collection_index_demo")}}' class='btn btn-primary float-left mr-2'>
+                        {{macros.btn_icon('download', 'r')}}
+                        Sýnidæmi
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                    <button class='btn btn-primary' type='submit'>
+                        Klára
+                        <span class='ml-1'><i class='fa fa-check'></i></span>
+                    </button>
+                </div>
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script>
+        $('#files').on('change',function(){
+            //get the file name
+            var fileName = $(this).val();
+            //replace the "Choose a file" label
+            $(this).next('.custom-file-label').html(fileName);
+        });
+    </script>
 {% endblock %}

@@ -68,6 +68,9 @@ video{
     width: 100%;
 }
 
+.mosCheckboxLabel{
+    margin-bottom: 0;
+}
 
 .carousel-indicators {
     position: unset !important;
@@ -156,4 +159,19 @@ textarea#comment:disabled {
 
 .color-change{
     animation: color-change 1s infinite;
+}
+
+.accordion-icons .card-header .btn:before {
+    font-family: Font Awesome\ 5 Free;
+    font-weight:900;
+    content:"\f07c";
+    padding-right: 4px;
+}
+.accordion-icons .card-header .btn.collapsed:before {
+    content:"\f07b";
+}
+.accordion-icons .card-header .btn:hover, 
+.accordion-icons .card-header .btn:active, 
+.accordion-icons .card-header .btn:focus  {
+    text-decoration:none;
 }

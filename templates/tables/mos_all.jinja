@@ -1,0 +1,39 @@
+<div class='table-responsive'>
+    <table class='table'>
+        <thead>
+            <th>
+                Dagsetning
+                {{macros.sort_th_a('created_at')}}
+            </th>
+            <th>
+                Auðkenni
+                {{macros.sort_th_a('id')}}
+            </th>
+            {%if is_no_collection%}
+            {% else %}
+            <th>
+                Söfnun
+                {{macros.sort_th_a('duration')}}
+            </th>
+            {% endif %}
+        </thead>
+        <tbody>
+            {% for mos in mos_list %}
+                <tr>
+                    <td>{{mos.created_at | datetime(format='low')}}</td>
+                    <td><a href={{mos.url}}>{{mos.printable_id}}</a></td>
+                    {%if is_no_collection%}
+        
+                    {% else %}
+                        
+                        {%if mos.collection.printable_id%}
+                            <td>{{mos.collection.name}}</td>
+                        {% else %}
+                            <td class=''>-</td>
+                        {% endif %}
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

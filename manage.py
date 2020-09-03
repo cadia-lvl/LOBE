@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import json
+import uuid
 import traceback
 import datetime
 from shutil import copyfile
@@ -61,7 +62,7 @@ class AddDefaultRoles(Command):
 
 class AddDefaultConfiguration(Command):
     def run(self):
-        main_conf = Configuration.query.filter_by(name='Aðalstilling')
+        main_conf = Configuration.query.filter_by(name='Aðalstilling').count()
         if main_conf:
             print("Configuration already exists.")
             return
@@ -631,6 +632,14 @@ def reset_weekly_challenge():
     db.session.commit()
 
 
+class AddColumnDefaults(Command):
+    def run(self):
+        users = User.query.filter(User.uuid == None).all()
+        for u in users:
+            u.uuid = str(uuid.uuid4())
+        db.session.commit()
+
+
 @manager.command
 def set_firesale():
     do_fire_sale = bool(int(input('Do 1 for firesale, 0 to deactivate: ')))
@@ -681,6 +690,9 @@ manager.add_command('change_pass', changePass)
 manager.add_command('change_dataroot', changeDataRoot)
 manager.add_command('add_default_roles', AddDefaultRoles)
 manager.add_command('add_default_configuration', AddDefaultConfiguration)
+manager.add_command('add_column_defults', AddColumnDefaults)
+
 
 if __name__ == '__main__':
     manager.run()
+

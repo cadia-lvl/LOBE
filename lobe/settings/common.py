@@ -6,11 +6,14 @@ APP_ROOT = os.path.abspath(os.path.join(
 # these should all have a trailing slash
 DATA_BASE_DIR = os.path.join(APP_ROOT, os.pardir, 'data/')
 TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'tokens/')
+CUSTOM_TOKEN_DIR = os.path.join(DATA_BASE_DIR, 'custom_tokens/')
 RECORD_DIR = os.path.join(DATA_BASE_DIR, 'records/')
+CUSTOM_RECORDING_DIR = os.path.join(DATA_BASE_DIR, 'custom_recordings/')
 VIDEO_DIR = os.path.join(DATA_BASE_DIR, 'videos/')
 ZIP_DIR = os.path.join(DATA_BASE_DIR, 'zips/')
 TEMP_DIR = os.path.join(DATA_BASE_DIR, 'temp/')
 WAV_AUDIO_DIR = os.path.join(DATA_BASE_DIR, 'wav_audio/')
+WAV_CUSTOM_AUDIO_DIR = os.path.join(DATA_BASE_DIR, 'wav_custom_audio/')
 
 # Path to the logging file
 LOG_PATH = os.path.join(APP_ROOT, os.pardir, 'logs', 'info.log')
@@ -26,6 +29,8 @@ COLLECTION_PAGINATION = 20
 USER_PAGINATION = 30
 SESSION_PAGINATION = 50
 CONF_PAGINATION = 30
+MOS_PAGINATION = 20
+
 
 SESSION_SZ = 50
 

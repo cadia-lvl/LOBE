@@ -1,0 +1,80 @@
+<div class='table-responsive'>
+    <table class='table'>
+        <thead>
+            <th>
+            
+            </th>
+            <th>
+                Auðkenni setningar
+            </th>
+            <th>
+                Texti
+            </th>
+            <th>
+                Meðaleinkunn
+            </th>
+            <th>
+                <div class="btn-group" style="margin-bottom: -8px;">
+                
+                    <form id='selectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
+                        {% for f in selectAllForm %}
+                            {{f}}
+                        {% endfor%}
+                        <button type='submit' id='selectAll' class='btn' style="margin-right: 0px;">
+                            <span class=''><i class="far fa-check-square text-success"></i></span>
+                        </button>
+                    </form>
+                    <form id='deselectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
+                        {% for f in deselectAllForm %}
+                            {{f}}
+                        {% endfor%}
+                        <button type='submit' id='selectAll' class='btn' style="margin-left: -5px;">
+                            <span class=''><i class="far fa-square text-success"></i></span>
+                        </button>
+                    </form>
+                </div>
+            </th>
+            <th>
+            </th>
+        </thead>
+        <tbody>
+            {% for mos in mos_list %}
+                <tr>      
+                    <td>
+                        <audio id="audio-{{mos.custom_recording.id}}" src={{mos.custom_recording.get_download_url()}} type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{mos.custom_recording.id}})">
+                            <i id='playButtonIcon-{{mos.custom_recording.id}}' class='fa fa-play'></i>
+                        </button>
+                    </td>
+                    {% if mos.custom_token %}
+                        <td><a href={{mos.custom_token.get_url()}} class='{% if mos.custom_token.marked_as_bad %} text-warning {% endif %}'><code>{{mos.custom_token.get_printable_id()}}</code></a></td>
+                    {% else %}
+                        <td>-</td>
+                    {% endif %}
+                    
+                    <td>{{mos.text}}</td>
+                    <td>{{mos.average_rating}}</td>
+                    <td>
+                        <form class="mos-check-button" id="verificationForm" name="mos-{{mos.id}}" action="{{mos.ajax_edit_action}}" method="POST">
+                            {% for field in mos.selection_form %}
+                                <div class="custom-control custom-switch">
+                                {% if field.name == "selected" %}
+                                    {{field(checked=field.data, id="check-field", class_="")}}
+                                {% endif %}
+                                </div>
+                            {% endfor %}
+                        </form>
+                    </td>
+                    <td>
+                        <button id="deleteButton" name="{{mos.id}}" onClick="deletebutton(name)" class="btn btn-secondary btn-sm text-danger float-right" type="button" data-toggle='modal', data-target='#deleteModal'>
+                            {{macros.btn_icon('trash', 'r')}} Eyða
+                        </button>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src='{{url_for("static", filename="js/listControls.js")}}'></script>
+

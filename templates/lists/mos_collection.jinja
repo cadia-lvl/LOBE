@@ -1,0 +1,32 @@
+{% extends "lists/_list.jinja" %}
+{% block title %}MOS prufur á söfnun: {{collection.name}}{% endblock %}
+{% block total %}{{mos_list.total}}{% endblock %}
+{% block buttons %}
+    {% if current_user.is_admin() %}
+        <a class='btn btn-secondary text-success float-right' href='{{url_for("mos_create_collection", id=collection.id)}}'>
+            {{macros.btn_icon('plus', 'r')}}
+            Búa til
+        </a>
+    {% endif %}
+{% endblock %}
+{% block table %}
+    {% if mos_list.total > 0 %}
+        {% with mos_list=mos_list.items %}
+            {% include 'tables/mos_all.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if mos_list.total > 0 %}
+        {{macros.pagination(mos_list, url_for('mos_list'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if mos_list.total == 0 %}
+        {{macros.no_results("Engar MOS prufur",
+            "Til að sjá MOS prufur þarf fyrst að búa þær til.",
+            url_for('mos_create_collection', id=collection.id), "Búa til MOS prufu")}}
+    {% endif %}
+{% endblock %}

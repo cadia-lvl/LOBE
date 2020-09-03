@@ -8,16 +8,17 @@ import csv
 from pydub import AudioSegment
 from pydub.utils import mediainfo
 import pathlib
-from pathlib import Path
 from werkzeug import secure_filename
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from functools import partialmethod
 from flask import flash
+from sqlalchemy import func
 from flask_security import current_user
 from models import (Collection, Recording, Session, Token, Trim, 
                     User, db, Mos, MosInstance, CustomRecording, CustomToken, 
-                    MosRating)
+                    MosRating, Verification)
+
 
 def create_tokens(collection_id, files, is_g2p):
     tokens = []
@@ -665,3 +666,20 @@ def insert_trims(trims, verification_id):
         trim.verification_id = verification_id
         db.session.add(trim)
     db.session.commit()
+
+def activity(model):
+    '''
+    Returns two lists (x, y) where x contains timestamps
+    and y contains the number of items of the given model
+    that were created at the given day
+    '''
+    groups = ['year', 'month', 'day']
+    groups = [func.extract(x, model.created_at).label(x) for x in groups]
+    q = (db.session.query(func.count(model.id).label('count'),*groups)
+        .group_by(*groups)
+        .order_by(*groups)
+        .all())
+    x = [(lambda x: f'{int(x.day)}/{int(x.month)}/{int(x.year)}')(el) for el in q]
+    y = [el.count for el in q]
+    return x, y
+

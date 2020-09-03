@@ -21,7 +21,7 @@
                             {{f}}
                         {% endfor%}
                         <button type='submit' id='selectAll' class='btn' style="margin-right: 0px;">
-                            <span class=''><i class="far fa-check-square"></i></span>
+                            <span class=''><i class="far fa-check-square text-success"></i></span>
                         </button>
                     </form>
                     <form id='deselectAllForm' method="POST" action="{{url_for('mos_select_all', id=mos.id)}}">
@@ -29,7 +29,7 @@
                             {{f}}
                         {% endfor%}
                         <button type='submit' id='selectAll' class='btn' style="margin-left: -5px;">
-                            <span class=''><i class="far fa-square"></i></span>
+                            <span class=''><i class="far fa-square text-success"></i></span>
                         </button>
                     </form>
                 </div>

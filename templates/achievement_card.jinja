@@ -6,11 +6,7 @@
     {% endif %}
     <div class='card-body d-flex justify-content-between flex-column'>
         <div>
-            {% if level >= category.items()|length %}
-                <p class='text-center'><i class='fa fa-check fa-5x text-{{color}}'></i></p>
-                <h5 class='card-title text-center'>Leiðarendi</h5>
-                <p class='card-text text-center'>Þú hefur klárað öll afrek í þessum flokk.</p>
-            {% else %}
+            {% if level < category.items()|length %}
                 <p class='text-center'><i class='fa {{category[level|string].fa_id}} fa-5x text-{{color}}'></i></p>
                 <h5 class='card-title text-center'>{{category[level|string].title}}</h5>
                 {% if type == 'verification' %}
@@ -20,6 +16,10 @@
                 {% elif type == 'streak' %}
                     <p class='card-text text-center'>Greindu {{config.ECONOMY.achievements.streak_minimum}} lotur á dag í {{category[level|string].goal}} daga til að fá:</p>
                 {% endif %}
+            {% else %}
+                <p class='text-center'><i class='fa fa-check fa-5x text-{{color}}'></i></p>
+                <h5 class='card-title text-center'>Leiðarendi</h5>
+                <p class='card-text text-center'>Þú hefur klárað öll afrek í þessum flokk.</p>
             {% endif %}
         </div>
         <div>

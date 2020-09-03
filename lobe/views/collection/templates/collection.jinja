@@ -79,11 +79,17 @@
                 Lotur
             </a>
             {% if current_user.is_admin() %}
-                <button class="btn btn-secondary float-right ml-2 mb-2 btn-sm" type="button" data-toggle='modal', data-target='#downloadModal'>
+                <button type='button' class='btn btn-sm btn-secondary float-right dropdown-toggle' data-toggle='dropdown'>
                     {{macros.btn_icon('download', 'r')}}
                     Sækja
                 </button>
-                <button type='button' class='btn btn-sm btn-secondary float-right text-warning dropdown-toggle' data-toggle='dropdown'>
+                <div class='dropdown-menu'>
+                    <button class="dropdown-item" type="button" data-toggle='modal', data-target='#downloadModal'>
+                        Sækja söfnun
+                    </button>
+                    <a href="{{url_for('download_collection_info', id=collection.id)}}" class='dropdown-item'>Sækja upplýsingaskjal</a>
+                </div>
+                <button type='button' class='btn btn-sm btn-secondary float-right text-warning dropdown-toggle mr-2' data-toggle='dropdown'>
                     {{macros.btn_icon('edit', 'r')}}
                     Breyta
                 </button>

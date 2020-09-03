@@ -447,6 +447,43 @@
     </div>
 {% endmacro %}
 
+{% macro premium_item_card(item, current_user) %}
+    <div class='card' style='background-color: {{config.COLORS.epic}};'>
+        <div class='card-body d-flex justify-content-between flex-column'>
+            <div>
+                <h3 class='card-title' style='font-family: "Dancing Script", cursive;'>{{item.title}}</h3>
+                <p class='card-text'>{{item.description}}</p>
+                {% if item.num_available > 0%}
+                    <p class='card-text'>Aðeins {{item.num_available}} eintök eru í boði. Drífðu þér að tryggja þér eintak!</p>
+                {% endif %}
+            </div>
+            <div class='mt-2'>
+                {% if current_user.progression.owns_premium_item(item) %}
+                    <span class='font-weight-bold float-right'>Þú átt þennan hlut</span>
+                {% elif item.num_available > 0 %}
+                    <a href="{{url_for('premium_item_buy', premium_item_id=item.id, user_id=current_user.id)}}" class='btn btn-warning rounded-pill float-right'>
+                        <span class="mr-2 ml-2 font-weight-bold">{{item.coin_price}}</span>
+                        <i class="fas fa-coins mr-2"></i>
+                        <span class="mr-2 ml-2 font-weight-bold">{{item.experience_price}}</span>
+                        <i class="fas fa-gem mr-2"></i>
+                    </a>
+                {% else %}
+                    <span class='font-weight-bold float-right'>Uppselt!</span>
+                {% endif %}
+
+                {% if current_user.is_admin() %}
+                    <a href="{{item.edit_url}}" class="mr-1 btn btn-secondary text-warning rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">
+                            <i class='fa fa-edit'></i>
+                        </span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+
 {% macro font_link(font) %}
     <link href="{{font.href}}" rel="stylesheet">
 {% endmacro %}

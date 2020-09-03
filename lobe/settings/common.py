@@ -55,13 +55,13 @@ COLORS = {
 ECONOMY = {
     'weekly_challenge': {
         'goal': 15000,
-        'coin_reward': 100,
-        'experience_reward': 500,
+        'coin_reward': 300,
+        'experience_reward': 3000,
         'extra_interval': 2000,
         'extra_coin_reward': 50,
         'extra_experience_reward': 200,
-        'best_coin_reward': 50,
-        'best_experience_reward': 500,
+        'best_coin_reward': 500,
+        'best_experience_reward': 5000,
     },
     'loot_boxes': {
         'prices': {

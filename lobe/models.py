@@ -1101,6 +1101,11 @@ progression_font = db.Table(
         db.ForeignKey('verifier_font.id')))
 
 
+progression_premium_item = db.Table('progression_premium_item',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('premium_item_id', db.Integer(), db.ForeignKey('premium_item.id')))
+
+
 class VerifierProgression(BaseModel, db.Model):
     id = db.Column(
         db.Integer(),
@@ -1201,6 +1206,9 @@ class VerifierProgression(BaseModel, db.Model):
     def is_font_equipped(self, font):
         return self.equipped_font_id == font.id
 
+    def owns_premium_item(self, item):
+        return any([i.id == item.id for i in self.owned_premium_items])
+
     @property
     def equipped_icon(self):
         if self.equipped_icon_id is not None:
@@ -1220,6 +1228,10 @@ class VerifierProgression(BaseModel, db.Model):
     def equipped_font(self):
         if self.equipped_font_id is not None:
             return VerifierFont.query.get(self.equipped_font_id)
+
+    @property
+    def premium_wheel(self):
+        return any([i.wheel_modifier for i in self.owned_premium_items])
 
     def equip_random_icon(self):
         self.equipped_icon_id =\
@@ -1389,6 +1401,24 @@ class VerifierFont(BaseModel, db.Model):
     def edit_url(self):
         return url_for('shop.font_edit', id=self.id)
 
+class PremiumItem(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    title = db.Column(db.String(255), info={
+        'label': 'Titill'})
+    description = db.Column(db.String(255), info={
+        'label': 'Lýsing'})
+    coin_price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð (aurar)'})
+    experience_price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð (demantar)'})
+    num_available = db.Column(db.Integer(), default=0, info={
+        'label': 'Fjöldi í boði'})
+    wheel_modifier = db.Column(db.Boolean(), default=False, info={
+        'label': 'Breyta þessi verðlaun lukkuhjólinu?'})
+
+    @property
+    def edit_url(self):
+        return url_for('premium_item_edit', id=self.id)
 
 class Posting(BaseModel, db.Model):
     __tablename__ = 'Posting'

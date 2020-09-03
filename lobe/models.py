@@ -11,11 +11,10 @@ from flask import current_app as app
 from flask import url_for
 from flask_security import RoleMixin, UserMixin
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func, select, MetaData
-from sqlalchemy.dialects import postgresql
+from sqlalchemy import func
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug import secure_filename
-from wtforms_components import ColorField, SelectField
+from wtforms_components import ColorField
 from wtforms import validators
 
 db = SQLAlchemy()
@@ -41,6 +40,60 @@ class BaseModel(db.Model):
 class Collection(BaseModel, db.Model):
     __tablename__ = 'Collection'
 
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        nullable=False,
+        autoincrement=True)
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
+    name = db.Column(
+        db.String,
+        default=str(datetime.now().date()))
+    assigned_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id'))
+    is_multi_speaker = db.Column(
+        db.Boolean,
+        default=False)
+    configuration_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Configuration.id'))
+    tokens = db.relationship(
+        "Token",
+        lazy='select',
+        backref='collection',
+        cascade='all, delete, delete-orphan')
+    sessions = db.relationship(
+        "Session",
+        lazy='select',
+        backref='collection',
+        cascade='all, delete, delete-orphan')
+    active = db.Column(
+        db.Boolean,
+        default=True)
+    sort_by = db.Column(db.String)
+    num_tokens = db.Column(
+        db.Integer,
+        default=0)
+    num_recorded_tokens = db.Column(
+        db.Integer,
+        default=0)
+    num_invalid_tokens = db.Column(
+        db.Integer,
+        default=0)
+    has_zip = db.Column(
+        db.Boolean,
+        default=False)
+    zip_token_count = db.Column(
+        db.Integer,
+        default=0)
+    zip_created_at = db.Column(db.DateTime)
+    is_dev = db.Column(
+        db.Boolean,
+        default=False)
+
     @hybrid_property
     def num_nonrecorded_tokens(self):
         return self.num_tokens - self.num_recorded_tokens
@@ -50,8 +103,10 @@ class Collection(BaseModel, db.Model):
         if self.num_tokens == 0:
             ratio = 0
         else:
-            ratio = (self.num_tokens - self.num_nonrecorded_tokens) / self.num_tokens
-        if as_percent: ratio = round(ratio*100, 3)
+            ratio = (self.num_tokens - self.num_nonrecorded_tokens)\
+                    / self.num_tokens
+        if as_percent:
+            ratio = round(ratio*100, 3)
         return ratio
 
     @hybrid_method
@@ -60,7 +115,8 @@ class Collection(BaseModel, db.Model):
             ratio = 0
         else:
             ratio = (self.num_invalid_tokens) / self.num_tokens
-        if as_percent: ratio = round(ratio*100, 3)
+        if as_percent:
+            ratio = round(ratio*100, 3)
         return ratio
 
     def get_url(self):
@@ -73,7 +129,8 @@ class Collection(BaseModel, db.Model):
         return url_for('collection.edit_collection', id=self.id)
 
     def get_trim_url(self, trim_type):
-        return url_for('collection.trim_collection', id=self.id) + f'?trim_type={trim_type}'
+        return url_for('collection.trim_collection', id=self.id) +\
+            f'?trim_type={trim_type}'
 
     def get_record_dir(self):
         return os.path.join(app.config['RECORD_DIR'], str(self.id))
@@ -111,11 +168,12 @@ class Collection(BaseModel, db.Model):
             return Token.id
 
     def update_numbers(self):
-        tokens = Token.query.filter(Token.collection_id==self.id)
+        tokens = Token.query.filter(Token.collection_id == self.id)
         self.num_tokens = tokens.count()
-        self.num_invalid_tokens = tokens.filter(Token.marked_as_bad==True).count()
-        self.num_recorded_tokens = tokens.filter(Token.num_recordings>0).count()
-
+        self.num_invalid_tokens = \
+            tokens.filter(Token.marked_as_bad == True).count()
+        self.num_recorded_tokens = \
+            tokens.filter(Token.num_recordings > 0).count()
 
     def get_meta(self):
         '''
@@ -134,8 +192,8 @@ class Collection(BaseModel, db.Model):
         Returns an estimate of hours of speech given the number
         of sentences spoken.
         '''
-        return round((self.num_tokens - self.num_nonrecorded_tokens)\
-            *ESTIMATED_AVERAGE_RECORD_LENGTH/3600, 1)
+        return round((self.num_tokens - self.num_nonrecorded_tokens)
+                     * ESTIMATED_AVERAGE_RECORD_LENGTH / 3600, 1)
 
     @hybrid_property
     def is_closed(self):
@@ -143,7 +201,8 @@ class Collection(BaseModel, db.Model):
 
     def open_for_applicant(self, user_id):
         if not self.is_closed:
-            application = Application.query.filter(Application.user_id == user_id).first()
+            application = \
+                Application.query.filter(Application.user_id == user_id).first()
             if application and application.posting_id == self.posting.id:
                 return True
         return False
@@ -163,36 +222,89 @@ class Collection(BaseModel, db.Model):
         return "T-{:04d}".format(self.id)
 
 
-    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    name = db.Column(db.String, default=str(datetime.now().date()))
-
-    # the assigned user
-    assigned_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    is_multi_speaker = db.Column(db.Boolean, default=False)
-    configuration_id = db.Column(db.Integer, db.ForeignKey('Configuration.id'))
-    tokens = db.relationship("Token", lazy='select', backref='collection',
-        cascade='all, delete, delete-orphan')
-    sessions = db.relationship("Session", lazy='select',
-        backref='collection', cascade='all, delete, delete-orphan')
-    active = db.Column(db.Boolean, default=True)
-    sort_by = db.Column(db.String)
-    num_tokens = db.Column(db.Integer, default=0)
-    num_recorded_tokens = db.Column(db.Integer, default=0)
-    num_invalid_tokens = db.Column(db.Integer, default=0)
-
-    has_zip = db.Column(db.Boolean, default=False)
-    zip_token_count = db.Column(db.Integer, default=0)
-    zip_created_at = db.Column(db.DateTime)
-
-    is_dev = db.Column(db.Boolean, default=False)
-
-
 class Configuration(BaseModel, db.Model):
     __tablename__ = 'Configuration'
 
-    def __init__(self):
-        pass
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        nullable=False,
+        autoincrement=True)
+    name = db.Column(db.String)
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
+    is_default = db.Column(
+        db.Boolean,
+        default=False)
+    # general configuration
+    session_sz = db.Column(
+        db.Integer,
+        default=50)
+    live_transcribe = db.Column(
+        db.Boolean,
+        default=True)
+    visualize_mic = db.Column(
+        db.Boolean,
+        default=True)
+    auto_trim = db.Column(
+        db.Boolean,
+        default=True)
+    analyze_sound = db.Column(
+        db.Boolean,
+        default=True)
+    # recording configuration
+    auto_gain_control = db.Column(
+        db.Boolean,
+        default=False)
+    noise_suppression = db.Column(
+        db.Boolean,
+        default=False)
+    channel_count = db.Column(
+        db.Integer,
+        default=1)
+    sample_rate = db.Column(
+        db.Integer,
+        default=48000)
+    sample_size = db.Column(
+        db.Integer,
+        default=16)
+
+    # MediaRecorder configuration
+    blob_slice = db.Column(
+        db.Integer,
+        default=10)
+    audio_codec = db.Column(
+        db.String,
+        default='pcm')
+
+    # Video configuration
+    video_w = db.Column(
+        db.Integer,
+        default=1280)
+    video_h = db.Column(
+        db.Integer,
+        default=720)
+    video_codec = db.Column(
+        db.String,
+        default='vp8')
+    has_video = db.Column(
+        db.Boolean,
+        default=False)
+
+    # Other
+    trim_threshold = db.Column(
+        db.Float,
+        default=40)
+    too_low_threshold = db.Column(
+        db.Float,
+        default=-15)
+    too_high_threshold = db.Column(
+        db.Float,
+        default=-4.5)
+    too_high_frames = db.Column(
+        db.Integer,
+        default=10)
 
     @hybrid_property
     def printable_name(self):
@@ -221,7 +333,7 @@ class Configuration(BaseModel, db.Model):
 
     @hybrid_property
     def media_constraints(self):
-        constraints = {'audio':{
+        constraints = {'audio': {
             'channelCount': self.channel_count,
             'sampleSize': self.sample_size,
             'sampleRate': self.sample_rate,
@@ -256,47 +368,19 @@ class Configuration(BaseModel, db.Model):
             'high_threshold': self.too_high_threshold,
             'high_frames': self.too_high_frames})
 
-    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
-    name = db.Column(db.String)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-
-    is_default = db.Column(db.Boolean, default=False)
-    # general configuration
-    session_sz = db.Column(db.Integer, default=50)
-    live_transcribe = db.Column(db.Boolean, default=True)
-    visualize_mic = db.Column(db.Boolean, default=True)
-    auto_trim = db.Column(db.Boolean, default=True)
-    analyze_sound = db.Column(db.Boolean, default=True)
-
-    # recording configuration
-    auto_gain_control = db.Column(db.Boolean, default=False)
-    noise_suppression = db.Column(db.Boolean, default=False)
-    channel_count = db.Column(db.Integer, default=1)
-    sample_rate = db.Column(db.Integer, default=48000)
-    sample_size = db.Column(db.Integer, default=16)
-
-    # MediaRecorder configuration
-    blob_slice = db.Column(db.Integer, default=10)
-    audio_codec = db.Column(db.String, default='pcm')
-
-    # Video configuration
-    video_w = db.Column(db.Integer, default=1280)
-    video_h = db.Column(db.Integer, default=720)
-    video_codec = db.Column(db.String, default='vp8')
-    has_video = db.Column(db.Boolean, default=False)
-
-    # Other
-    trim_threshold = db.Column(db.Float, default=40)
-    too_low_threshold = db.Column(db.Float, default=-15)
-    too_high_threshold = db.Column(db.Float, default=-4.5)
-    too_high_frames = db.Column(db.Integer, default=10)
-
 
 class Token(BaseModel, db.Model):
     __tablename__ = 'Token'
 
-    def __init__(self, text, original_fname, collection_id,
-        score:float=-1, pron:str=None, source:str=None):
+    def __init__(
+        self,
+        text,
+        original_fname,
+        collection_id,
+        score: float = -1,
+        pron: str = None,
+        source: str = None
+    ):
         self.text = text
         self.original_fname = original_fname
         self.collection_id = collection_id
@@ -306,6 +390,40 @@ class Token(BaseModel, db.Model):
             self.pron = pron
         if source is not None:
             self.source = source
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        nullable=False,
+        autoincrement=True)
+    text = db.Column(db.String)
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
+
+    original_fname = db.Column(
+        db.String,
+        default='Unknown')
+    collection_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Collection.id'))
+    fname = db.Column(db.String)
+    path = db.Column(db.String)
+    marked_as_bad = db.Column(
+        db.Boolean,
+        default=False)
+    num_recordings = db.Column(
+        db.Integer,
+        default=0)
+    pron = db.Column(db.String)
+    score = db.Column(
+        db.Float,
+        default=-1)
+    source = db.Column(db.String)
+    recordings = db.relationship(
+        "Recording",
+        lazy='joined',
+        backref='token')
 
     def get_url(self):
         return url_for('token.token_detail', id=self.id)
@@ -354,15 +472,16 @@ class Token(BaseModel, db.Model):
         Get the path the program believes the token should be stored at
         w.r.t. the current TOKEN_DIR environment variable
         '''
-        fname = secure_filename("{}_{:09d}.token".format(
-            os.path.splitext(self.original_fname)[0], self.id))
         path = os.path.join(
             app.config['TOKEN_DIR'], str(self.collection_id), self.fname)
         return path
 
     def get_dict(self):
-        return {'id':self.id, 'text':self.text, 'file_id':self.get_file_id(),
-        'url':self.get_url()}
+        return {
+            'id': self.id,
+            'text': self.text,
+            'file_id': self.get_file_id(),
+            'url': self.get_url()}
 
     def get_file_id(self):
         return os.path.splitext(self.fname)[0]
@@ -391,23 +510,6 @@ class Token(BaseModel, db.Model):
     def collection(self):
         return Collection.query.get(self.collection_id)
 
-    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
-    text = db.Column(db.String)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-
-    original_fname = db.Column(db.String, default='Unknown')
-    collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
-
-    fname = db.Column(db.String)
-    path = db.Column(db.String)
-    marked_as_bad = db.Column(db.Boolean, default=False)
-    num_recordings = db.Column(db.Integer, default=0)
-    pron = db.Column(db.String)
-    score = db.Column(db.Float, default=-1)
-    source = db.Column(db.String)
-
-    recordings = db.relationship("Recording", lazy='joined', backref='token')
-
 
 class Rating(BaseModel, db.Model):
     __tablename__ = 'Rating'
@@ -417,18 +519,37 @@ class Rating(BaseModel, db.Model):
         self.user_id = user_id
         self.value = value
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
-    value = db.Column(db.Boolean, default=False)
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True)
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
+    recording_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Recording.id'))
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    value = db.Column(
+        db.Boolean,
+        default=False)
 
 
 class Recording(BaseModel, db.Model):
     __tablename__ = 'Recording'
 
-    def __init__(self, token_id, original_fname, user_id,
-        bit_depth=None, session_id=None, has_video=False):
+    def __init__(
+        self,
+        token_id,
+        original_fname,
+        user_id,
+        bit_depth=None,
+        session_id=None,
+        has_video=False
+    ):
         self.token_id = token_id
         self.original_fname = original_fname
         self.user_id = user_id
@@ -438,6 +559,62 @@ class Recording(BaseModel, db.Model):
         if session_id is not None:
             self.session_id = session_id
         self.has_video = has_video
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True)
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
+    original_fname = db.Column(
+        db.String, default='Unknown')
+
+    token_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Token.id'))
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    session_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Session.id'))
+    sr = db.Column(db.Integer)
+    num_channels = db.Column(
+        db.Integer,
+        default=1)
+    latency = db.Column(db.Float)
+    auto_gain_control = db.Column(db.Boolean)
+    echo_cancellation = db.Column(db.Boolean)
+    noise_suppression = db.Column(db.Boolean)
+    analysis = db.Column(db.String)
+    duration = db.Column(db.Float)
+    bit_depth = db.Column(db.Integer)
+    transcription = db.Column(db.String)
+    fname = db.Column(db.String)
+    file_id = db.Column(db.String)
+    path = db.Column(db.String)
+    wav_path = db.Column(db.String)
+    start = db.Column(db.Float)
+    end = db.Column(db.Float)
+    marked_as_bad = db.Column(
+        db.Boolean,
+        default=False)
+    has_video = db.Column(
+        db.Boolean,
+        default=False)
+    verifications = db.relationship(
+        "Verification",
+        lazy='select',
+        backref='recording',
+        cascade='all, delete, delete-orphan')
+    is_verified = db.Column(
+        db.Boolean,
+        default=False)
+    is_secondarily_verified = db.Column(
+        db.Boolean,
+        default=False)
 
     def set_session_id(self, session_id):
         self.session_id = session_id
@@ -497,7 +674,8 @@ class Recording(BaseModel, db.Model):
 
     def _save_wav_to_disk(self):
         # there is no ffmpeg on Eyra
-        if os.getenv('SEMI_PROD', False) or os.getenv('FLASK_ENV', 'development') == 'production':
+        if os.getenv('SEMI_PROD', False) or \
+                os.getenv('FLASK_ENV', 'development') == 'production':
             subprocess.call(['avconv', '-i', self.path, self.wav_path])
         else:
             subprocess.call(['ffmpeg', '-i', self.path, self.wav_path])
@@ -515,13 +693,15 @@ class Recording(BaseModel, db.Model):
         self._set_wave_params(recorder_settings)
 
     def _set_path(self):
-        # TODO: deal with file endings
         self.file_id = '{}_r{:09d}_t{:09d}'.format(
             os.path.splitext(self.original_fname)[0], self.id, self.token_id)
         self.fname = secure_filename(f'{self.file_id}.webm')
-        self.path = os.path.join(app.config['VIDEO_DIR'] if self.has_video else app.config['RECORD_DIR'],
+        self.path = os.path.join(
+            app.config['VIDEO_DIR'] if self.has_video
+            else app.config['RECORD_DIR'],
             str(self.token.collection_id), self.fname)
-        self.wav_path = os.path.join(app.config['WAV_AUDIO_DIR'],
+        self.wav_path = os.path.join(
+            app.config['WAV_AUDIO_DIR'],
             str(self.token.collection_id),
             secure_filename(f'{self.file_id}.wav'))
 
@@ -530,11 +710,10 @@ class Recording(BaseModel, db.Model):
         Get the path the program believes the token should be stored at
         w.r.t. the current TOKEN_DIR environment variable
         '''
-        file_id = '{}_r{:09d}'.format(os.path.splitext(self.original_fname)[0], self.id)
-        fname = secure_filename('{}.wav'.format(self.file_id))
-        path = os.path.join(app.config['RECORD_DIR'],
-            str(self.token.collection_id), self.fname)
-        return path
+        return os.path.join(
+            app.config['RECORD_DIR'],
+            str(self.token.collection_id),
+            self.fname)
 
     def get_file_id(self):
         if self.fname is not None:
@@ -567,7 +746,7 @@ class Recording(BaseModel, db.Model):
             return "n/a"
 
     def get_dict(self):
-        return {'id':self.id, 'token': self.token.get_dict()}
+        return {'id': self.id, 'token': self.token.get_dict()}
 
     def get_collection_id(self):
         return Token.query.get(self.token_id).collection_id
@@ -583,51 +762,19 @@ class Recording(BaseModel, db.Model):
     def reset_trim(self):
         self.set_trim(None, None)
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    original_fname = db.Column(db.String, default='Unknown')
-
-    token_id = db.Column(db.Integer, db.ForeignKey('Token.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('Session.id'))
-
-    sr = db.Column(db.Integer)
-    num_channels = db.Column(db.Integer, default=1)
-    latency = db.Column(db.Float)
-    auto_gain_control = db.Column(db.Boolean)
-    echo_cancellation = db.Column(db.Boolean)
-    noise_suppression = db.Column(db.Boolean)
-
-    analysis = db.Column(db.String)
-
-    duration = db.Column(db.Float)
-    bit_depth = db.Column(db.Integer)
-
-    transcription = db.Column(db.String)
-
-    fname = db.Column(db.String)
-    file_id = db.Column(db.String)
-    path = db.Column(db.String)
-    wav_path = db.Column(db.String)
-
-    start = db.Column(db.Float)
-    end = db.Column(db.Float)
-
-    marked_as_bad = db.Column(db.Boolean, default=False)
-    has_video = db.Column(db.Boolean, default=False)
-
-    verifications = db.relationship("Verification", lazy='select',
-            backref='recording', cascade='all, delete, delete-orphan')
-
-    is_verified = db.Column(db.Boolean, default=False)
-    is_secondarily_verified = db.Column(db.Boolean, default=False)
-
 
 class Session(BaseModel, db.Model):
     __tablename__ = 'Session'
 
-    def __init__(self, user_id, collection_id, manager_id,
-        duration=None, has_video=False, is_dev=False):
+    def __init__(
+        self,
+        user_id,
+        collection_id,
+        manager_id,
+        duration=None,
+        has_video=False,
+        is_dev=False
+    ):
         self.user_id = user_id
         self.manager_id = manager_id
         self.collection_id = collection_id
@@ -635,6 +782,52 @@ class Session(BaseModel, db.Model):
         self.is_dev = is_dev
         if duration is not None:
             self.duration = duration
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    manager_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    collection_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Collection.id'))
+    duration = db.Column(db.Float)
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
+    has_video = db.Column(
+        db.Boolean,
+        default=False)
+    recordings = db.relationship(
+        "Recording",
+        lazy='joined',
+        backref='session',
+        cascade='all, delete, delete-orphan')
+
+    is_secondarily_verified = db.Column(
+        db.Boolean,
+        default=False)
+    is_verified = db.Column(
+        db.Boolean,
+        default=False)
+    verified_by = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    secondarily_verified_by = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    is_dev = db.Column(
+        db.Boolean,
+        default=False)
 
     def get_printable_id(self):
         return "S-{:06d}".format(self.id)
@@ -670,43 +863,45 @@ class Session(BaseModel, db.Model):
             return User.query.get(self.manager_id)
         return "n/a"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
-    manager_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
-    collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
-    duration = db.Column(db.Float)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    has_video = db.Column(db.Boolean, default=False)
-    recordings = db.relationship("Recording", lazy='joined', backref='session', cascade='all, delete, delete-orphan')
-
-    is_secondarily_verified = db.Column(db.Boolean, default=False)
-    is_verified = db.Column(db.Boolean, default=False)
-
-    verified_by =  db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
-    secondarily_verified_by = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
-
-    is_dev = db.Column(db.Boolean, default=False)
 
 class Verification(BaseModel, db.Model):
     __tablename__ = 'Verification'
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    verified_by = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
-    recording_id = db.Column(db.Integer, db.ForeignKey('Recording.id'))
-
-    volume_is_low = db.Column(db.Boolean, default=False)
-    volume_is_high = db.Column(db.Boolean, default=False)
-    recording_has_glitch = db.Column(db.Boolean, default=False)
-    #recording_has_glitch_outside_trimming = db.Column(db.Boolean, default=False)
-    recording_has_wrong_wording = db.Column(db.Boolean, default=False)
-
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True)
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
+    verified_by = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    recording_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Recording.id'))
+    volume_is_low = db.Column(
+        db.Boolean,
+        default=False)
+    volume_is_high = db.Column(
+        db.Boolean,
+        default=False)
+    recording_has_glitch = db.Column(
+        db.Boolean,
+        default=False)
+    recording_has_wrong_wording = db.Column(
+        db.Boolean,
+        default=False)
     comment = db.Column(db.String(255))
-
-    is_secondary = db.Column(db.Boolean, default=False)
-
-    trims = db.relationship("Trim", lazy='select',
-           backref='verification', cascade='all, delete, delete-orphan')
+    is_secondary = db.Column(
+        db.Boolean,
+        default=False)
+    trims = db.relationship(
+        "Trim",
+        lazy='select',
+        backref='verification',
+        cascade='all, delete, delete-orphan')
 
     @property
     def url(self):
@@ -730,8 +925,9 @@ class Verification(BaseModel, db.Model):
 
     @property
     def recording_is_good(self):
-        return not any([self.recording_has_glitch, self.recording_has_wrong_wording,
-            self.volume_is_high, self.volume_is_low])
+        return not any(
+            [self.recording_has_glitch, self.recording_has_wrong_wording,
+                self.volume_is_high, self.volume_is_low])
 
     def set_quality(self, quality_field_data):
         '''
@@ -754,7 +950,6 @@ class Verification(BaseModel, db.Model):
             elif data == 'glitch-outside':
                 self.recording_has_glitch_outside_trimming = True
 
-
     @hybrid_property
     def dict(self):
         return {
@@ -763,8 +958,8 @@ class Verification(BaseModel, db.Model):
             'recording_has_glitch': self.recording_has_glitch,
             'recording_has_wrong_wording': self.recording_has_wrong_wording,
             'comment': self.comment,
-            'trims': [{'start': t.start, 'end': t.end} for t in self.trims]
-        }
+            'trims': [{'start': t.start, 'end': t.end} for t in self.trims]}
+
 
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'
@@ -777,9 +972,11 @@ class Trim(BaseModel, db.Model):
     verification_id = db.Column(db.Integer, db.ForeignKey('Verification.id'))
 
 
-roles_users = db.Table('roles_users',
-        db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
-        db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+roles_users = db.Table(
+    'roles_users',
+    db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
+    db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+
 
 class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
@@ -788,25 +985,34 @@ class Role(db.Model, RoleMixin):
 
 
 class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True)
     name = db.Column(db.String(255))
-    email = db.Column(db.String(255), unique=True)
+    email = db.Column(
+        db.String(255),
+        unique=True)
     password = db.Column(db.String(255))
-
     sex = db.Column(db.String(255))
     age = db.Column(db.Integer)
     dialect = db.Column(db.String(255))
-
     active = db.Column(db.Boolean())
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    roles = db.relationship('Role', secondary=roles_users,
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
+    roles = db.relationship(
+        'Role',
+        secondary=roles_users,
         backref=db.backref('users', lazy='dynamic'))
-
-    assigned_collections = db.relationship("Collection",
+    assigned_collections = db.relationship(
+        "Collection",
         cascade='all, delete, delete-orphan')
     recordings = db.relationship("Recording")
 
-    progression_id = db.Column(db.Integer, db.ForeignKey('verifier_progression.id'))
+    progression_id = db.Column(
+        db.Integer,
+        db.ForeignKey('verifier_progression.id'))
 
     @property
     def progression(self):
@@ -846,60 +1052,130 @@ class User(db.Model, UserMixin):
             'age': self.age,
             'dialect': self.dialect}
 
-progression_icon = db.Table('progression_icon',
-    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
-    db.Column('icon_id', db.Integer(), db.ForeignKey('verifier_icon.id')))
 
-progression_title = db.Table('progression_title',
-    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
-    db.Column('title_id', db.Integer(), db.ForeignKey('verifier_title.id')))
+progression_icon = db.Table(
+    'progression_icon',
+    db.Column(
+        'progression_id',
+        db.Integer(),
+        db.ForeignKey('verifier_progression.id')),
+    db.Column(
+        'icon_id',
+        db.Integer(),
+        db.ForeignKey('verifier_icon.id')))
 
-progression_quote = db.Table('progression_quote',
-    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
-    db.Column('quote_id', db.Integer(), db.ForeignKey('verifier_quote.id')))
 
-progression_font = db.Table('progression_font',
-    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
-    db.Column('font_id', db.Integer(), db.ForeignKey('verifier_font.id')))
+progression_title = db.Table(
+    'progression_title',
+    db.Column(
+        'progression_id',
+        db.Integer(),
+        db.ForeignKey('verifier_progression.id')),
+    db.Column(
+        'title_id',
+        db.Integer(),
+        db.ForeignKey('verifier_title.id')))
+
+
+progression_quote = db.Table(
+    'progression_quote',
+    db.Column(
+        'progression_id',
+        db.Integer(),
+        db.ForeignKey('verifier_progression.id')),
+    db.Column(
+        'quote_id',
+        db.Integer(),
+        db.ForeignKey('verifier_quote.id')))
+
+
+progression_font = db.Table(
+    'progression_font',
+    db.Column(
+        'progression_id',
+        db.Integer(),
+        db.ForeignKey('verifier_progression.id')),
+    db.Column(
+        'font_id',
+        db.Integer(),
+        db.ForeignKey('verifier_font.id')))
+
 
 class VerifierProgression(BaseModel, db.Model):
-    id = db.Column(db.Integer(), primary_key=True)
+    id = db.Column(
+        db.Integer(),
+        primary_key=True)
 
-    num_verifies = db.Column(db.Integer(), default=0)
-    num_session_verifies = db.Column(db.Integer(), default=0)
-    num_invalid = db.Column(db.Integer(), default=0)
-    num_streak_days = db.Column(db.Integer(), default=0)
-
-    weekly_verifies = db.Column(db.Integer(), default=0)
-    weekly_coin_price = db.Column(db.Integer(), default=0)
-    weekly_experience_price = db.Column(db.Integer(), default=0)
-    has_seen_weekly_prices = db.Column(db.Boolean(), default=False)
-
+    num_verifies = db.Column(
+        db.Integer(),
+        default=0)
+    num_session_verifies = db.Column(
+        db.Integer(),
+        default=0)
+    num_invalid = db.Column(
+        db.Integer(),
+        default=0)
+    num_streak_days = db.Column(
+        db.Integer(),
+        default=0)
+    weekly_verifies = db.Column(
+        db.Integer(),
+        default=0)
+    weekly_coin_price = db.Column(
+        db.Integer(),
+        default=0)
+    weekly_experience_price = db.Column(
+        db.Integer(),
+        default=0)
+    has_seen_weekly_prices = db.Column(
+        db.Boolean(),
+        default=False)
     last_spin = db.Column(db.DateTime)
-
-    lobe_coins = db.Column(db.Integer(), default=0)
-    experience = db.Column(db.Integer(), default=0)
-
-    verification_level = db.Column(db.Integer(), default=0)
-    spy_level = db.Column(db.Integer(), default=0)
-    streak_level = db.Column(db.Integer(), default=0)
-
-    equipped_icon_id = db.Column(db.Integer, db.ForeignKey('verifier_icon.id'))
-    equipped_title_id = db.Column(db.Integer, db.ForeignKey('verifier_title.id'))
-    equipped_quote_id = db.Column(db.Integer, db.ForeignKey('verifier_quote.id'))
-    equipped_font_id = db.Column(db.Integer, db.ForeignKey('verifier_font.id'))
-
-    owned_icons = db.relationship("VerifierIcon",
+    lobe_coins = db.Column(
+        db.Integer(),
+        default=0)
+    experience = db.Column(
+        db.Integer(),
+        default=0)
+    verification_level = db.Column(
+        db.Integer(),
+        default=0)
+    spy_level = db.Column(
+        db.Integer(),
+        default=0)
+    streak_level = db.Column(
+        db.Integer(),
+        default=0)
+    equipped_icon_id = db.Column(
+        db.Integer,
+        db.ForeignKey('verifier_icon.id'))
+    equipped_title_id = db.Column(
+        db.Integer,
+        db.ForeignKey('verifier_title.id'))
+    equipped_quote_id = db.Column(
+        db.Integer,
+        db.ForeignKey('verifier_quote.id'))
+    equipped_font_id = db.Column(
+        db.Integer,
+        db.ForeignKey('verifier_font.id'))
+    owned_icons = db.relationship(
+        "VerifierIcon",
         secondary=progression_icon)
-    owned_titles = db.relationship("VerifierTitle",
+    owned_titles = db.relationship(
+        "VerifierTitle",
         secondary=progression_title)
-    owned_quotes = db.relationship("VerifierQuote",
+    owned_quotes = db.relationship(
+        "VerifierQuote",
         secondary=progression_quote)
-    owned_fonts = db.relationship("VerifierFont",
+    owned_fonts = db.relationship(
+        "VerifierFont",
         secondary=progression_font)
-
-    fire_sale = db.Column(db.Boolean, default=False)
-    fire_sale_discount = db.Column(db.Float, default=0.0)
+    fire_sale = db.Column(
+        db.Boolean,
+        default=False)
+    fire_sale_discount = db.Column(
+        db.Float,
+        default=0.0)
 
     def owns_icon(self, icon):
         return any([i.id == icon.id for i in self.owned_icons])
@@ -946,42 +1222,59 @@ class VerifierProgression(BaseModel, db.Model):
             return VerifierFont.query.get(self.equipped_font_id)
 
     def equip_random_icon(self):
-        self.equipped_icon_id = random.choice([i.id for i in self.owned_icons])
+        self.equipped_icon_id =\
+            random.choice([i.id for i in self.owned_icons])
 
     def equip_random_title(self):
-        self.equipped_title_id = random.choice([t.id for t in self.owned_titles])
+        self.equipped_title_id =\
+            random.choice([t.id for t in self.owned_titles])
 
     def equip_random_quote(self):
-        self.equipped_quote_id = random.choice([q.id for q in self.owned_quotes])
+        self.equipped_quote_id =\
+            random.choice([q.id for q in self.owned_quotes])
 
 
 class VerifierIcon(BaseModel, db.Model):
-    id = db.Column(db.Integer(), primary_key=True)
-    fa_id = db.Column(db.String(), info={
-        'validators': [validators.InputRequired()],
-        'label': 'Merkisklassar',
-        'description': 'Til dæmis: fab fa-apple'})
-    title = db.Column(db.String(64), info={
-        'validators': [validators.InputRequired()],
-        'label': 'Titill'})
-    description = db.Column(db.String(255), info={
-        'validators': [validators.InputRequired()],
-        'label': 'Stutt lýsing'})
-    price = db.Column(db.Integer(), default=0, info={
-        'label': 'Verð', 'min': 0, 'max': 1000})
-    color = db.Column(db.String(), info={
-        'label': 'Litur á merki',
-        'form_field_class': ColorField,
-        'validators': [validators.InputRequired()]})
-    rarity = db.Column(db.Integer(), info={
-        'validators': [validators.InputRequired()],
-        'label': 'Tegund',
-        'choices': [
-            (0, 'Basic'),
-            (1, 'Rare'),
-            (2, 'Epic'),
-            (3, 'Legendary')
-        ]})
+    id = db.Column(
+        db.Integer(),
+        primary_key=True)
+    fa_id = db.Column(
+        db.String(),
+        info={
+            'validators': [validators.InputRequired()],
+            'label': 'Merkisklassar',
+            'description': 'Til dæmis: fab fa-apple'})
+    title = db.Column(
+        db.String(64),
+        info={
+            'validators': [validators.InputRequired()],
+            'label': 'Titill'})
+    description = db.Column(
+        db.String(255),
+        info={
+            'validators': [validators.InputRequired()],
+            'label': 'Stutt lýsing'})
+    price = db.Column(
+        db.Integer(),
+        default=0,
+        info={
+            'label': 'Verð', 'min': 0, 'max': 1000})
+    color = db.Column(
+        db.String(),
+        info={
+            'label': 'Litur á merki',
+            'form_field_class': ColorField,
+            'validators': [validators.InputRequired()]})
+    rarity = db.Column(
+        db.Integer(),
+        info={
+            'validators': [validators.InputRequired()],
+            'label': 'Tegund',
+            'choices': [
+                (0, 'Basic'),
+                (1, 'Rare'),
+                (2, 'Epic'),
+                (3, 'Legendary')]})
 
     @property
     def edit_url(self):
@@ -989,22 +1282,32 @@ class VerifierIcon(BaseModel, db.Model):
 
 
 class VerifierTitle(BaseModel, db.Model):
-    id = db.Column(db.Integer(), primary_key=True)
-    title = db.Column(db.String(64), info={
-        'label': 'Titillinn'})
-    description = db.Column(db.String(255), info={
-        'label': 'Stutt lýsing'})
-    price = db.Column(db.Integer(), default=0, info={
-        'label': 'Verð'})
-    rarity = db.Column(db.Integer(), info={
-        'validators': [validators.InputRequired()],
-        'label': 'Tegund',
-        'choices': [
-            (0, 'Basic'),
-            (1, 'Rare'),
-            (2, 'Epic'),
-            (3, 'Legendary')
-        ]})
+    id = db.Column(
+        db.Integer(),
+        primary_key=True)
+    title = db.Column(
+        db.String(64),
+        info={
+            'label': 'Titillinn'})
+    description = db.Column(
+        db.String(255),
+        info={
+            'label': 'Stutt lýsing'})
+    price = db.Column(
+        db.Integer(),
+        default=0,
+        info={
+            'label': 'Verð'})
+    rarity = db.Column(
+        db.Integer(),
+        info={
+            'validators': [validators.InputRequired()],
+            'label': 'Tegund',
+            'choices': [
+                (0, 'Basic'),
+                (1, 'Rare'),
+                (2, 'Epic'),
+                (3, 'Legendary')]})
 
     @property
     def edit_url(self):
@@ -1012,20 +1315,28 @@ class VerifierTitle(BaseModel, db.Model):
 
 
 class VerifierQuote(BaseModel, db.Model):
-    id = db.Column(db.Integer(), primary_key=True)
-    quote = db.Column(db.String(255), info={
-        'label': 'Slagorðið'})
-    price = db.Column(db.Integer(), default=0, info={
-        'label': 'Verð'})
-    rarity = db.Column(db.Integer(), info={
-        'validators': [validators.InputRequired()],
-        'label': 'Tegund',
-        'choices': [
-            (0, 'Basic'),
-            (1, 'Rare'),
-            (2, 'Epic'),
-            (3, 'Legendary')
-        ]})
+    id = db.Column(
+        db.Integer(),
+        primary_key=True)
+    quote = db.Column(
+        db.String(255),
+        info={
+            'label': 'Slagorðið'})
+    price = db.Column(
+        db.Integer(),
+        default=0,
+        info={
+            'label': 'Verð'})
+    rarity = db.Column(
+        db.Integer(),
+        info={
+            'validators': [validators.InputRequired()],
+            'label': 'Tegund',
+            'choices': [
+                (0, 'Basic'),
+                (1, 'Rare'),
+                (2, 'Epic'),
+                (3, 'Legendary')]})
 
     @property
     def edit_url(self):
@@ -1033,33 +1344,46 @@ class VerifierQuote(BaseModel, db.Model):
 
 
 class VerifierFont(BaseModel, db.Model):
-    id = db.Column(db.Integer(), primary_key=True)
-    font_family = db.Column(db.String(), info={
-        'label': 'Font fjölskylda',
-        'description': "Til dæmis Megrim"
-    })
-    font_type = db.Column(db.String(), info={
-        'label': 'Font týpa',
-        'description': "Til dæmis cursive"
-    })
-
-    href = db.Column(db.String(), info={
-        'label': 'Linkur á font CSS'})
-    title = db.Column(db.String(255), info={
-        'label': 'Titill'})
-    description = db.Column(db.String(255), info={
-        'label': 'Lýsing'})
-    price = db.Column(db.Integer(), default=0, info={
-        'label': 'Verð (gimsteinar)'})
-    rarity = db.Column(db.Integer(), info={
-        'validators': [validators.InputRequired()],
-        'label': 'Tegund',
-        'choices': [
-            (0, 'Basic'),
-            (1, 'Rare'),
-            (2, 'Epic'),
-            (3, 'Legendary')
-        ]})
+    id = db.Column(
+        db.Integer(),
+        primary_key=True)
+    font_family = db.Column(
+        db.String(),
+        info={
+            'label': 'Font fjölskylda',
+            'description': "Til dæmis Megrim"})
+    font_type = db.Column(
+        db.String(),
+        info={
+            'label': 'Font týpa',
+            'description': "Til dæmis cursive"})
+    href = db.Column(
+        db.String(),
+        info={
+            'label': 'Linkur á font CSS'})
+    title = db.Column(
+        db.String(255),
+        info={
+            'label': 'Titill'})
+    description = db.Column(
+        db.String(255),
+        info={
+            'label': 'Lýsing'})
+    price = db.Column(
+        db.Integer(),
+        default=0,
+        info={
+            'label': 'Verð (gimsteinar)'})
+    rarity = db.Column(
+        db.Integer(),
+        info={
+            'validators': [validators.InputRequired()],
+            'label': 'Tegund',
+            'choices': [
+                (0, 'Basic'),
+                (1, 'Rare'),
+                (2, 'Epic'),
+                (3, 'Legendary')]})
 
     @property
     def edit_url(self):
@@ -1069,18 +1393,27 @@ class VerifierFont(BaseModel, db.Model):
 class Posting(BaseModel, db.Model):
     __tablename__ = 'Posting'
 
-    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
-
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        nullable=False,
+        autoincrement=True)
     name = db.Column(db.String)
     ad_text = db.Column(db.String)
-
     utterances = db.Column(db.String)
-    collection = db.Column(db.Integer, db.ForeignKey("Collection.id"))
-
-    uuid = db.Column(db.String, default=str(uuid.uuid4()))
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-
-    applications = db.relationship("Application", lazy="select", backref='posting',
+    collection = db.Column(
+        db.Integer,
+        db.ForeignKey("Collection.id"))
+    uuid = db.Column(
+        db.String,
+        default=str(uuid.uuid4()))
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
+    applications = db.relationship(
+        "Application",
+        lazy="select",
+        backref='posting',
         cascade='all, delete, delete-orphan')
 
     def get_url(self):
@@ -1097,23 +1430,32 @@ class Posting(BaseModel, db.Model):
 class Application(BaseModel, db.Model):
     __tablename__ = 'Application'
 
-    id = db.Column(db.Integer, primary_key=True, nullable=False, autoincrement=True)
-
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        nullable=False,
+        autoincrement=True)
     name = db.Column(db.String)
     sex = db.Column(db.String)
     age = db.Column(db.Integer)
     voice = db.Column(db.String)
-
     email = db.Column(db.String)
     phone = db.Column(db.String)
-
-    terms_agreement = db.Column(db.Boolean, default=False)
-
-    uuid = db.Column(db.String, default=str(uuid.uuid4()))
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-
-    posting_id = db.Column(db.Integer, db.ForeignKey("Posting.id"))
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    terms_agreement = db.Column(
+        db.Boolean,
+        default=False)
+    uuid = db.Column(
+        db.String,
+        default=str(uuid.uuid4()))
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"))
+    posting_id = db.Column(
+        db.Integer,
+        db.ForeignKey("Posting.id"))
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
 
     def get_url(self):
         return url_for("application.application_detail", id=self.id)

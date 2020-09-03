@@ -29,7 +29,7 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
                 delete_session_db, delete_token_db, delete_mos_instance_db, save_recording_session, save_MOS_ratings, resolve_order,
-                save_custom_wav, get_verifiers, insert_trims, save_uploaded_collection)
+                save_custom_wav, get_verifiers, insert_trims, save_uploaded_collection, save_uploaded_lobe_collection)
 from filters import format_date
 from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
                    ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
@@ -131,7 +131,6 @@ def require_login_if_closed_collection(func):
 
         return func(*args, **kwargs)
     return wrapper
-
 
 @app.route('/post_recording/', methods=['POST'])
 @require_login_if_closed_collection
@@ -294,16 +293,31 @@ def create_collection():
 def collection_list():
     form = UploadCollectionForm()
     if request.method == 'POST':
-        if form.validate() and form.is_g2p.data:
-            try:
-                zip_file = request.files.get('files')
-                with ZipFile(zip_file, 'r') as zip:
-                    zip_name = zip_file.filename[:-4]
-                    tsv_name = '{}/index.tsv'.format(zip_name)
-                    collection = save_uploaded_collection(zip, zip_name, tsv_name, form)
-                return redirect(url_for('collection', id=collection.id))          
-            except Exception as e: 
-                print(e)
+        if form.validate():
+            if form.is_g2p.data:
+                try:
+                    zip_file = request.files.get('files')
+                    with ZipFile(zip_file, 'r') as zip:
+                        zip_name = zip_file.filename[:-4]
+                        tsv_name = '{}/index.tsv'.format(zip_name)
+                        collection = save_uploaded_collection(zip, zip_name, tsv_name, form)
+                    return redirect(url_for('collection', id=collection.id))          
+                except Exception as e: 
+                    print(e)
+                    flash('Ekki tókst að hlaða söfnun upp. Athugaðu hvort öllum leiðbeiningum sé fylgt og reyndu aftur.', category='warning')
+            elif form.is_lobe_collection:
+                try:
+                    zip_file = request.files.get('files')
+                    with ZipFile(zip_file, 'r') as zip:
+                        zip_name = zip_file.filename[:-4]
+                        json_name = 'info.json'
+                        collection = save_uploaded_lobe_collection(zip, zip_name, json_name, form)
+                    return redirect(url_for('collection', id=collection.id))      
+                except Exception as e: 
+                    print(e)
+                    flash('Ekki tókst að hlaða söfnun upp. Athugaðu hvort öllum leiðbeiningum sé fylgt og reyndu aftur.', category='warning')
+            else:
+                flash('Ekki tókst að hlaða söfnun upp. Athugaðu hvort öllum leiðbeiningum sé fylgt og reyndu aftur.', category='warning')
         else:
             flash('Ekki tókst að hlaða söfnun upp. Athugaðu hvort öllum leiðbeiningum sé fylgt og reyndu aftur.', category='warning')
 
@@ -740,53 +754,72 @@ def delete_conf(id):
 
 # MOS ROUTES
 
-
 @app.route('/mos/')
 @login_required
 @roles_accepted('admin')
 def mos_list():
     page = int(request.args.get('page', 1))
-    mos_list = Mos.query.order_by(resolve_order(Mos,
-        request.args.get('sort_by', default='created_at'),
-        order=request.args.get('order', default='desc'))).paginate(page,
-        per_page=app.config['MOS_PAGINATION'])
-    collections = Collection.query.order_by(resolve_order(Collection,
-            request.args.get('sort_by', default='name'),
-            order=request.args.get('order', default='desc')))
-    return render_template('lists/mos.jinja', mos_list=mos_list,
-        collections=collections, section='mos')
+    mos_list = Mos.query.order_by(
+            resolve_order(
+                Mos,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    collections = Collection.query.order_by(
+            resolve_order(
+                Collection,
+                request.args.get('sort_by', default='name'),
+                order=request.args.get('order', default='desc')))
+    return render_template(
+        'lists/mos.jinja',
+        mos_list=mos_list,
+        collections=collections,
+        section='mos')
+
 
 @app.route('/mos/collection/<int:id>')
 @login_required
 @roles_accepted('admin')
 def mos_collection(id):
     page = int(request.args.get('page', 1))
-    collection=Collection.query.get(id)
-    mos_list = Mos.query.filter(Mos.collection_id == id).order_by(resolve_order(Mos,
-        request.args.get('sort_by', default='created_at'),
-        order=request.args.get('order', default='desc'))).paginate(page,
-        per_page=app.config['MOS_PAGINATION'])
-    return render_template('lists/mos_collection.jinja', mos_list=mos_list,
-        collection=collection, section='mos')
+    collection = Collection.query.get(id)
+    mos_list = Mos.query.filter(Mos.collection_id == id).order_by(
+            resolve_order(
+                Mos,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    return render_template(
+        'lists/mos_collection.jinja',
+        mos_list=mos_list,
+        collection=collection,
+        section='mos')
+
 
 @app.route('/mos/collection/none')
 @login_required
 @roles_accepted('admin')
 def mos_collection_none():
     page = int(request.args.get('page', 1))
-    collection=json.dumps({'name': 'Óháð söfnun', 'id': 0})
-    mos_list = Mos.query.filter(Mos.collection_id == None).order_by(resolve_order(Mos,
-        request.args.get('sort_by', default='created_at'),
-        order=request.args.get('order', default='desc'))).paginate(page,
-        per_page=app.config['MOS_PAGINATION'])
-    return render_template('lists/mos_no_collection.jinja', mos_list=mos_list,
-        collection=collection, section='mos')
+    collection = json.dumps({'name': 'Óháð söfnun', 'id': 0})
+    mos_list = Mos.query.filter(Mos.collection_id == None).order_by(
+            resolve_order(
+                Mos,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc')))\
+        .paginate(page, per_page=app.config['MOS_PAGINATION'])
+    return render_template(
+        'lists/mos_no_collection.jinja',
+        mos_list=mos_list,
+        collection=collection,
+        section='mos')
 
 
 @app.route('/mos/<int:id>', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
 def mos(id):
+    print(current_user.uuid)
     mos = Mos.query.get(id)
     form = MosUploadForm()
     select_all_forms = [
@@ -796,25 +829,33 @@ def mos(id):
         MosSelectAllForm(is_synth=False, select=False),
     ]
 
-    if request.method == 'POST' and form.validate():
-        try:
-            if(form.is_g2p.data):
-                zip_file = request.files.get('files')
-                with ZipFile(zip_file, 'r') as zip:
-                    zip_name = zip_file.filename[:-4]
-                    tsv_name = '{}/index.tsv'.format(zip_name)
-                    successfully_uploaded = save_custom_wav(zip, zip_name, tsv_name, mos, id)
-                    if successfully_uploaded > 0:
-                        flash("Tókst að hlaða upp {} setningum.".format(successfully_uploaded),category="success")
-                    else:
-                        flash("Ekki tókst að hlaða upp neinum setningum.".format(successfully_uploaded),category="warning")
-                return redirect(url_for('mos', id=id))   
-            else:
-                flash("Ekki tókst að hlaða upp skrá, vinsamlegast lestu leiðbeiningar og reyndu aftur.",
-                    category="danger")                 
-        except Exception as e: 
-            print(e)
-            flash("Ekki tókst að hlaða upp skrá.",
+    if request.method == 'POST':
+        if form.validate():
+            try:
+                if(form.is_g2p.data):
+                    zip_file = request.files.get('files')
+                    with ZipFile(zip_file, 'r') as zip:
+                        zip_name = zip_file.filename[:-4]
+                        tsv_name = '{}/index.tsv'.format(zip_name)
+                        successfully_uploaded = save_custom_wav(zip,
+                                                                zip_name,
+                                                                tsv_name,
+                                                                mos,
+                                                                id)
+                        if successfully_uploaded > 0:
+                            flash("Tókst að hlaða upp {} setningum.".format(successfully_uploaded),category="success")
+                        else:
+                            flash("Ekki tókst að hlaða upp neinum setningum.".format(successfully_uploaded),category="warning")
+                    return redirect(url_for('mos', id=id))   
+                else:
+                    flash("Ekki tókst að hlaða upp skrá, vinsamlegast lestu leiðbeiningar og reyndu aftur.",
+                        category="danger")                 
+            except Exception as e: 
+                print(e)
+                flash("Ekki tókst að hlaða upp skrá.",
+                            category="danger")   
+        else:
+            flash("Ekki tókst að hlaða upp skrá, vinsamlegast lestu leiðbeiningar og reyndu aftur.",
                         category="danger")   
   
 
@@ -864,19 +905,18 @@ def take_mos_test(mos_uuid):
                 flash("Þetta netfang er nú þegar í notkun", category='error')
                 return redirect(
                     url_for("take_mos_test", mos_uuid=mos_uuid))
-            return redirect(url_for("mos_test", id=mos.id) + f"?user_id={new_user.id}")
+            return redirect(url_for("mos_test", id=mos.id, uuid=new_user.uuid))
 
     return render_template('take_mos_test.jinja', form=form, type='create', mos=mos,
                            action=url_for('take_mos_test', mos_uuid=mos_uuid))
 
-@app.route('/mos/<int:id>/mostest/', methods=['GET', 'POST'])
-#@login_required
-#@roles_accepted('admin', 'Notandi')
-def mos_test(id):
-    user_id = request.args.get('user_id')
-    if not user_id:
-        user_id = int(current_user.id)
-    user = User.query.get(user_id)
+@app.route('/mos/<int:id>/mostest/<string:uuid>', methods=['GET', 'POST'])
+def mos_test(id, uuid):
+    user = User.query.filter(User.uuid == uuid).first()
+    if user.is_admin():
+        if user.id != current_user.id:
+            flash("Þú hefur ekki aðgang að þessari síðu", category='error')
+            return redirect(url_for("mos", id=id))
     mos = Mos.query.get(id)
     mos_list = MosInstance.query.filter(MosInstance.mos_id == id).all()
     mos_list_to_use = []

@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import json
+import uuid
 import traceback
 from shutil import copyfile
 from tqdm import tqdm
@@ -572,12 +573,23 @@ def reset_weekly_challenge():
     db.session.commit()
 
 
+class AddColumnDefaults(Command):
+    def run(self):
+        users = User.query.filter(User.uuid == None).all()
+        for u in users:
+            u.uuid = str(uuid.uuid4())
+        db.session.commit()
+
+
+
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)
 manager.add_command('change_pass', changePass)
 manager.add_command('change_dataroot', changeDataRoot)
 manager.add_command('add_default_roles', AddDefaultRoles)
 manager.add_command('add_default_configuration', AddDefaultConfiguration)
+manager.add_command('add_column_defults', AddColumnDefaults)
+
 
 if __name__ == '__main__':
     manager.run()

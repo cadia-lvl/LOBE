@@ -284,10 +284,147 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
         collection.update_numbers()
         db.session.commit()
                     
-                        
-
     return collection
 
+def is_valid_info(data):
+    if 'collection_info' in data and \
+    'text_info' in data and \
+    'recording_info' in data and \
+    'other' in data:
+        if 'text' in data['text_info'] and \
+            "session_id" in data["collection_info"] and \
+            "recording_fname" in data["recording_info"] and \
+            "text_marked_bad" in data["other"] and \
+            "recording_marked_bad" in data["other"] and\
+            "duration" in data["recording_info"]:
+            return True
+    return False
+
+
+
+def save_uploaded_lobe_collection(zip, zip_name, json_name, form):
+    # creating new collection
+    collection = Collection()
+    
+    form.populate_obj(collection)
+   
+    db.session.add(collection)
+    db.session.flush()
+
+    dirs = [collection.get_record_dir(), collection.get_token_dir(),
+        collection.get_video_dir(), collection.get_wav_audio_dir()]
+    # create dirs for tokens and records
+    for dir in dirs:
+        if not os.path.exists(dir): os.makedirs(dir)
+        else:
+            raise ValueError("""
+                For some reason, we are about to create a collection with the
+                same primary key as a previous collection. This could happen
+                for example if 2 databases are used on the same machine. If
+                this error occurs, the current environment has to change the
+                DATA_BASE_DIR, TOKEN_DIR, RECORD_DIR flask environment variables
+                to point to some other place.
+
+                Folder that already exists: {}
+
+                Perhaps some of the source folders have never been created before.
+                """.format(dir))
+                
+    with zip.open(json_name) as json_file:
+        data = json_file.read()
+        info = json.loads(data.decode("utf-8"))
+        custom_tokens = []
+        tokens = []
+        num_errors = 0
+        error_line, error_file = None, None
+        # creating session
+        duration = 0
+        user_id = int(form.data['assigned_user_id'])
+        manager_id = current_user.id
+        collection_id = collection.id
+        has_video = False
+        
+        sessions = {}
+        for key in info:
+            if is_valid_info(info[key]):
+                for zip_info in zip.infolist():
+                    row = info[key]
+                    session_id = row["collection_info"]["session_id"]
+                    duration = row["recording_info"]["duration"]
+                    if session_id not in sessions:
+                        new_record_session = Session(user_id, collection_id, manager_id,
+                            duration=duration, has_video=has_video, is_dev=collection.is_dev)
+                        db.session.add(new_record_session)
+                        db.session.flush()
+                        sessions[session_id]={'session': new_record_session, 'duration': []}
+                        record_session = new_record_session
+                    else:
+                        record_session = sessions[session_id]['session']
+                    info_filename = row["recording_info"]["recording_fname"]
+                    zip_info.filename = os.path.basename(zip_info.filename)
+                    if zip_info.filename == info_filename:
+                        try:
+                            text = row["text_info"]["text"]
+                            src = row["text_info"]["fname"] if row["text_info"]["fname"] else None
+                            scr = row["text_info"]["score"]
+                            pron = row["text_info"]["pron"] 
+                            token = Token(text, zip_name, collection.id, score=scr,
+                                pron=pron, source=src)
+                            tokens.append(token)
+                            db.session.add(token)
+                            db.session.flush()
+                            if row['other']['text_marked_bad'] == 'true':
+                                token.marked_as_bad = True
+
+                        except ValueError as error:
+                            num_errors += 1
+                            error_line = idx + 1
+                            error_file = file.filename
+                            continue
+
+                        recording = Recording(int(token.id), info_filename, user_id,
+                            session_id=record_session.id, has_video=has_video)
+                        
+                        db.session.add(recording)
+                        db.session.flush()
+                        recording._set_path()
+
+                        wav_path = os.path.join(dirs[3], secure_filename(info_filename))
+                
+                        zip_info.filename = '{}.wav'.format(os.path.splitext(os.path.basename(recording.fname))[0])#secure_filename(row[0])
+                        export_to_path = secure_filename('{}.webm'.format(os.path.splitext(os.path.basename(info_filename))[0]))
+                        export_to_path = os.path.join(dirs[0], export_to_path)
+                        
+                        zip.extract(zip_info, dirs[3])
+                        sound = AudioSegment.from_wav(recording.wav_path)
+                        sound.export(recording.path, format="webm")
+                        fpath_info = os.path.join(dirs[0],secure_filename(info_filename))
+                    
+                        recorder_settings = {
+                            'sampleRate': row["recording_info"]["sr"],
+                            'sampleSize': row["recording_info"]["bit_depth"],
+                            'channelCount': row["recording_info"]["num_channels"],
+                            'latency': 0,
+                            'autoGainControl': False,
+                            'echoCancellation': False,
+                            'noiseSuppression': False,
+                        }
+                        recording._set_wave_params(recorder_settings)
+                        if row['other']['recording_marked_bad'] == 'true':
+                                recording.marked_as_bad = True
+                        sessions[session_id]['duration'].append(duration)
+        for key in sessions:
+            sessions[session_id]['session'].duration = sum(sessions[session_id]['duration'])
+        db.session.commit()
+
+        for t in tokens:
+            t.save_to_disk()
+            t.update_numbers()
+        db.session.commit()
+        # then update the numbers of the collection
+        collection.update_numbers()
+        db.session.commit()
+    return collection
 
 def is_valid_rating(rating):
     if int(rating) > 0 and int(rating) <= 5:

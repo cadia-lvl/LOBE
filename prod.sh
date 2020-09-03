@@ -6,6 +6,8 @@ export SEMI_PROD=True
 
 py38/bin/python manage.py add_default_roles
 py38/bin/python manage.py add_default_configuration
+py38/bin/python manage.py add_column_defaults
+
 
 py38/bin/gunicorn -b 127.0.0.1:$PORT wsgi \
     --timeout 360 \

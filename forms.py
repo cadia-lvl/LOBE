@@ -105,6 +105,12 @@ class MosTestForm(Form):
     email = EmailField("Netfang", [validators.required()])
 
 class UploadCollectionForm(FlaskForm):
+    is_g2p = BooleanField('Staðlað form.',
+        description='Hakið við ef uphleðslan er á stöðluðu formi samanber lýsingu hér að ofan',
+        default=False)
+    is_lobe_collection = BooleanField('LOBE söfnun.',
+        description='Hakið við ef uphleðslan er LOBE söfnun á sama formi og LOBE söfnun er hlaðið niður',
+        default=False)
     name = TextField('Nafn', validators=[validators.required()])
     assigned_user_id = QuerySelectField('Rödd', query_factory=lambda: User.query,
                                         get_label='name', allow_blank=True)
@@ -116,9 +122,7 @@ class UploadCollectionForm(FlaskForm):
         ('random', 'Slembiröðun')])
     is_dev = BooleanField('Tilraunarsöfnun')
     is_multi_speaker = BooleanField("Margar raddir")
-    is_g2p = BooleanField('Staðlað form.',
-        description='Hakið við ef uphleðslan er á stöðluðu formi samanber lýsingu hér að ofan',
-        default=False)
+    
     files = FileField(validators=[FileAllowed(['zip'], 'Skrá verður að vera zip mappa'), FileRequired('Hladdu upp zip skrá')])
 
     
@@ -132,6 +136,31 @@ class UploadCollectionForm(FlaskForm):
         if field.data is not None:
             field.data = field.data.id
 
+    def validate_is_g2p(self, field):
+        if field.data:
+            if not self.is_lobe_collection.data:
+                return True
+            else:
+                raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
+        else:
+            if self.is_lobe_collection.data:
+                return True
+            else:
+                raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
+        raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
+
+    def validate_is_lobe_collection(self, field):
+        if field.data:
+            if not self.is_g2p.data:
+                return True
+            else:
+                raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
+        else:
+            if self.is_g2p.data:
+                return True
+            else:
+                raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
+        raise ValidationError('Velja verður annað hvort staðlað form EÐA LOBE söfnun')
         
 class CollectionForm(Form):
     name = TextField('Nafn', validators=[validators.required()])

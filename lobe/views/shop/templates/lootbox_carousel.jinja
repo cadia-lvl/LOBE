@@ -1,0 +1,85 @@
+
+    <!--Large screen Carousel Wrapper-->
+    <div id="{{type}}-carousel-large" class="carousel slide carousel-multi-item d-lg-block d-none" style="margin-bottom:40px" data-interval="false">
+
+        <div class="row justify-content-center justify-content-md-center">
+            <div class="col align-self-center">
+                <a href="#{{type}}-carousel-large" data-slide="prev">
+                    <i class="fas fa-chevron-left fa-2x" style="color: #ffee58"></i>
+                </a>
+            </div>
+
+            <div class="carousel-inner col-9" role="listbox" >
+                {% for item_set in items | batch(1, '&nbsp;') %}
+                    <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
+                        {% for item in item_set %}
+                            {% if item is not none%}
+                                <div class="col-12 col-md-8 offset-md-2" style="float:left">
+                                    {%if item.__class__.__name__ == 'VerifierIcon'%}
+                                        {{macros.icon_card(item, true, current_user)}}
+                                    {% elif item.__class__.__name__ == 'VerifierTitle' %}
+                                        {{macros.title_card(item, true, current_user)}}
+                                    {% elif item.__class__.__name__ == 'VerifierQuote' %}
+                                        {{macros.slogan_card(item, true, current_user)}}
+                                    {%endif%}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="col align-self-center">
+                <a class="float-right" href="#{{type}}-carousel-large" data-slide="next">
+                    <i class="fas fa-chevron-right fa-2x" style="color: #ffee58"></i>
+                </a>
+            </div>
+
+        </div>
+        <!--Indicators-->
+        <ol class="carousel-indicators">
+            {% for item in items | batch(1, none) %}
+                <li data-target="#{{type}}-carousel-large" data-slide-to="{{loop.index0}}" class="{% if loop.index0 == 0 %}active{% endif%}"></li>
+            {% endfor %}
+        </ol>
+    </div>
+
+
+    <!--Small screen Carousel wrapper-->
+
+    <div id="{{type}}-carousel-small" class="carousel slide carousel-multi-item d-sm-block d-lg-none" style="margin-bottom:30px" data-interval="false">
+
+        <div class="row justify-content-md-center">
+            <div class="col-1 align-self-center">
+                <a href="#{{type}}-carousel-small" data-slide="prev"><i class="fas fa-chevron-left fa-2x" style="color: #ffee58">></i></a>
+            </div>
+            <div class="carousel-inner col-10" role="listbox" >
+                {% for item_set in items | batch(1, '&nbsp;') %}
+                    <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
+                        {% for item in item_set %}
+                            {% if item is not none%}
+                                <div class="col-12 col-md-8 offset-md-2" style="float:left">
+                                    {%if item.__class__.__name__ == 'VerifierIcon'%}
+                                        {{macros.icon_card(item, true, current_user)}}
+                                    {% elif item.__class__.__name__ == 'VerifierTitle' %}
+                                        {{macros.title_card(item, true, current_user)}}
+                                    {% elif item.__class__.__name__ == 'VerifierQuote' %}
+                                        {{macros.slogan_card(item, true, current_user)}}
+                                    {%endif%}
+                                </div>
+                            {%endif%}
+                        {%endfor%}
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="col-1 align-self-center">
+                <a class="float-right" href="#{{type}}-carousel-small" data-slide="next"><i class="fas fa-chevron-right fa-2x" style="color: #ffee58"></i></a>
+            </div>
+
+        </div>
+        <!--Indicators-->
+        <ol class="carousel-indicators">
+            {% for item in items %}
+                <li data-target="#{{type}}-carousel-small" data-slide-to="{{loop.index0}}" class="{%if loop.index0 == 0%}active{% endif%}"></li>
+            {% endfor %}
+        </ol>
+    </div>

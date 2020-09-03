@@ -1,0 +1,465 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>{{conf.printable_name}}</h1>
+        </div>
+        <div class='col-12'>
+            {% if current_user.is_admin() %}
+                <button type='button' data-toggle='modal', data-target='#deleteModal' class='btn btn-secondary text-danger btn-sm float-right mb-2 ml-2'>
+                    {{macros.btn_icon('trash', 'r')}}
+                    Eyða
+                </button>
+                <button type='button' onclick="testConstraints(0);", data-toggle='modal', data-target='#testModal' class='btn btn-secondary btn-sm float-right mb-2 ml-2'>
+                    {{macros.btn_icon('vial', 'r')}}
+                    Prófa
+                </button>
+
+                <a href='{{conf.edit_url}}' class='btn btn-secondary text-warning btn-sm mb-2 float-right'>
+                    {{macros.btn_icon('edit', 'r')}}
+                    Breyta
+                </a>
+            {% endif %}
+        </div>
+        <div class='col-12'>
+            <h4 class='font-weight-bold'>Grunnstillingar</h4>
+            <table class='table'>
+                <tbody>
+                    <tr>
+                        <td>Setningar í lotu</td>
+                        <td class='text-right'><code>{{conf.session_sz}} setningar</code></td>
+                    </tr>
+                    <tr>
+                        <td>Nota talgreini</td>
+                        <td class='text-right'>
+                            {% if conf.live_transcribe %}
+                                <span class='text-success'>{{macros.btn_icon('check', '')}}</span>
+                            {% else %}
+                                <span class='text-danger'>{{macros.btn_icon('times', '')}}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Sýna viðmót hljóðnema</td>
+                        <td class='text-right'>
+                            {% if conf.visualize_mic %}
+                                <span class='text-success'>{{macros.btn_icon('check', '')}}</span>
+                            {% else %}
+                                <span class='text-danger'>{{macros.btn_icon('times', '')}}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Sjálfvirk gæðastjórnun</td>
+                        <td class='text-right'>
+                            {% if conf.analyze_sound %}
+                                <span class='text-success'>{{macros.btn_icon('check', '')}}</span>
+                            {% else %}
+                                <span class='text-danger'>{{macros.btn_icon('times', '')}}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Sjálfvirk klipping</td>
+                        <td class='text-right'>
+                            {% if conf.auto_trim %}
+                                <span class='text-success'>{{macros.btn_icon('check', '')}}</span>
+                            {% else %}
+                                <span class='text-danger'>{{macros.btn_icon('times', '')}}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class='col-12'>
+            <h4 class='font-weight-bold'>Upptökustillingar</h4>
+            <table class='table'>
+                <tbody>
+                    <tr>
+                        <td>Fjöldi rása</td>
+                        <td class='text-right'><code>{{conf.channel_count}}</code></td>
+                    </tr>
+                    <tr>
+                        <td>Upptökutíðni</td>
+                        <td class='text-right'><code>{{conf.sample_rate}} Hz</code></td>
+                    </tr>
+                    <tr>
+                        <td>Úrtaksstærð</td>
+                        <td class='text-right'><code>{{conf.sample_size}} bitar</code></td>
+                    </tr>
+                    <tr>
+                        <td>Bútastærð á upptöku</td>
+                        <td class='text-right'><code>{{conf.blob_slice}} ms</code></td>
+                    </tr>
+                    <tr>
+                        <td>Merkjamál</td>
+                        <td class='text-right'><code>{{conf.audio_codec}}</code></td>
+                    </tr>
+                    <tr>
+                        <td>Sjálfvirk hljóðstyrksstýring</td>
+                        <td class='text-right'>
+                            {% if conf.auto_gain_control %}
+                                <span class='text-success'>{{macros.btn_icon('check', '')}}</span>
+                            {% else %}
+                                <span class='text-danger'>{{macros.btn_icon('times', '')}}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Dempun bakgrunnshljóðs</td>
+                        <td class='text-right'>
+                            {% if conf.noise_suppression %}
+                                <span class='text-success'>{{macros.btn_icon('check', '')}}</span>
+                            {% else %}
+                                <span class='text-danger'>{{macros.btn_icon('times', '')}}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class='col-12'>
+            <h4 class='font-weight-bold'>Gæðastjórnunarstillingar</h4>
+            <table class='table'>
+                <tbody>
+                    <tr>
+                        <td>Lágmarkshljóð sem markar þögn</td>
+                        <td class='text-right'><code>{{conf.trim_threshold}} dB</code></td>
+                    </tr>
+                    <tr>
+                        <td>Lágmarkshljóð fyrir gæðastjórnun</td>
+                        <td class='text-right'><code>{{conf.too_low_threshold}}</code></td>
+                    </tr>
+                    <tr>
+                        <td>Hámarkshljóð fyrir gæðastjórnun</td>
+                        <td class='text-right'><code>{{conf.too_high_threshold}}</code></td>
+                    </tr>
+                    <tr>
+                        <td>Lágmarksfjöldi hárra ramma</td>
+                        <td class='text-right'><code>{{conf.too_high_frames}}</code></td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class='col-12'>
+            <h4 class='font-weight-bold'>Myndbandsstillingar</h4>
+            <table class='table'>
+                <tbody>
+                    <tr>
+                        <td>Notar myndbandsupptökur</td>
+                        <td class='text-right'>
+                            {% if conf.has_video %}
+                                <span class='text-success'>{{macros.btn_icon('check', '')}}</span>
+                            {% else %}
+                                <span class='text-danger'>{{macros.btn_icon('times', '')}}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Víddir myndbandsupptöku</td>
+                        <td class='text-right'><code>{{conf.video_w}} x {{conf.video_h}} pixlar</code></td>
+                    </tr>
+                    <tr>
+                        <td>Merkjamál myndbands</td>
+                        <td class='text-right'><code>{{conf.video_codec}}</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class='col-12'>
+            <h4 class='font-weight-bold'>Afleidd gildi</h4>
+            <table class='table'>
+                <tbody>
+                    <tr>
+                        <td>
+                            Mime Type
+                            <button type='button' class='btn btn-link btn-sm' data-toggle='modal', data-target='#mimeModal'>
+                                {{macros.btn_icon('question-circle')}}
+                            </button>
+                        </td>
+                        <td class='text-right'>
+                            <code>{{conf.mime_type}}</code>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block modals %}
+    <div class="modal fade" id='deleteModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Þú ert við það að eyða stillingum!</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                {% if collections is not none %}
+                    <p>Eftirfarandi safnanir nota þessar stillingar:</p>
+                    <ul>
+                        {% for collection in collections %}
+                            <li>{{collection.name}}</li>
+                        {% endfor %}
+                    </ul>
+                    <p>Ef þessum stillingum er eitt þá þarf að velja nýjar stillingar fyrir
+                        þessar safnanir til þess að halda áfram að taka upp í þeim.
+                    </p>
+                {% endif %}
+                <p>Ertu viss um að þú viljir eyða þessum stillingum?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                <a href={{conf.delete_url}} class='btn btn-danger'>
+                    Eyða
+                    {{macros.btn_icon('times', 'l')}}
+                </a>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id='mimeModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Mime Type</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        Mime type segir til um hvers konar skjal við búum til þegar við tökum upp. Við tilgreinum:
+                    </p>
+                    <ul>
+                        <li>Hvers konar gögn verða í skjalinu: audio eða video</li>
+                        <li>Hvers konar skjal verður notað: t.d. .webm eða .wav</li>
+                        <li>Hvaða merkjamál er notað til að kóða gögnin í skjalinu: t.d. opus eða pcm</li>
+                    </ul>
+                    <p>
+                        Við notum <a href='https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder'><code>Web API MediaRecorder</code></a> til að taka
+                        upp hljóð og mynd. <code>Mediarecorder</code> hluturinn tekur við hljóð eða myndbandstraum sem er framkallaður með
+                        <a href='https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia'><code>MediaDevices.getUserMedia()</code></a>. Ásamt
+                        straumnum tekur <code>MediaRecorder</code> við <code>options</code> hlut sem inniheldur upplýsingar um hvers konar gögn á að taka upp,
+                        þar á meðal <code>mime_type</code>.
+                        <code>MediaRecorder</code> reynir að öðru leiti að hlíða þeim þvingunum sem sett eru á upptökustrauminn sem <code>MediaRecorder</code>
+                        tekur inn.
+                    </p>
+                    <p>Hægt er að lesa meira <a href='https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder'>hér</a>.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id='blobModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Blob Type</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id='mimeModal' tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Mime Type</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id='testModal' tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Hljóðstillingarprufa</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class='font-weight-bold'>Niðurstöður</p>
+                <div class='table-responsive'>
+                    <table class='table table-borderless'>
+                        <thead>
+                            <th></th>
+                            <th>Valið gildi</th>
+                            <th>Gildi í boði</th>
+                            <th>Notað gildi</th>
+                            <th></th>
+                        </thead>
+                        <tbody id='constraintTable'>
+                        </tbody>
+                    </table>
+                    <table class='table table-borderless'>
+                        <tbody>
+                            <tr>
+                                <td>Tegund miðlunarskjals <code id='mimeType' class='ml-3'></code></td>
+                                <td class='text-right'><i class='fa' id='mimeTypeSuccess'></i></td>
+                            <tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class='font-italic'>Athugið að stundum telur vafri að ákveðin gildi séu studd án þess þó að svo sé.
+                    Þetta á sérstaklega við um upptökutíðni.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+            </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <script src='{{url_for("recording.static", filename="js/recorder.js")}}'></script>
+    <script>
+        const confs = [{{conf.json}}];
+        const constraintTable = document.querySelector("#constraintTable");
+        const mimeType = document.querySelector('#mimeType');
+        const mimeTypeSuccess = document.querySelector('#mimeTypeSuccess');
+        const keyToIce = {
+            autoGainControl: "Sjálfvirk hljóðstýring",
+            noiseSuppression: "Dempun bakgrunnshljóðs",
+            sampleRate: "Upptökutíðni (Hz)",
+            sampleSize: "Sýnisstærð (bitar)",
+            channelCount: "Fjöldi hljóðrása"
+        }
+        let stream;
+        let audioCtx;
+        let constraintResults, mimeTypeInfo;
+
+        async function testConstraints(i){
+            try{
+                await init(confs[i].media_constraints);
+                async function init(constraints) {
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                }
+            } catch(e){
+                if (e instanceof OverconstrainedError){
+                    console.log(`Villa kom upp í Media Constraints. Of hátt gildi á ${e.constraint}, ${e.message}, ${e.stack}`);
+                } else{
+                    console.log(e);
+                }
+            }
+
+            [constraintResults, mimeTypeInfo] = await testMediaRecorder({mimeType: confs[i].mime_type},
+                stream, confs[i].media_constraints);
+            stream.getAudioTracks()[0].stop();
+
+            setConstraintTable(constraintResults);
+            setMimeTypeInfo(mimeTypeInfo);
+        }
+
+        function setConstraintTable(results){
+            var i = 0;
+            let row, cell;
+            constraintTable.innerHTML = '';
+            for(var key in results){
+                row = constraintTable.insertRow(i);
+
+                cell = row.insertCell(0);
+                cell.innerHTML = keyToIce[key];
+
+                cell = row.insertCell(1);
+                cell.innerHTML = constraintTd(results[key].constraint);
+
+                cell = row.insertCell(2);
+                cell.innerHTML = capabilityTd(results[key].capability);
+
+                cell = row.insertCell(3);
+                cell.innerHTML = constraintTd(results[key].setting);
+
+                cell = row.insertCell(4);
+                cell.classList.add('text-right');
+                cell.appendChild(successTd(results[key].success));
+            }
+
+            function successTd(val){
+                var elem = document.createElement('i');
+                if(val){
+                    elem.classList.add('fa', 'fa-check', 'text-success');
+                } else{
+                    elem.classList.add('fa', 'fa-times', 'text-danger');
+                }
+                return elem;
+            }
+
+            function capabilityTd(val){
+                if(Array.isArray(val)){
+                    if(val.length == 2){
+                        return "Já / Nei"
+                    } else if(val.length == 1){
+                        return boolToIce(val[0])
+                    }
+                    return val;
+                } else if(typeof val === 'object' && val !== null){
+                    if(val.min == val.max){
+                        return val.min;
+                    }
+                    return `${val.min}-${val.max}`;
+                }
+                return val;
+            }
+
+            function constraintTd(val){
+                if(typeof val === "boolean"){
+                    return boolToIce(val);
+                }
+                return val;
+            }
+
+            function boolToIce(bool){
+                if(bool){return 'Já'}
+                return "Nei";
+            }
+
+        }
+
+        function setMimeTypeInfo(info){
+            mimeType.innerHTML = info.constraint;
+            if(info.success){
+                mimeTypeSuccess.classList.add('text-success','fa-check');
+            } else{
+                mimeTypeSuccess.classList.add('text-danger', 'fa-times');
+            }
+        }
+
+    </script>
+{% endblock %}

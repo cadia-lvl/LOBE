@@ -16,12 +16,13 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from termcolor import colored
 from collections import defaultdict
 
-from app import app, db, user_datastore
-from models import (Recording, Token, User, Role, Collection, Configuration,
-                    Session, VerifierProgression, VerifierIcon, VerifierQuote,
-                    VerifierTitle)
-from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low
-from db import get_verifiers
+from lobe import app
+from lobe.models import (Recording, Token, User, Role, Collection,
+                         Configuration, Session, VerifierProgression,
+                         VerifierIcon, VerifierQuote, VerifierTitle, db)
+from lobe.db import get_verifiers
+from lobe.tools.analyze import (load_sample, signal_is_too_high,
+                                signal_is_too_low)
 
 migrate = Migrate(app, db)
 manager = Manager(app)
@@ -87,7 +88,7 @@ class AddUser(Command):
             selected_roles.append(Role.query.get(role_select).name)
         with app.app_context():
             try:
-                user_datastore.create_user(
+                app.user_datastore.create_user(
                     email=email, password=hash_password(password),
                     name=name, roles=selected_roles)
                 db.session.commit()

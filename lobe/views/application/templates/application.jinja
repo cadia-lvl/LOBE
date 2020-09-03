@@ -1,0 +1,101 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row mb-3'>
+        <div class='col-12 mb-3'>
+            <h1 class='font-weight-bold'>{{application.name}}</h1>
+            <p>
+                <span>Netfang:</span>
+                <span>{{application.email}}</span>
+            </p>
+        </div>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-7'>
+                    <p>Sótt um þann:</p>
+                </div>
+                <div class='col-5 text-right'>
+                    <p>{{application.created_at | datetime(format='low')}}</p>
+                </div>
+                <div class='col-7'>
+                    <p>Kyn:</p>
+                </div>
+                <div class='col-5 text-right'>
+                    <p>{{application.sex}}</p>
+                </div>
+                <div class='col-7'>
+                    <p>Aldur:</p>
+                </div>
+                <div class='col-5 text-right'>
+                    <p>{{application.age}} ára</p>
+                </div>
+            </div>
+        </div>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-7'>
+                    <p>Rödd:</p>
+                </div>
+                <div class='col-5 text-right'>
+                    <p>{{application.voice}}</p>
+                </div>
+                <div class='col-7'>
+                    <p>Sími:</p>
+                </div>
+                <div class='col-5 text-right'>
+                    <p>{{application.phone}}</p>
+                </div>
+                <div class='col-7'>
+                    <p>Notandi:</p>
+                </div>
+                <div class='col-5 text-right'>
+                    {% if application.user_id %}
+                        <p><a href='{{application.user_url}}'>{{application.user_id}}</a></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class='row mb-3'>
+        <div class='col-12'>
+            {% if current_user.is_admin() %}
+                <button class='btn btn-secondary text-danger float-right' data-toggle='modal', data-target='#deletePostingModal'>
+                    {{macros.btn_icon('trash', 'r')}} Eyða
+                </button>
+            {% endif %}
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Upptökur</h3>
+        </div>
+        <div class='col-12'>
+            {% if recordings.total > 0 %}
+                {% with recordings=recordings.items %}
+                    {% include 'recording_table.jinja'%}
+                {% endwith %}
+            {% else %}
+                <div class='jumbotron'>
+                    <h3 class='font-weight-bold'>
+                        <span class='text-warning'>
+                            <i class='fa fa-exclamation-triangle'></i>
+                        </span>
+                        Engar upptökur
+                    </h3>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% if recordings.total > 0 %}
+        <div class='row mt-3'>
+            <div class='col-12'>
+                {{macros.pagination(recordings, url_for("user.user_detail", id=application.user_id))}}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+{% block modals %}
+    {% include 'modals/delete_application.jinja' %}
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+{% endblock %}

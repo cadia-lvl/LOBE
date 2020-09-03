@@ -1,0 +1,31 @@
+{% extends "_list.jinja" %}
+{% block title %}Lotur úr {{collection.name}}-söfnunni{% endblock %}
+{% block total %}{{sessions.total}}{% endblock %}
+{% block buttons %}
+    <a href='{{url_for("collection.collection_detail", id=collection.id)}}' class='btn btn-secondary float-right mr-2'>
+        {{macros.btn_icon('arrow-left', 'r')}}
+        Til baka í söfnun
+    </a>
+{% endblock %}
+{% block table %}
+    {% if sessions.total > 0 %}
+        {% with sessions=sessions.items %}
+            {% include 'session_table.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if sessions.total > 0 %}
+        {{macros.pagination(sessions, url_for('collection.collection_sessions', id=collection.id))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if sessions.total == 0 %}
+        {{macros.no_results("Engar lotur",
+            "Til að sjá lotur þarf fyrst að taka upp í söfnuninni.",
+            url_for('collection.collection_detail', id=collection.id),
+            "Til baka")}}
+    {% endif %}
+{% endblock %}

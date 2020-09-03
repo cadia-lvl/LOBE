@@ -1,0 +1,107 @@
+<div class='table-responsive'>
+    <table class='table table-sm table-no-break'>
+        <thead>
+            <th id="btn-th"></th>
+            <th>
+                Lesið þann
+                {{macros.sort_th_a('created_at', url)}}
+            </th>
+            <th>
+                Auðkenni
+                {{macros.sort_th_a('id', url)}}
+            </th>
+            <th>
+                Texti
+                {{macros.sort_th_a('token_id', url)}}
+            </th>
+            <th>
+                Lota
+                {{macros.sort_th_a('session_id', url)}}
+            </th>
+            <th>
+                Lesið af
+                {{macros.sort_th_a('user_id', url)}}
+            </th>
+            <th>
+                Texti lesinn
+            </th>
+            <th>
+                Lengd
+                {{macros.sort_th_a('duration', url)}}
+            </th>
+            <th>
+                Gæði
+            </th>
+        </thead>
+        <tbody>
+            {% for recording in recordings %}
+                <tr>
+                    <td>
+                        <audio id="audio-{{recording.id}}" src={{recording.get_download_url()}} type="audio/wav"></audio>
+                        <button type='button' class='btn btn-link btn-sm' onClick="play({{recording.id}})">
+                            <i id='playButtonIcon-{{recording.id}}' class='fa fa-play'></i>
+                        </button>
+                        <button class="btn btn-link btn-sm" type="button" data-toggle="dropdown">
+                                {{macros.btn_icon('ellipsis-h', 0)}}
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                            <a class='dropdown-item' href='{{recording.get_download_url()}}'><i class='fa fa-download'></i> Hlaða niður</a>
+                            {% if recording.marked_as_bad %}
+                                <button id='{{recording.id}}-btn' onClick='toggle_recording_bad("{{recording.get_toggle_bad_ajax()}}", "{{recording.id}}")' class='dropdown-item text-success'>
+                                    {{macros.btn_icon('check', 'r')}}
+                                    Merkja sem góð
+                                </button>
+                            {% else %}
+                                <button id='{{recording.id}}}-btn' onClick='toggle_recording_bad("{{recording.get_toggle_bad_ajax()}}", "{{recording.id}}")' class='dropdown-item text-warning'>
+                                    {{macros.btn_icon('times', 'r')}}
+                                    Merkja sem léleg
+                                </button>
+                            {% endif%}
+                            {% if current_user.is_admin() %}
+                                <a class="dropdown-item text-danger" href="{{url_for('recording.delete_recording', id=recording.id)}}?backref={{request.path}}">
+                                    {{macros.btn_icon('trash', 'r')}}
+                                    Eyða
+                                </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>{{recording.created_at | datetime(format='low')}}</td>
+                    <td><a id="{{recording.id}}-name" href={{recording.get_url()}} class='{% if recording.marked_as_bad %} text-warning {% endif %}'><code>#{{recording.id}}</code></a></td>
+                    <td>
+                    {% if recording.get_token() %}
+                        <a href="{{url_for('token.token_detail', id=recording.token.id)}}"><code>{{recording.token.get_printable_id()}}</code></a>
+                    {% else %}
+                        n/a
+                    {% endif %}
+                    </td>
+                    <td>
+                        {% if recording.session%}
+                            <a href="{{url_for('session.rec_session_detail', id=recording.session.id)}}"><code>{{recording.session.get_printable_id()}}</code></a>
+                        {% else %}
+                            n/a
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if recording.user_id %}
+                            <a href={{recording.get_user().get_url()}}>{{recording.get_user().name}}</a>
+                        {% else %}
+                            n/a
+                        {% endif %}
+                    </td>
+                    {% if recording.get_token() %}
+                        <td data-toggle="tooltip" data-placement="bottom" title="{{recording.get_token().text}}">{{recording.get_token().short_text()}}</td>
+                    {% else %}
+                        <td>n/a</td>
+                    {% endif %}
+                    <td>{{recording.get_printable_duration()}}</td>
+                    <td>
+                        {{macros.recording_verification(recording)}}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!--Can't be included in the script block here-->
+<script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>
+

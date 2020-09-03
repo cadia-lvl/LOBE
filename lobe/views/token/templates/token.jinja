@@ -1,0 +1,119 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row mb-3'>
+        <div class='col-12 mb-3'>
+            <h1 class='font-weight-bold'>{{token.get_printable_id()}}</h1>
+            <p class='mb-0'>
+                <span class='font-weight-bold'>Texti: </span>
+                <span class='font-italic'>{{token.text}}</span>
+            </p>
+            <span class='font-weight-bold'>Framburður: </span>
+            {% if token.pron %}
+                {{macros.pron_spans(token.pron_list)}}
+            {% else %}
+                <span>Ekki tilgreint</span>
+            {% endif %}
+        </div>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-5'>
+                    <p>Bætt við þann: </p>
+                </div>
+                <div class='col-7 text-right'>
+                    <p>{{token.created_at | datetime(format='low')}}</p>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-5'>
+                    <p>Upprunalegt skjal: </p>
+                </div>
+                <div class='col-7 text-right'>
+                    <code>{{token.original_fname}}</code>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-5'>
+                    <p>Núverandi skjal: </p>
+                </div>
+                <div class='col-7 text-right'>
+                    <code>{{token.fname}}</code>
+                </div>
+            </div>
+        </div>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-5'>
+                    <p>Tekið úr:</p>
+                </div>
+                <div class='col-7 text-right'>
+                    <p>{{macros.default(token.source)}}</p>
+                </div>
+                <div class='col-5'>
+                    <p>Röðunarstuðull</p>
+                </div>
+                <div class='col-7 text-right'>
+                    <p>{{token.get_printable_score()}}</p>
+                </div>
+                <div class='col-5'>
+                    <p>Í lagi: </p>
+                </div>
+                <div class='col-7 text-right'>
+                    {% if token.marked_as_bad %}
+                        <span class='text-danger'>
+                            Nei
+                            {{macros.btn_icon('times', 'l')}}
+                        </span>
+                    {% else %}
+                        <span class='text-success'>
+                            Já
+                            {{macros.btn_icon('check', 'l')}}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class='row mb-3'>
+        <div class='col-12'>
+            <a href={{token.get_download_url()}} class='btn btn-sm btn-secondary float-right ml-2 mt-2'>
+                {{macros.btn_icon('download', 'r')}} Sækja
+            </a>
+            <a href={{token.mark_bad_url}} class='btn btn-sm btn-secondary text-warning float-right ml-2 mt-2'>
+                {% if token.marked_as_bad %}
+                    {{macros.btn_icon('check', 'r')}} Afmerkja
+                {% else %}
+                    {{macros.btn_icon('times', 'r')}} Merkja
+
+                {% endif %}
+            </a>
+            {% if current_user.is_admin() %}
+                <button class='btn btn-sm btn-secondary text-danger float-right mt-2' data-toggle='modal', data-target='#deleteTokenModal'>
+                    {{macros.btn_icon('trash', 'r')}} Eyða
+                </button>
+            {% endif %}
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Upptökur</h3>
+            <p>Fjöldi: {{token.num_recordings}}</p>
+        </div>
+        <div class='col-12'>
+            {% if token.recordings %}
+                {% with recordings=token.recordings %}
+                    {% include 'recording_table.jinja'%}
+                {% endwith %}
+            {% else %}
+                {{macros.no_results("Engar upptökur",
+                    "Engar upptökur fundust fyrir þessa setningu.",
+                    icon="question-circle", type="secondary")}}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+{% block modals %}
+    {% include 'modals/delete_token.jinja' %}
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+{% endblock %}

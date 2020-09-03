@@ -1,0 +1,25 @@
+{% extends "_list.jinja" %}
+{% block title %}Upptökur{% endblock %}
+{% block total %}{{recordings.total}}{% endblock %}
+{% block table %}
+    {% if recordings.total > 0 %}
+        {% with recordings=recordings.items %}
+            {% include 'recording_table.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if recordings.total > 0 %}
+        {{macros.pagination(recordings, url_for('recording.recording_list'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if recordings.total == 0 %}
+        {{macros.no_results("Engar upptökur",
+            "Byrjaðu á að taka upp setningar í einhverri söfnun og upptökurnar birtast hér.",
+            url_for('collection.collection_list'),
+            "Safnanir")}}
+    {% endif %}
+{% endblock %}

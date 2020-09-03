@@ -1,0 +1,37 @@
+{% extends "_list.jinja" %}
+{% block title %}Safnanir{% endblock %}
+{% block total %}{{collections.total}}{% endblock %}
+{% block buttons %}
+    {% if current_user.is_admin() %}
+        <a class='btn btn-secondary text-success float-right' href='{{url_for("collection.create_collection")}}'>
+            {{macros.btn_icon('plus', 'r')}}
+            Búa til
+        </a>
+        <a class='btn btn-secondary float-right mr-2' href='{{url_for("collection.collection_zip_list")}}'>
+            {{macros.btn_icon('archive', 'r')}}
+            Skjalasöfn
+        </a>
+    {% endif %}
+{% endblock %}
+{% block table %}
+    {% if collections.total > 0 %}
+        {% with collections=collections.items %}
+            {% include 'collection_table.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if collections.total > 0 %}
+        {{macros.pagination(collections, url_for('collection.collection_list'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if collections.total == 0 %}
+        {{macros.no_results("Engar safnanir",
+            "Til að byrja að safna gögnum þarf að búa til söfnun fyrst.",
+            url_for('collection.create_collection'),
+            "Búa til")}}
+    {% endif %}
+{% endblock %}

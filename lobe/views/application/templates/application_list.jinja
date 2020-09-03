@@ -1,0 +1,25 @@
+{% extends "_list.jinja" %}
+{% block title %}Umsóknir{% endblock %}
+{% block total %}{{applications.total}}{% endblock %}
+{% block table %}
+    {% if applications.total > 0 %}
+        {% with applications=applications.items %}
+            {% include 'application_table.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if applications.total > 0 %}
+        {{macros.pagination(applications, url_for('application.applications'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if applications.total == 0 %}
+        {{macros.no_results("Engar umsóknir",
+            "Til að fá umsóknir þarf fyrst að búa til auglýsingu.",
+            url_for('application.create_posting'),
+            "Búa til auglýsingu")}}
+    {% endif %}
+{% endblock %}

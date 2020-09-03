@@ -1,0 +1,25 @@
+{% extends "_list.jinja" %}
+{% block title %}Setningar{% endblock %}
+{% block total %}{{tokens.total}}{% endblock %}
+{% block table %}
+    {% if tokens.total > 0 %}
+        {% with tokens=tokens.items %}
+            {% include 'token_table.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if tokens.total > 0 %}
+        {{macros.pagination(tokens, url_for('token.token_list'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if tokens.total == 0 %}
+        {{macros.no_results("Engar setningar",
+            "Veldu söfnun til að bæta við setningum og setningarnar birtast hér.",
+            url_for('collection.collection_list'),
+            "Safnanir")}}
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,226 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Upptaka #{{recording.id}}</h1>
+            <p class='font-weight-bold'>{{recording.get_printable_id()}}
+                {% if recording.marked_as_bad %}
+                    <span class='text-danger'>Merkt sem léleg.</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-6'><p>Tekið upp:</p></div>
+                <div class='col-6 text-right'><p>{{recording.created_at | datetime(format='low')}}</p></div>
+
+                <div class='col-6'><p>Lesið af:</p></div>
+                <div class='col-6 text-right'><p>{{recording.get_user().name | default("ekki skráð", true)}}</p></div>
+
+                <div class='col-6'><p>Lengd:</p></div>
+                <div class='col-6 text-right'><p>{{recording.get_printable_duration()}}</p></div>
+
+                <div class='col-6'><p>Texti lesinn:</p></div>
+                <div class='col-6 text-right'><p>{{recording.token.text}}</p></div>
+
+                <div class='col-6'><p>Rafrænt afrit:</p></div>
+                <div class='col-6 text-right'><p>{{recording.get_printable_transcription()}}</p></div>
+            </div>
+        </div>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-6'><p>Upptökutíðni:</p></div>
+                <div class='col-6 text-right'><p>{{recording.sr}}</p></div>
+
+                <div class='col-6'><p>Fjöldi rása:</p></div>
+                <div class='col-6 text-right'><p>{{recording.num_channels}}</p></div>
+
+                <div class='col-6'><p>Fjöldi ramma:</p></div>
+                <div class='col-6 text-right'><p>{{recording.num_frames}}</p></div>
+
+                <div class='col-6'><p>Sýnisstærð:</p></div>
+                <div class='col-6 text-right'><p>{% if recording.bit_depth %}{{recording.bit_depth}}{% else %}Ekki skráð{% endif %}</p></div>
+            </div>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <a href="{{url_for('token.token_detail', id=recording.token.id)}}" class='btn btn-sm btn-secondary float-right ml-1'>
+                {{macros.btn_icon('file', 'r')}}
+                Skoða setningu
+            </a>
+            <form method="POST" action=>
+                {% if recording.marked_as_bad %}
+                    <a href="{{url_for('recording.toggle_recording_bad', id=recording.id)}}" class='btn btn-sm btn-success float-right ml-1'>
+                        {{macros.btn_icon('check', 'r')}}
+                        Merkja sem góð
+                    </a>
+                {% else %}
+                    <a href="{{url_for('recording.toggle_recording_bad', id=recording.id)}}" class='btn btn-sm btn-secondary text-warning float-right ml-1'>
+                        {{macros.btn_icon('times', 'r')}}
+                        Merkja sem léleg
+                    </a>
+                {% endif%}
+            </form>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <div id='recordingCard' class='card mt-2'>
+                <div class='card-body'>
+                    <div id="waveform"></div>
+                </div>
+                <ul class='list-group list-group-flush'>
+                    <li class='list-group-item'>
+                        <code>{{recording.fname}}</code>
+                        <div class='btn-group float-right' role='group'>
+                            <button id='cut' type='button' class='btn btn-secondary btn-sm' disabled>
+                                <span id='cutButtonText'>Klippa</span>
+                                <i id='cutButtonIcon' class='fa fa-cut text-success ml-1'></i>
+                            </button>
+                            <button id='play' type='button' class='btn btn-secondary btn-sm'>
+                                <i id='playButtonIcon' class='fa fa-play'></i>
+                            </button>
+                            <a class="btn btn-secondary btn-sm" href='{{recording.get_download_url()}}'><i class='fa fa-download'></i></a>
+                            <a href="{{url_for('recording.delete_recording', id=recording.id)}}" type='button' class='btn btn-secondary btn-sm text-danger'>
+                                <i class='fa fa-trash'></i>
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% if recording.has_video%}
+        <div class='row mt-2'>
+            <div class='col-12'>
+                <video playsinline src={{recording.get_download_url()}} style='border-radius: 0.25rem;'>
+                </video>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+{% block modals %}
+
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/3.3.3/wavesurfer.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.regions.min.js"></script>
+    <script src='{{url_for("recording.static", filename="js/surf.js")}}'></script>
+    <script>
+        //TODO: add region support on playback and reconsider wavesurfer + video binding
+        const playButtonIcon = document.querySelector('#playButtonIcon');
+        const cutButton = document.querySelector('button#cut');
+        const cutButtonIcon = document.querySelector('#cutButtonIcon');
+        const cutButtonText = document.querySelector('#cutButtonText');
+        const video = document.querySelector('video');
+        let start = 0;
+        let end = 0;
+        let newCut = false;
+
+        {% if recording.has_video %}
+            // Does not currently support trimming
+            let wavesurfer = createSimpleWaveSurfer('#waveform', true, playButtonIcon);
+        {% else %}
+            let wavesurfer = createRecordWaveSurfer('#waveform', false, playButtonIcon);
+            wavesurfer.on('region-update-end', function(){
+                setCut();
+                newCut = true;
+                setCutButtonUI();
+            });
+
+        {% endif %}
+
+        wavesurfer.load("{{recording.get_download_url()}}");
+        if(typeof {{recording.start}} === 'number' && typeof {{recording.end}} == 'number'){
+            // recording has been trimmed, disable cut button
+            wavesurfer.addRegion({
+                color: "rgba(243, 156, 18, 0.1)",
+                start: {{recording.start}},
+                end: {{recording.end}}});
+            setCut();
+        }
+        setCutButtonUI();
+
+        document.querySelector('button#play').addEventListener('click', function(){
+            if(wavesurfer.isPlaying()){
+                wavesurfer.pause();
+            } else{
+                wavesurfer.play();
+                video.play();
+            }
+        })
+
+        cutButton.addEventListener('click', async function(){
+            if(hasCut){
+                if(newCut){
+                    await sendCut('{{url_for("recording.cut_recording", id=recording.id)}}');
+                    newCut = false;
+                } else{
+                    // we are deleting a cut
+                    await sendCutDelete('{{url_for("recording.cut_recording", id=recording.id)}}');
+                    wavesurfer.clearRegions();
+                    start = 0;
+                    end = 0;
+                }
+            };
+            setCutButtonUI();
+        })
+
+        function hasCut(){
+            return start !== end;
+        }
+
+        function setCut(){
+            var region = wavesurfer.regions.list[Object.keys(wavesurfer.regions.list)[0]];
+            start = region.start;
+            end = region.end;
+        }
+
+        function setCutButtonUI(){
+            if(hasCut()){
+                if(newCut){
+                    // we have a cut that is new
+                    cutButton.disabled = false;
+                } else{
+                    // else we allow for deleting cut
+                    cutButtonIcon.classList.remove('text-success');
+                    cutButtonIcon.classList.add('text-danger');
+                    cutButtonText.innerHTML = 'Afklippa';                }
+                    cutButton.disabled = false;
+            } else{
+                // we don't have any cut
+                cutButtonIcon.classList.remove('text-danger');
+                cutButtonIcon.classList.add('text-success');
+                cutButtonText.innerHTML = 'Klippa';
+                cutButton.disabled = true;
+            }
+        };
+
+        function sendCut(postURL){
+            var msg = "";
+            var fd = new FormData();
+            fd.append("start", start);
+            fd.append("end", end);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', postURL, false);
+            xhr.send(fd);
+            return msg;
+        }
+
+        function sendCutDelete(postURL){
+            var msg = "";
+            var fd = new FormData();
+            fd.append("start", -1);
+            fd.append("end", -1);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', postURL, false);
+            xhr.send(fd);
+            return msg;
+        }
+
+    </script>
+{% endblock %}

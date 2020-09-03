@@ -1,0 +1,31 @@
+{% extends "_list.jinja" %}
+{% block title %}Stillingar{% endblock %}
+{% block total %}{{confs.total}}{% endblock %}
+{% block buttons %}
+    <a href="{{url_for('configuration.create_conf')}}" class='btn btn-secondary text-success float-right'>
+        {{macros.btn_icon('plus', 'r')}}
+        Búa til
+    </a>
+{% endblock %}
+{% block table %}
+    {% if confs.total > 0 %}
+        {% with confs=confs.items %}
+            {% include 'conf_table.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if confs.total > 0 %}
+        {{macros.pagination(confs, url_for('configuration.conf_list'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if confs.total == 0 %}
+        {{macros.no_results("Engar stillingar",
+            "Til að taka upp söfnun þarf að skilgreina stillingar",
+            url_for('configuration.create_conf'),
+            "Búa til")}}
+    {% endif %}
+{% endblock %}

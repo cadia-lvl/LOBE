@@ -1,0 +1,68 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h2 class='font-weight-bold'>Tímaskýrsla</h2>
+            <h3>{{user.name if user.name != None else 'Ekki skráð'}}</h3>
+            <a href="{{url_for('user.user_detail', id=user.id)}}" class='btn btn-secondary text-success float-right'>
+                Notandi
+                {{macros.btn_icon('arrow-right', 'l')}}
+            </a>
+        </div>
+        <div class='col-12'>
+            <hr>
+        </div>
+        <div class='col-12'>
+            <p class='font-weight-bold'>Áætlaður heildarvinnutími: {{total_est_work_time}}</p>
+            <p>Tími í upptökum: {{total_session_duration}}</p>
+            <small class='float-right'>(*) <span class='font-italic'>Athugið að vinnutími er áætlaður með því að reikna út tímann á milli upphafs fyrstu lotu og lok seinustu lotu hvers dags</span></small>
+        </div>
+        <div class='col-12'>
+            <hr>
+        </div>
+    </div>
+    <div class='row'>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Dagar</h3>
+        </div>
+        <div class='col-12'>
+            <div class='table-responsive'>
+                <table class='table'>
+                    <thead>
+                        <th>Dagsetning</th>
+                        <th>Upphaf <br> kk:mm</th>
+                        <th>Endir <br> kk:mm</th>
+                        <th>Tími í upptökum <br> kk:mm:ss</th>
+                        <th>Áætlaður vinnutími <br> kk:mm:ss</th>
+                        <th>Lotufjöldi</th>
+                        <th>Hlutverk</th>
+                    </thead>
+                    <tbody>
+                        {% for day, info in day_info.items() %}
+                            <tr>
+                                <td>{{day | datetime(format='low')}}</td>
+                                <td>{{info.start_time | datetime(format='hm')}}</td>
+                                <td>{{info.end_time | datetime(format='hm')}}</td>
+                                <td>{{info.session_duration}}</td>
+                                <td>{{info.est_work_time}}</td>
+                                <td>{{info.sessions|length}}</td>
+                                <td>
+                                    {% if info.role == 'voice' %}
+                                        Rödd
+                                        {{macros.btn_icon('microphone', 'l')}}
+                                    {% elif info.role == 'manager' %}
+                                        Stjórnandi
+                                        {{macros.btn_icon('tv', 'l')}}
+                                    {% else %}
+                                        Bæði
+                                        {{macros.btn_icon('question', 'l')}}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "_list.jinja" %}
+{% block title %}Auglýsingar{% endblock %}
+{% block total %}{{postings.total}}{% endblock %}
+{% block buttons %}
+    {% if current_user.is_admin() %}
+        <a class='btn btn-secondary text-success float-right' href='{{url_for("application.create_posting")}}'>
+            {{macros.btn_icon('plus', 'r')}}
+            Búa til
+        </a>
+    {% endif %}
+{% endblock %}
+{% block table %}
+    {% if postings.total > 0 %}
+        {% with postings=postings.items %}
+            {% include 'posting_table.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if postings.total > 0 %}
+        {{macros.pagination(postings, url_for('application.postings'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if postings.total == 0 %}
+        {{macros.no_results("Engar auglýsingar",
+            "Ekki er búið að búa til neinar auglýsingar.",
+            url_for('application.create_posting'),
+            "Búa til auglýsingu")}}
+    {% endif %}
+{% endblock %}

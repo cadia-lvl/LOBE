@@ -1,0 +1,427 @@
+{% extends "__base.jinja" %}
+{% block headscripts %}
+    {{super()}}
+    <script src='{{url_for("main.static", filename="js/plotly-latest.min.js")}}'></script>
+{% endblock %}
+{% block body %}
+    <div class='row'>
+        <div class='col-12'>
+            <h1 class='font-weight-bold'>Gagnagreining</h1>
+        </div>
+
+        <div class='col-12'>
+            <a href="{{url_for('verification.verify_queue')}}" class='btn btn-success float-right'>
+                Greina
+                {{macros.btn_icon('arrow-right', 'l')}}
+            </a>
+            {% if current_user.progression.fire_sale %}
+                <a href="{{url_for('shop.lobe_shop')}}" class='btn btn-danger float-right mr-2'
+                    style='animation-name: small-stretch;
+                            animation-duration: 0.7s;
+                            animation-timing-function: ease-out;
+                            animation-delay: 0;
+                            animation-direction: alternate;
+                            animation-iteration-count: infinite;
+                            animation-fill-mode: none;
+                            animation-play-state: running;'>
+                    ÚTSALA
+                    {{(100*current_user.progression.fire_sale_discount)|int}} %
+                </a>
+            {% else %}
+                <a href="{{url_for('shop.lobe_shop')}}" class='btn btn-secondary text-warning float-right mr-2'>
+                    Búðin
+                    {{macros.btn_icon('coins', 'l')}}
+                </a>
+            {% endif %}
+        </div>
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Greinendur</h3>
+            <p>
+                <i class='fa fa-crown text-warning mr-2'></i>
+                <span>Sá sem er með flestar greiningar í vikunni fær: </span>
+                <span class='text-warning'>
+                    {{config.ECONOMY.weekly_challenge.best_coin_reward}}
+                    <i class='fa fa-coins ml-1'></i>
+                </span>
+                <span style="color: {{config.COLORS.diamond}}">
+                    {{config.ECONOMY.weekly_challenge.best_experience_reward}}
+                    <i class='fa fa-gem ml-1'></i>
+                </span>
+            </p>
+            <div class='table-responsive'>
+                <table class='table table-sm table-striped'>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                            <th style="color: {{config.COLORS.diamond}}; text-align:right;">Demantar</th>
+                            <th style='text-align:right;'>Greiningar í vikunni</th>
+                            <th style='text-align:right;'>Heildargreiningar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for verifier in verifiers %}
+                            <tr>
+                                <td style='vertical-align:middle;'>
+                                    <div class='ml-2'>
+                                        {% if verifier.progression.equipped_icon.title %}
+                                            {{macros.verifier_icon(verifier.progression.equipped_icon.fa_id, verifier.progression.equipped_icon.color, '2x')}}
+                                        {% else %}
+                                            {{macros.verifier_icon('fa fa-user', '#fff', '2x')}}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td style='vertical-align:middle;'>
+                                    <p class='mb-0'>
+                                        <a href="#" data-toggle="modal" data-target="#userModal-{{verifier.id}}">
+                                            {{verifier.progression.equipped_title.title}}
+                                            {{verifier.name}}
+                                        </a>
+                                        {% if loop.index == 1 %}
+                                            <span class='ml-2'><i class='fa fa-crown text-warning'></i></span>
+                                        {% endif %}
+                                    </p>
+                                    <p class='mb-0'>
+                                        <small class='font-italic'>
+                                            {% if verifier.progression.equipped_quote.quote %}
+                                                {{verifier.progression.equipped_quote.quote}}
+                                            {% else %}
+                                                Ég var að byrja að greina!
+                                            {% endif %}
+                                        </small>
+                                    </p>
+                                </td>
+                                <td style='vertical-align:middle; text-align:right;'>
+                                    <span class='font-weight-bold' style="color: {{config.COLORS.diamond}}">
+                                        {{verifier.progression.experience}}
+                                        <i class='fa fa-gem ml-1'></i>
+                                    </span>
+                                </td>
+                                <td style='vertical-align:middle; text-align:right;'>{{verifier.progression.weekly_verifies}}</td>
+                                <td style='vertical-align:middle; text-align:right;'>{{verifier.progression.num_verifies}}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class='col-12 mt-3'>
+            <h3 class='font-weight-bold'>Vikulegt markmið hópsins</h3>
+            {% if weekly_verifies < config.ECONOMY.weekly_challenge.goal %}
+                <p>
+                    Í þessari viku ætlum við að reyna að greina {{config.ECONOMY.weekly_challenge.goal}} upptökur.
+                    <br>
+                    Verðlaun eru gefin út á þriðjudögum.
+                    <span class=float-right>
+                        <span class='mr-2'><i class='fa fa-circle text-warning'></i> : Aðrir</span>
+                        <span><i class='fa fa-circle text-success'></i> : Þú</span>
+                    </span>
+                </p>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{weekly_progress}}%;"></div>
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{user_weekly_progress}}%;"></div>
+                </div>
+                <p class='mt-2'>Verðlaun:
+                    <span class='text-warning'>
+                        {{config.ECONOMY.weekly_challenge.coin_reward}}
+                        <i class='fa fa-coins ml-1'></i>
+                    </span>
+                    <span style="color: {{config.COLORS.diamond}}">
+                        {{config.ECONOMY.weekly_challenge.experience_reward}}
+                        <i class='fa fa-gem ml-1'></i>
+                    </span>
+                    <span class='float-right'>{{weekly_verifies}}/{{config.ECONOMY.weekly_challenge.goal}}</span>
+                </p>
+            {% else %}
+                <p>
+                    Til hamingju, hópurinn hefur náð vikulega markmiðinu!
+                    <br>
+                    Fyrir hverjar {{config.ECONOMY.weekly_challenge.extra_interval}} aukagreiningar fær hópurinn aukaverðlaun.
+                </p>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{weekly_progress}}%;"></div>
+                </div>
+                <p class='mt-2'>Verðlaun:
+                    <span class='text-warning'>
+                        {{config.ECONOMY.weekly_challenge.extra_coin_reward}}
+                        <i class='fa fa-coins ml-1'></i>
+                    </span>
+                    <span style="color: {{config.COLORS.diamond}}">
+                        {{config.ECONOMY.weekly_challenge.extra_experience_reward}}
+                        <i class='fa fa-gem ml-1'></i>
+                    </span>
+                    <span class='float-right'>{{weekly_verifies}}</span>
+                </p>
+            {% endif %}
+        </div>
+
+        <div class='col-12 mt-3 mb-3'>
+            <h3 class='font-weight-bold'>Markmið</h3>
+            <p>Önnur markmið og afrek til að fá fleiri aura og demanta.</p>
+            <div class='row'>
+                <div class='col-xl-4 col-md-4 col-sm-6 col-12 d-flex align-items-stretch mb-2'>
+                    {% with category=config.ECONOMY.achievements.verification, level=current_user.progression.verification_level, progress=verification_progress, type='verification', color='success' %}
+                        {% include 'achievement_card.jinja' %}
+                    {% endwith %}
+                </div>
+                <div class='col-xl-4 col-md-4 col-sm-6 col-12 d-flex align-items-stretch mb-2'>
+                    {% with category=config.ECONOMY.achievements.spy, level=current_user.progression.spy_level, progress=spy_progress, type='spy', color='warning' %}
+                        {% include 'achievement_card.jinja' %}
+                    {% endwith %}
+                </div>
+                <div class='col-xl-4 col-md-4 col-sm-6 col-12 d-flex align-items-stretch mb-2'>
+                    {% with category=config.ECONOMY.achievements.streak, level=current_user.progression.streak_level, progress=streak_progress, type='streak', color='danger' %}
+                        {% include 'achievement_card.jinja' %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+
+        <div class='col-12'>
+            <h3 class='font-weight-bold'>Yfirlit</h3>
+            <p>Svona hefur okkur gengið að greina upptökur.</p>
+            <div class='card'>
+                <div class='card-body'>
+                    <div id='tester'>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            var container = document.getElementById('tester');
+            var layout = {
+                plot_bgcolor: 'rgba(0, 0, 0, 0)',
+                paper_bgcolor: 'rgba(0, 0, 0, 0)',
+                margin: {
+                    'l': 30,
+                    'r': 30,
+                    't': 30,
+                    'b': 30
+                },
+                font: {
+                    color: 'white'
+                },
+                yaxis:{
+                    title:{
+                        text: 'Fjöldi greininga'
+                    }
+                }
+            };
+
+            var config = {
+                responsive: true
+            }
+
+            var trace = {
+                x: {{activity_days}},
+                y: {{activity_counts}},
+                fill: 'tonexty',
+                marker: {
+                }
+            };
+
+
+
+            var data = [trace];
+
+            Plotly.newPlot(container, data, layout, config);
+        </script>
+    </div>
+{% endblock %}
+
+{% block modals %}
+    {% for verifier in verifiers %}
+        <div class="modal fade" id="userModal-{{verifier.id}}" tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Notandi</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    {{macros.verifier_card(verifier)}}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    {% if show_weekly_prices %}
+        <div class="modal fade"tabindex="-1" id='weeklyPriceModal'>
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Vikuleg verðlaun</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                     <div id='revealContent'>
+                        <div class='row'>
+                            <div class='col-12 px-5'>
+                                <h3 class='text-center font-weight-bold mt-4 mb-4'>
+                                    Vikuleg verðlaun
+                                </h3>
+                            </div>
+                            <div class='col-12 text-center'>
+                                <button id='revealButton' class='btn btn-lg btn-success btn-danger rounded-pill mb-5'>
+                                    Sýna
+                                    <i class='fa fa-heart'></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id='weeklyChallengeContent' class='d-none'>
+                        <h3 class='text-center font-weight-bold'>Í þessari viku fékkstu</h3>
+                        <h4 class='text-center font-weight-bold text-warning'>
+                            {{current_user.progression.weekly_coin_price}}
+                            <i class='fa fa-gem ml-2'></i>
+                        </h4>
+                        <h4 class='text-center font-weight-bold text-danger'>
+                            {{current_user.progression.weekly_experience_price}}
+                            <i class='fa fa-coins ml-2'></i>
+                        </h4>
+                    </div>
+                </div>
+                <div class="modal-footer d-none" id='weeklyChallengeFooter'>
+                    <button type="button" class="btn btn-secondary float-right" data-dismiss="modal">Loka</button>
+                </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% if show_daily_spin %}
+        <div class="modal fade"tabindex="-1" id='wheelModal'>
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Snúðu daglega lukkuhjólinu!</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <div class='d-flex justify-content-center' style='width: 100%;'>
+                        <canvas id='canvas' width='300' height='300'>
+                            Opnaðu þennan glugga í Google Chrome til að sjá lukkuhjólið.
+                        </canvas>
+                    </div>
+                    <p id='prizeText' class='text-center d-none mt-2 mb-0'></p>
+                </div>
+                <div class="modal-footer" id='weeklyChallengeFooter'>
+                <form id="dailySpinForm" action="{{url_for('shop.claim_daily_prize')}}" method="POST">
+                    {{ daily_spin_form.prize_type }}
+                    {{ daily_spin_form.prize_value }}
+                    <button id='claimPrizeButton' type='submit' class='btn btn-success float-right d-none'>Sækja verðlaun!</button>
+                </form>
+                <button id='spinWheelButton' type="button" class="btn btn-success float-right" onClick='startSpin()'>Snúa</button>
+                <button type="button" class="btn btn-secondary float-right" data-dismiss="modal">Loka</button>
+                </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    {% if show_weekly_prices %}
+        <script src='{{url_for("shop.static", filename="js/confetti.min.js")}}'></script>
+        <script>
+            $('#weeklyPriceModal').modal('show');
+            $('#weeklyPriceModal').on('hide.bs.modal', function(e){
+                confetti.stop();
+            })
+            confetti.maxCount = 150;
+
+            $('#revealButton').click(function(){
+                $('#revealContent').addClass('d-none');
+                $('#weeklyChallengeContent').addClass('d-block');
+                $('#weeklyChallengeFooter').addClass('d-block');
+                confetti.start();
+                $('#confetti-canvas').css('z-index', 900);
+                var audio = new Audio('{{url_for("shop.static", filename="audio/weekly_challenge.wav")}}');
+                audio.volume = 0.7;
+                audio.play();
+            });
+        </script>
+    {% endif %}
+    {% if show_daily_spin %}
+        <script src='{{url_for("shop.static", filename="js/TweenMax.min.js")}}'></script>
+        <script src='{{url_for("shop.static", filename="js/Winwheel.min.js")}}'></script>
+        <script>
+            let wheel = new Winwheel({
+                'numSegments': 9,
+                'textFontSize': 15,
+                'lineWidth': 0,
+                'strokeStyle': null,
+                'outerRadius': 150,
+                'segments':
+                [
+                    {'type': 'experience', 'value': 30, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '30 demantar'},
+                    {'type': 'coin', 'value': 6, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '6 aurar',},
+                    {'type': 'experience', 'value': 500, 'textFillStyle': '{{config.COLORS.legendary}}', 'fillStyle': '{{config.COLORS.epic}}', 'text' : '500 demantar'},
+                    {'type': 'experience', 'value': 60, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '60 demantar'},
+                    {'type': 'coin', 'value': 4, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '4 aurar'},
+                    {'type': 'lootbox', 'value': null, 'textFillStyle': '{{config.COLORS.diamond}}', 'fillStyle': '{{config.COLORS.legendary}}', 'text' : 'Epískur\nslembikassi'},
+                    {'type': 'experience', 'value': 50, 'fillStyle': '{{config.COLORS.diamond}}', 'text' : '50 demantar'},
+                    {'type': 'coin', 'value': 2, 'fillStyle': '{{config.COLORS.rare}}', 'text' : '2 aurar'},
+                    {'type': 'coin', 'value': 40, 'textFillStyle': '{{config.COLORS.legendary}}', 'fillStyle': '{{config.COLORS.epic}}', 'text' : '40 aurar'},
+                ],
+                'animation' :
+                {
+                    'type'     : 'spinToStop',
+                    'duration' : 5,
+                    'spins'    : 8,
+                    'callbackFinished': givePrize
+                },
+                'pointerGuide' :        // Specify pointer guide properties.
+                {
+                    'display'     : true,
+                    'strokeStyle' : '{{config.COLORS.success}}',
+                    'lineWidth'   : 2
+                }
+            });
+
+            function startSpin(){
+                var audio = new Audio('{{url_for("shop.static", filename="audio/wheel.wav")}}');
+                audio.volume = 0.7;
+                audio.play();
+                wheel.startAnimation();
+                document.querySelector('#spinWheelButton').classList.add('d-none');
+            }
+
+            function givePrize(segment){
+                setPrizeText(segment);
+                document.querySelector('#claimPrizeButton').classList.remove('d-none');
+                document.querySelector('#prize_type').value = segment.type;
+                document.querySelector('#prize_value').value = segment.value;
+            }
+
+            function setPrizeText(segment){
+                let text = document.querySelector('#prizeText');
+                if(segment.type == 'lootbox'){
+                    text.innerHTML = 'Þú vannst slembikassa!';
+                } else if(segment.type == 'coin'){
+                    text.innerHTML = 'Þú vannst ' + segment.value + ' aura!';
+                } else if(segment.type == 'experience'){
+                    text.innerHTML = 'Þú vannst ' + segment.value + ' demanta!';
+                }
+                text.classList.remove('d-none');
+            }
+
+            $('#wheelModal').modal('show');
+        </script>
+
+    {% endif %}
+{% endblock %}
+
+

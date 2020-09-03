@@ -1,0 +1,31 @@
+{% extends "_list.jinja" %}
+{% block title %}Skjalasöfn{% endblock %}
+{% block total %}{{zips.total}}{% endblock %}
+{% block buttons %}
+    <a class='btn btn-secondary float-right' href='{{url_for("collection.collection_list")}}'>
+        {{macros.btn_icon('database', 'r')}}
+        Safnanir
+    </a>
+{% endblock %}
+{% block table %}
+    {% if zips.total > 0 %}
+        {% with zips=zips.items %}
+            {% include 'zip_table.jinja'%}
+        {% endwith %}
+    {% endif %}
+{% endblock %}
+
+{% block pagination %}
+    {% if zips.total > 0 %}
+        {{macros.pagination(zips, url_for('collection.collection_zip_list'))}}
+    {% endif %}
+{% endblock %}
+
+{% block no_results %}
+    {% if zips.total == 0 %}
+        {{macros.no_results("Engin skjalasöfn",
+            "Til að búa til skjalasafn þarf fyrst að velja söfnun og síðan velja að útbúa skjalasafn fyrir viðkomandi söfnun.",
+            url_for('collection.collection_list'),
+            "Safnanir")}}
+    {% endif %}
+{% endblock %}

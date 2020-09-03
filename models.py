@@ -152,6 +152,17 @@ class Collection(BaseModel, db.Model):
             *ESTIMATED_AVERAGE_RECORD_LENGTH/3600, 1)
 
     @hybrid_property
+    def is_closed(self):
+        return self.posting is None
+
+    def open_for_applicant(self, user_id):
+        if not self.is_closed:
+            application = Application.query.filter(Application.user_id == user_id).first()
+            if application and application.posting_id == self.posting.id:
+                return True
+        return False
+
+    @hybrid_property
     def configuration(self):
         if self.configuration_id is not None:
             return Configuration.query.get(self.configuration_id)
@@ -1100,6 +1111,11 @@ progression_font = db.Table('progression_font',
     db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
     db.Column('font_id', db.Integer(), db.ForeignKey('verifier_font.id')))
 
+progression_premium_item = db.Table('progression_premium_item',
+    db.Column('progression_id', db.Integer(), db.ForeignKey('verifier_progression.id')),
+    db.Column('premium_item_id', db.Integer(), db.ForeignKey('premium_item.id')))
+
+
 class VerifierProgression(BaseModel, db.Model):
     id = db.Column(db.Integer(), primary_key=True)
 
@@ -1135,6 +1151,11 @@ class VerifierProgression(BaseModel, db.Model):
         secondary=progression_quote)
     owned_fonts = db.relationship("VerifierFont",
         secondary=progression_font)
+    owned_premium_items = db.relationship("PremiumItem",
+        secondary=progression_premium_item)
+
+    fire_sale = db.Column(db.Boolean, default=False)
+    fire_sale_discount = db.Column(db.Float, default=0.0)
 
     def owns_icon(self, icon):
         return any([i.id == icon.id for i in self.owned_icons])
@@ -1160,6 +1181,9 @@ class VerifierProgression(BaseModel, db.Model):
     def is_font_equipped(self, font):
         return self.equipped_font_id == font.id
 
+    def owns_premium_item(self, item):
+        return any([i.id == item.id for i in self.owned_premium_items])
+
     @property
     def equipped_icon(self):
         if self.equipped_icon_id is not None:
@@ -1179,6 +1203,10 @@ class VerifierProgression(BaseModel, db.Model):
     def equipped_font(self):
         if self.equipped_font_id is not None:
             return VerifierFont.query.get(self.equipped_font_id)
+
+    @property
+    def premium_wheel(self):
+        return any([i.wheel_modifier for i in self.owned_premium_items])
 
     def equip_random_icon(self):
         self.equipped_icon_id = random.choice([i.id for i in self.owned_icons])
@@ -1299,6 +1327,24 @@ class VerifierFont(BaseModel, db.Model):
     def edit_url(self):
         return url_for('font_edit', id=self.id)
 
+class PremiumItem(BaseModel, db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    title = db.Column(db.String(255), info={
+        'label': 'Titill'})
+    description = db.Column(db.String(255), info={
+        'label': 'Lýsing'})
+    coin_price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð (aurar)'})
+    experience_price = db.Column(db.Integer(), default=0, info={
+        'label': 'Verð (demantar)'})
+    num_available = db.Column(db.Integer(), default=0, info={
+        'label': 'Fjöldi í boði'})
+    wheel_modifier = db.Column(db.Boolean(), default=False, info={
+        'label': 'Breyta þessi verðlaun lukkuhjólinu?'})
+
+    @property
+    def edit_url(self):
+        return url_for('premium_item_edit', id=self.id)
 
 class Posting(BaseModel, db.Model):
     __tablename__ = 'Posting'
@@ -1340,6 +1386,8 @@ class Application(BaseModel, db.Model):
 
     email = db.Column(db.String)
     phone = db.Column(db.String)
+
+    terms_agreement = db.Column(db.Boolean, default=False)
 
     uuid = db.Column(db.String, default=str(uuid.uuid4()))
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))

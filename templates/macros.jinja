@@ -152,7 +152,7 @@
             <div>
                 {% if not current_user.progression.owns_icon(icon) and not loot_display %}
                     <a href="{{url_for('icon_buy', icon_id=icon.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">{{icon.price}}</span>
+                        <span class="mr-2 ml-2 font-weight-bold">{{(icon.price * (1-current_user.progression.fire_sale_discount))|int}}</span>
                         <i class="fas fa-coins mr-2"></i>
                     </a>
                 {% else %}
@@ -217,7 +217,7 @@
             <div>
                 {% if not current_user.progression.owns_title(title) and not loot_display%}
                     <a href="{{url_for('title_buy', title_id=title.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">{{title.price}}</span>
+                        <span class="mr-2 ml-2 font-weight-bold">{{(title.price * (1-current_user.progression.fire_sale_discount))|int}}</span>
                         <i class="fas fa-coins mr-2"></i>
                     </a>
                 {% else %}
@@ -281,7 +281,7 @@
             <div>
                 {% if not current_user.progression.owns_quote(quote) and not loot_display%}
                     <a href="{{url_for('quote_buy', quote_id=quote.id, user_id=current_user.id)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">{{quote.price}}</span>
+                        <span class="mr-2 ml-2 font-weight-bold">{{(quote.price * (1-current_user.progression.fire_sale_discount))|int}}</span>
                         <i class="fas fa-coins mr-2"></i>
                     </a>
                 {% else %}
@@ -350,7 +350,7 @@
             </div>
             <div>
                 <a href="{{url_for('loot_box', rarity=loot.rarity)}}" class="btn btn-warning btn-sm rounded-pill text-center float-right">
-                    <span class="mr-2 ml-2 font-weight-bold">{{loot.price}}</span>
+                    <span class="mr-2 ml-2 font-weight-bold">{{(loot.price * (1-current_user.progression.fire_sale_discount))|int}}</span>
                     <i class="fas fa-coins mr-2"></i>
                 </a>
             </div>
@@ -399,7 +399,7 @@
             <div>
                 {% if not current_user.progression.owns_font(font) %}
                     <a href="{{url_for('font_buy', font_id=font.id, user_id=current_user.id)}}" class="btn btn-danger btn-sm rounded-pill text-center float-right">
-                        <span class="mr-2 ml-2 font-weight-bold">{{font.price}}</span>
+                        <span class="mr-2 ml-2 font-weight-bold">{{(font.price * (1-current_user.progression.fire_sale_discount))|int}}</span>
                         <i class="fas fa-gem mr-2"></i>
                     </a>
                 {% else %}
@@ -446,6 +446,43 @@
         </ul>
     </div>
 {% endmacro %}
+
+{% macro premium_item_card(item, current_user) %}
+    <div class='card' style='background-color: {{config.COLORS.epic}};'>
+        <div class='card-body d-flex justify-content-between flex-column'>
+            <div>
+                <h3 class='card-title' style='font-family: "Dancing Script", cursive;'>{{item.title}}</h3>
+                <p class='card-text'>{{item.description}}</p>
+                {% if item.num_available > 0%}
+                    <p class='card-text'>Aðeins {{item.num_available}} eintök eru í boði. Drífðu þér að tryggja þér eintak!</p>
+                {% endif %}
+            </div>
+            <div class='mt-2'>
+                {% if current_user.progression.owns_premium_item(item) %}
+                    <span class='font-weight-bold float-right'>Þú átt þennan hlut</span>
+                {% elif item.num_available > 0 %}
+                    <a href="{{url_for('premium_item_buy', premium_item_id=item.id, user_id=current_user.id)}}" class='btn btn-warning rounded-pill float-right'>
+                        <span class="mr-2 ml-2 font-weight-bold">{{item.coin_price}}</span>
+                        <i class="fas fa-coins mr-2"></i>
+                        <span class="mr-2 ml-2 font-weight-bold">{{item.experience_price}}</span>
+                        <i class="fas fa-gem mr-2"></i>
+                    </a>
+                {% else %}
+                    <span class='font-weight-bold float-right'>Uppselt!</span>
+                {% endif %}
+
+                {% if current_user.is_admin() %}
+                    <a href="{{item.edit_url}}" class="mr-1 btn btn-secondary text-warning rounded-pill text-center float-right">
+                        <span class="mr-2 ml-2 font-weight-bold">
+                            <i class='fa fa-edit'></i>
+                        </span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
 
 {% macro font_link(font) %}
     <link href="{{font.href}}" rel="stylesheet">

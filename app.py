@@ -1,49 +1,57 @@
 import json
-import os
-import pathlib
-from pathlib import Path
-
 import traceback
 import shutil
 import logging
-from functools import wraps
+import os
 import random
+import shutil
+import traceback
 from datetime import date, datetime
+from functools import wraps
 from logging.handlers import RotatingFileHandler
 from operator import itemgetter
 
 import numpy as np
 from zipfile import ZipFile
-import csv
-from pydub import AudioSegment
-from werkzeug import secure_filename
 
-from flask import (Flask, Response, redirect, render_template, request,
-                   send_from_directory, url_for, flash, jsonify)
-from flask_security import (Security, SQLAlchemyUserDatastore, login_required,
-                            current_user, roles_accepted)
-from flask_security.utils import hash_password
+from flask import (Flask, Response, flash, jsonify, redirect, render_template,
+                   request, send_from_directory, url_for)
 from flask_executor import Executor
-from sqlalchemy import or_, and_
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
-
-from db import (create_tokens, insert_collection, sessions_day_info, delete_recording_db,
-                delete_session_db, delete_token_db, delete_mos_instance_db, save_recording_session, save_MOS_ratings, resolve_order,
-                save_custom_wav, get_verifiers, insert_trims, save_uploaded_collection, save_uploaded_lobe_collection)
-from filters import format_date
-from forms import (BulkTokenForm, CollectionForm, ExtendedLoginForm,
-                   ExtendedRegisterForm, UserEditForm, SessionEditForm, RoleForm, ConfigurationForm,
-                   collection_edit_form, SessionVerifyForm, VerifierRegisterForm, DeleteVerificationForm,
-                   ApplicationForm, PostingForm, VerifierIconForm, VerifierTitleForm, VerifierQuoteForm, MosSelectAllForm,
-                   VerifierFontForm, DailySpinForm, MosForm, MosItemSelectionForm, MosUploadForm, MosTestForm, UploadCollectionForm)
-from models import Collection, Recording, Role, Token, User, Session, Configuration, Verification, VerifierProgression, \
-    VerifierIcon, VerifierTitle, VerifierQuote, VerifierFont, Application, Posting, Mos, MosInstance, CustomRecording, CustomToken, db
 from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
+from flask_security import (Security, SQLAlchemyUserDatastore, current_user,
+                            login_required, roles_accepted)
+from flask_security.utils import hash_password
+from sqlalchemy import and_, or_
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
+from flask_reverse_proxy_fix.middleware import ReverseProxyPrefixFix
+from db import (activity, create_tokens, delete_recording_db,
+                delete_session_db, delete_token_db, get_verifiers,
+                insert_collection, insert_trims, resolve_order,
+                save_recording_session, sessions_day_info,
+                delete_mos_instance_db, save_MOS_ratings,
+                save_custom_wav, save_uploaded_collection,
+                save_uploaded_lobe_collection)
+from filters import format_date
+from forms import (ApplicationForm, BulkTokenForm, CollectionForm,
+                   ConfigurationForm, DailySpinForm, DeleteVerificationForm,
+                   ExtendedLoginForm, ExtendedRegisterForm, PostingForm,
+                   RoleForm, SessionEditForm, SessionVerifyForm, UserEditForm,
+                   VerifierFontForm, VerifierIconForm, VerifierQuoteForm,
+                   VerifierRegisterForm, VerifierTitleForm,
+                   collection_edit_form, PremiumItemForm,
+                   MosSelectAllForm, MosForm, MosItemSelectionForm,
+                   MosUploadForm, MosTestForm, UploadCollectionForm)
 from ListPagination import ListPagination
-
-from managers import create_collection_zip, trim_collection_handler
-from tools.analyze import load_sample, signal_is_too_high, signal_is_too_low, find_segment
+from managers import create_collection_zip, create_collection_info
+from models import (Application, Collection, Configuration, Posting, Recording,
+                    Role, Session, Token, User, Verification, VerifierFont,
+                    VerifierIcon, VerifierProgression, VerifierQuote,
+                    VerifierTitle, PremiumItem, db, Mos, MosInstance,
+                    CustomRecording, CustomToken)
+from tools.analyze import (find_segment, load_sample, signal_is_too_high,
+                           signal_is_too_low)
 from tools.date import last_day
+
 
 # TODO: Move this to a sensible location
 DEFAULT_CONFIGURATION_ID = 1
@@ -120,16 +128,14 @@ def require_login_if_closed_collection(func):
         user_id = request.args.get('user_id') or request.form.get('user_id')
 
         collection = Collection.query.get(collection_id)
-        posting = collection.posting
-        if posting:
-            application = Application.query.filter(Application.user_id == user_id).first()
-            if application and application.posting_id == posting.id:
-                return func(*args, **kwargs)
+        if not collection.is_closed and collection.open_for_applicant(user_id):
+            return func(*args, **kwargs)
 
-        if not (current_user and (current_user.has_role("admin") or current_user.has_role("Notandi"))):
-            return app.login_manager.unauthorized()
+        if current_user and (current_user.has_role("admin") or current_user.has_role("Notandi")):
+            return func(*args, **kwargs)
 
-        return func(*args, **kwargs)
+        return app.login_manager.unauthorized()
+
     return wrapper
 
 @app.route('/post_recording/', methods=['POST'])
@@ -204,6 +210,7 @@ def record_session(collection_id):
         collection=collection, token=tokens,
         json_tokens=json.dumps([t.get_dict() for t in tokens]),
         user=user, manager=current_user,
+        application=(not collection.is_closed),
         tal_api_token=app.config['TAL_API_TOKEN'])
 
 
@@ -300,26 +307,40 @@ def collection_list():
                     with ZipFile(zip_file, 'r') as zip:
                         zip_name = zip_file.filename[:-4]
                         tsv_name = '{}/index.tsv'.format(zip_name)
-                        collection = save_uploaded_collection(zip, zip_name, tsv_name, form)
-                    return redirect(url_for('collection', id=collection.id))          
-                except Exception as e: 
+                        collection = save_uploaded_collection(
+                            zip, zip_name, tsv_name, form)
+                    return redirect(url_for('collection', id=collection.id))
+                except Exception as e:
                     print(e)
-                    flash('Ekki tókst að hlaða söfnun upp. Athugaðu hvort öllum leiðbeiningum sé fylgt og reyndu aftur.', category='warning')
+                    flash(
+                        'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +
+                        ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                        category='warning')
             elif form.is_lobe_collection:
                 try:
                     zip_file = request.files.get('files')
                     with ZipFile(zip_file, 'r') as zip:
                         zip_name = zip_file.filename[:-4]
                         json_name = 'info.json'
-                        collection = save_uploaded_lobe_collection(zip, zip_name, json_name, form)
+                        collection = save_uploaded_lobe_collection(
+                            zip, zip_name, json_name, form)
                     return redirect(url_for('collection', id=collection.id))      
-                except Exception as e: 
+                except Exception as e:
                     print(e)
-                    flash('Ekki tókst að hlaða söfnun upp. Athugaðu hvort öllum leiðbeiningum sé fylgt og reyndu aftur.', category='warning')
+                    flash(
+                        'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +
+                        ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                        category='warning')
             else:
-                flash('Ekki tókst að hlaða söfnun upp. Athugaðu hvort öllum leiðbeiningum sé fylgt og reyndu aftur.', category='warning')
+                flash(
+                    'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +
+                    ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                    category='warning')
         else:
-            flash('Ekki tókst að hlaða söfnun upp. Athugaðu hvort öllum leiðbeiningum sé fylgt og reyndu aftur.', category='warning')
+            flash(
+                'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' + 
+                ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                category='warning')
 
     page = int(request.args.get('page', 1))
     # TODO: sort_by not currently supported
@@ -417,6 +438,21 @@ def stream_collection_zip(id):
         ],
         direct_passthrough=True)
 
+@app.route('/collections/<int:id>/collection_info')
+@login_required
+@roles_accepted('admin')
+def download_collection_info(id):
+    info = create_collection_info(id)
+    json.dump(info,
+        open(os.path.join(app.config['TEMP_DIR'], f'{id}_info.json'),
+        'w', encoding='utf-8'), ensure_ascii=False, indent=4)
+    try:
+        return send_from_directory(app.config['TEMP_DIR'],
+            f'{id}_info.json',
+            as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading info : {}\n{}".format(error,traceback.format_exc()))
 
 @app.route('/collections/<int:id>/edit/', methods=['GET', 'POST'])
 @login_required
@@ -1584,20 +1620,21 @@ def verify_index():
         progression.has_seen_weekly_prices = True
         db.session.commit()
         show_weekly_prices = True
+
     elif current_user.progression.last_spin < datetime.combine(date.today(), datetime.min.time()):
         # we dont want to show weekly prizes and spins at the same time
         # last spin was not today
-        progression = current_user.progression
-        progression.last_spin = datetime.now()
-        db.session.commit()
         show_daily_spin = True
+
+    activity_days, activity_counts = activity(Verification)
 
     # get the number of verifications per user
     return render_template('verify_index.jinja', verifiers=verifiers, weekly_verifies=weekly_verifies,
         weekly_progress=weekly_progress, user_weekly_progress=user_weekly_progress,
         verification_progress=verification_progress, spy_progress=spy_progress,
         streak_progress=streak_progress, daily_spin_form=daily_spin_form,
-        progression_view=True, show_weekly_prices=show_weekly_prices, show_daily_spin=show_daily_spin)
+        progression_view=True, show_weekly_prices=show_weekly_prices, show_daily_spin=show_daily_spin,
+        activity_days=activity_days, activity_counts=activity_counts)
 
 
 @app.route('/shop/claim_daily_prize', methods=['POST'])
@@ -1607,20 +1644,26 @@ def claim_daily_prize():
     form = DailySpinForm(request.form)
     progression = current_user.progression
 
-    if form.prize_type.data == 'coin':
-        progression.lobe_coins += int(form.prize_value.data)
-        flash(f"Þú fékkst {form.prize_value.data} aura", category='success')
-    elif form.prize_type.data == 'experience':
-        progression.experience += int(form.prize_value.data)
-        flash(f"Þú fékkst {form.prize_value.data} demanta", category='success')
-    elif form.prize_type.data == 'lootbox':
-        # add the prize of epic loot box to user's lobe coins which is then
-        # withdrawn in the loot box view
-        progression.lobe_coins += app.config['ECONOMY']['loot_boxes']['prices']['2']
+    if current_user.progression.last_spin < datetime.combine(date.today(), datetime.min.time()):
+        progression.last_spin = datetime.now()
+        if form.prize_type.data == 'coin':
+            progression.lobe_coins += int(form.prize_value.data)
+            flash(f"Þú fékkst {form.prize_value.data} aura", category='success')
+        elif form.prize_type.data == 'experience':
+            progression.experience += int(form.prize_value.data)
+            flash(f"Þú fékkst {form.prize_value.data} demanta", category='success')
+        elif form.prize_type.data == 'lootbox':
+            # add the prize of epic loot box to user's lobe coins which is then
+            # withdrawn in the loot box view
+            rarity = 2
+            if current_user.progression.premium_wheel:
+                rarity = 3
+            progression.lobe_coins += app.config['ECONOMY']['loot_boxes']['prices'][str(rarity)]
+            db.session.commit()
+            return redirect(url_for('loot_box', rarity=rarity))
         db.session.commit()
-        return redirect(url_for('loot_box', rarity=2))
-
-    db.session.commit()
+    else:
+        flash("Þú ert búinn að snúa í dag", category='danger')
     return redirect(url_for('verify_index'))
 
 @app.route('/shop/', methods=['GET'])
@@ -1631,6 +1674,7 @@ def lobe_shop():
     titles = VerifierTitle.query.order_by(VerifierTitle.price).all()
     quotes = VerifierQuote.query.order_by(VerifierQuote.price).all()
     fonts = VerifierFont.query.order_by(VerifierFont.price).all()
+    premium_items = PremiumItem.query.order_by(PremiumItem.coin_price).all()
     loot_boxes = app.config['LOOT_BOXES']
 
     loot_box_message = request.args.get('messages', None)
@@ -1646,8 +1690,8 @@ def lobe_shop():
 
     return render_template('lobe_shop.jinja',
         icons=icons,titles=titles, quotes=quotes, loot_boxes=loot_boxes,
-        fonts=fonts, loot_box_items=loot_box_items, progression_view=True,
-        full_width=True,)
+        fonts=fonts, premium_items=premium_items, loot_box_items=loot_box_items,
+        progression_view=True, full_width=True)
 
 @app.route('/shop/random_equip', methods=['GET'])
 @login_required
@@ -1729,12 +1773,70 @@ def loot_box(rarity):
         db.session.commit()
 
         loot_box_message = json.dumps({str(i):{'type': types[i], 'id': item.id} for i,item in enumerate(selected_items)})
-        print(loot_box_message)
         flash("Kaup samþykkt", category='success')
         return redirect(url_for('lobe_shop', messages=loot_box_message))
 
     flash("Þú átt ekki nóg fyrir þessum lukkukassa", category='warning')
     return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/premium/<int:premium_item_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('Greinir')
+def premium_item_buy(premium_item_id, user_id):
+    user = User.query.get(user_id)
+    item = PremiumItem.query.get(premium_item_id)
+    progression = VerifierProgression.query.get(user.progression_id)
+
+    if progression.lobe_coins >= item.coin_price and progression.experience >= item.experience_price \
+        and item not in progression.owned_premium_items and item.num_available > 0:
+        progression.owned_premium_items.append(item)
+        progression.lobe_coins -= item.coin_price
+        progression.experience -= item.experience_price
+        item.num_available -= 1
+        db.session.commit()
+        flash("Kaup samþykkt. Lúxusverðlaun eru gefin út á þriðjudögum", category="success")
+    else:
+        flash("Kaup ekki samþykkt", category="warning")
+    return redirect(url_for('lobe_shop'))
+
+@app.route('/shop/premium/create', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def premium_item_create():
+    form = PremiumItemForm(request.form)
+    if request.method == 'POST' and form.validate():
+        try:
+            item = PremiumItem()
+            form.populate_obj(item)
+            db.session.add(item)
+            db.session.commit()
+            flash("Nýjum lúxusverðlaunum bætt við", category="success")
+            return redirect(url_for('lobe_shop'))
+        except Exception as error:
+            flash("Error creating premium item.", category="danger")
+            app.logger.error("Error creating premium item {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('premium_item_create'), section='verification', type='create')
+
+@app.route('/shop/premium/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def premium_item_edit(id):
+    item = PremiumItem.query.get(id)
+    form = PremiumItemForm(obj=item)
+    try:
+        if request.method == 'POST' and form.validate():
+            form = PremiumItemForm(request.form, obj=item)
+            form.populate_obj(item)
+            db.session.commit()
+            flash("Lúxusverðlaunum var breytt", category="success")
+            return redirect(url_for('lobe_shop'))
+    except Exception as error:
+        flash("Error updating premium item.", category="danger")
+        app.logger.error("Error updating premium item {}\n{}".format(error,traceback.format_exc()))
+    return render_template('forms/model.jinja', form=form,
+        action=url_for('premium_item_edit', id=id), section='verification', type='edit')
+
 
 @app.route('/shop/icons/<int:icon_id>/buy/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -1743,10 +1845,16 @@ def icon_buy(icon_id, user_id):
     user = User.query.get(user_id)
     icon = VerifierIcon.query.get(icon_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.lobe_coins >= icon.price and icon not in progression.owned_icons:
+
+    if progression.fire_sale:
+        price = int(icon.price*(1-progression.fire_sale_discount))
+    else:
+        price = icon.price
+
+    if progression.lobe_coins >= price and icon not in progression.owned_icons:
         progression.owned_icons.append(icon)
         progression.equipped_icon_id = icon.id
-        progression.lobe_coins -= icon.price
+        progression.lobe_coins -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:
@@ -1827,10 +1935,16 @@ def title_buy(title_id, user_id):
     user = User.query.get(user_id)
     title = VerifierTitle.query.get(title_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.lobe_coins >= title.price and title not in progression.owned_titles:
+
+    if progression.fire_sale:
+        price = int(title.price*(1-progression.fire_sale_discount))
+    else:
+        price = title.price
+
+    if progression.lobe_coins >= price and title not in progression.owned_titles:
         progression.owned_titles.append(title)
         progression.equipped_title_id = title.id
-        progression.lobe_coins -= title.price
+        progression.lobe_coins -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:
@@ -1909,10 +2023,16 @@ def quote_buy(quote_id, user_id):
     user = User.query.get(user_id)
     quote = VerifierQuote.query.get(quote_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.lobe_coins >= quote.price and quote not in progression.owned_quotes:
+
+    if progression.fire_sale:
+        price = int(quote.price*(1-progression.fire_sale_discount))
+    else:
+        price = quote.price
+
+    if progression.lobe_coins >= price and quote not in progression.owned_quotes:
         progression.owned_quotes.append(quote)
         progression.equipped_quote_id = quote.id
-        progression.lobe_coins -= quote.price
+        progression.lobe_coins -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:
@@ -1993,10 +2113,16 @@ def font_buy(font_id, user_id):
     user = User.query.get(user_id)
     font = VerifierFont.query.get(font_id)
     progression = VerifierProgression.query.get(user.progression_id)
-    if progression.experience >= font.price and font not in progression.owned_fonts:
+
+    if progression.fire_sale:
+        price = int(font.price*(1-progression.fire_sale_discount))
+    else:
+        price = font.price
+
+    if progression.experience >= price and font not in progression.owned_fonts:
         progression.owned_fonts.append(font)
         progression.equipped_font_id = font.id
-        progression.experience -= font.price
+        progression.experience -= price
         db.session.commit()
         flash("Kaup samþykkt.", category="success")
     else:
@@ -2345,6 +2471,31 @@ def posting(id):
         section='posting')
 
 
+@app.route('/postings/<int:id>/edit/', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def edit_posting(id):
+    posting = Posting.query.get(id)
+    form = PostingForm(obj=posting)
+
+    # Hack to make utterance field readonly
+    if form.utterances.render_kw:
+        form.utterances.render_kw["readonly"] = "readonly"
+    else:
+        form.utterances.render_kw = {"readonly": "readonly"}
+
+    if request.method == "POST":
+        form = PostingForm(request.form)
+        if form.validate():
+            form.populate_obj(posting)
+            db.session.add(posting)
+            db.session.commit()
+            return redirect(url_for("posting", id=posting.id))
+
+    return render_template('forms/model.jinja', form=form, type='edit',
+                           action=url_for('edit_posting', id=id))
+
+
 @app.route('/posting/<int:id>/delete/', methods=['GET'])
 @login_required
 @roles_accepted('admin')
@@ -2466,3 +2617,13 @@ def internal_server_error(error):
     flash("Alvarleg villa kom upp, vinsamlega reynið aftur", category="danger")
     app.logger.error('Server Error: %s', (error))
     return redirect(url_for('index'))
+
+
+@app.route('/not-in-chrome/')
+def not_in_chrome():
+    return render_template('not_in_chrome.jinja', previous=request.args.get('previous'))
+
+
+@app.route('/tos/')
+def tos():
+    return render_template('tos.jinja')

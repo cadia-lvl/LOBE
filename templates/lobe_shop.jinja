@@ -4,9 +4,14 @@
 <div class='col-lg-10 offset-lg-1 col-12'>
     <div class='row mb-5'>
         <div class="col-md-6 d-flex flex-column justify-content-between">
-            <h1 class='font-weight-bold display-1 d-xl-block d-none'>Búðin</h1>
-            <h1 class='font-weight-bold d-xl-none'>Búðin</h1>
+            <h1 class='font-weight-bold display-1 d-xl-block d-none'>{% if current_user.progression.fire_sale %}ÚTSALA{% else %}Búðin{%endif%}</h1>
+            <h1 class='font-weight-bold d-xl-none'>{% if current_user.progression.fire_sale %}ÚTSALA{% else %}Búðin{%endif%}</h1>
             <div>
+                {% if current_user.progression.fire_sale %}
+                    <p class='font-weight-bold'>
+                        Núna er {{(100*current_user.progression.fire_sale_discount)|int}}% afsláttur í búðinni!
+                    </p>
+                {% endif %}
                 <p>
                     Notaðu LOBE auranna sem þú hefur unnið hörðum höndum að safna. Veldu þér merki, titil og slagorð til að sýna hinum
                     að þú ert flottasti greinandinn.
@@ -31,6 +36,29 @@
             {{macros.verifier_card(current_user)}}
         </div>
     </div>
+
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+    <div class='row'>
+        <div class='col-12'>
+            <h2 class='font-weight-bold' style='font-family: "Dancing Script", cursive;'>Lúxusverðlaun</h2>
+            <p>Þessi verðlaun eru sérstaklega góð og kosta þar af leiðandi meira en önnur verðlaun. Athugið að lúxusverðlaun fara ekki á útsölu.
+                Drífðu þig að næla þér í lúxusverðlaun því takmarkað magn er í boði!</p>
+            {% if current_user.is_admin() %}
+                <a href="{{url_for('premium_item_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3 mt-2'>
+                    Búa til
+                    {{macros.btn_icon('plus', 'l')}}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class='row mb-3'>
+        {% for item in premium_items %}
+            <div class='col-lg-4 col-md-6 col-12 d-flex align-items-stretch'>
+                {{macros.premium_item_card(item, current_user)}}
+            </div>
+        {% endfor %}
+    </div>
+
     <div class='row'>
         <div class='col-12'>
             <h3 class='font-weight-bold'>Merki</h3>

@@ -74,10 +74,12 @@ class IndexManager:
         return self.path
 
 class RecordingInfoManager:
-    def __init__(self):
+    def __init__(self, write_file=True):
         self.info = {}
-        self.path = os.path.join(app.config['TEMP_DIR'], f'info_{pseudo_unique()}.json')
-        self.is_closed = False
+        self.write_file = write_file
+        if self.write_file:
+            self.path = os.path.join(app.config['TEMP_DIR'], f'info_{pseudo_unique()}.json')
+            self.is_closed = False
 
     def add(self, recording, token, user_name):
         self.info[recording.id] = {
@@ -106,17 +108,32 @@ class RecordingInfoManager:
             self.info[recording.id]['recording_info']['end'] = recording.end
 
     def close(self):
-        with open(self.path, 'w', encoding='utf-8') as info_f:
-            json.dump(self.info, info_f, ensure_ascii=False, indent=4)
-        self.is_closed = True
+        if self.write_file:
+            with open(self.path, 'w', encoding='utf-8') as info_f:
+                json.dump(self.info, info_f, ensure_ascii=False, indent=4)
+            self.is_closed = True
 
     def clean_up(self):
-        assert self.is_closed
-        os.remove(self.path)
+        if self.write_file:
+            assert self.is_closed
+            os.remove(self.path)
 
     def get_path(self):
-        return self.path
+        if self.write_file:
+            return self.path
 
+
+def create_collection_info(id):
+    collection = Collection.query.get(id)
+    dl_tokens = [t for t in collection.tokens if t.num_recordings > 0]
+    if not os.path.exists(app.config['TEMP_DIR']):
+        os.makedirs(app.config['TEMP_DIR'])
+    recording_info_manager = RecordingInfoManager(write_file=False)
+    for token in dl_tokens:
+        for recording in token.recordings:
+            speaker_name = recording.get_user().name
+            recording_info_manager.add(recording, token, speaker_name)
+    return recording_info_manager.info
 
 def create_collection_zip(id):
     collection = Collection.query.get(id)

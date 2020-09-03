@@ -5,6 +5,7 @@ import sys
 import json
 import uuid
 import traceback
+import datetime
 from shutil import copyfile
 from tqdm import tqdm
 
@@ -501,6 +502,10 @@ def initialize_verifiers():
             progression.weekly_verifies = 0
         if progression.last_spin is None:
             progression.last_spin = db.func.current_timestamp()
+        if progression.fire_sale is None:
+            progression.fire_sale = False
+        if progression.fire_sale_discount is None:
+            progression.fire_sale_discount = 0.0
     db.session.commit()
 
 @manager.command
@@ -581,6 +586,45 @@ class AddColumnDefaults(Command):
         db.session.commit()
 
 
+@manager.command
+def set_firesale():
+    do_fire_sale = bool(int(input('Do 1 for firesale, 0 to deactivate: ')))
+    if do_fire_sale:
+        fire_sale_discount = float(input('Select discount, e.g. 0.3 for 30 percent off: '))
+    else:
+        fire_sale_discount = 0.0
+
+    verifiers = get_verifiers()
+    for verifier in verifiers:
+        progression = verifier.progression
+        progression.fire_sale = do_fire_sale
+        progression.fire_sale_discount = fire_sale_discount
+
+    db.session.commit()
+
+@manager.command
+def respin():
+    verifiers = get_verifiers()
+    yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
+    for verifier in verifiers:
+        progression = verifier.progression
+        progression.last_spin = yesterday
+    db.session.commit()
+
+
+
+@manager.command
+def accurate_time():
+    collections = Collection.query.all()
+    print('Select a collection id')
+    for collection in collections:
+        print(f'{collection.name} [{collection.id}]')
+    collection = Collection.query.get(int(input('Selection: ')))
+    out = os.popen(f'soxi -D {collection.get_wav_audio_dir()}/* | paste -sd+ | bc').read()
+
+    out = float(out.strip('\n')) - collection.num_recorded_tokens*2
+    hours = out/3600
+    print(f'The collection has {hours:.3f} recorded hours')
 
 manager.add_command('db', MigrateCommand)
 manager.add_command('add_user', AddUser)

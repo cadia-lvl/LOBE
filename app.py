@@ -839,9 +839,9 @@ def mos(id):
                         tsv_name = '{}/index.tsv'.format(zip_name)
                         successfully_uploaded = save_custom_wav(
                             zip, zip_name, tsv_name, mos, id)
-                        if successfully_uploaded > 0:
+                        if len(successfully_uploaded) > 0:
                             flash("Tókst að hlaða upp {} setningum.".format(
-                                successfully_uploaded), category="success")
+                                len(successfully_uploaded)), category="success")
                         else:
                             flash(
                                 "Ekki tókst að hlaða upp neinum setningum.",

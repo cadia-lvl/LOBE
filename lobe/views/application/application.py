@@ -153,7 +153,8 @@ def new_application(posting_uuid):
                     "email already in use")
                 flash("Þetta netfang er nú þegar í notkun", category='error')
                 return redirect(
-                    url_for("application.new_application", posting_uuid=posting_uuid))
+                    url_for("application.new_application",
+                            posting_uuid=posting_uuid))
             application.user_id = new_user.id
             db.session.add(application)
             db.session.commit()

@@ -56,7 +56,8 @@ def edit_conf(id):
                 form.populate_obj(conf)
                 db.session.commit()
                 flash("Stillingum var breytt", category='success')
-                return redirect(url_for("configuration.conf_detail", id=conf.id))
+                return redirect(url_for("configuration.conf_detail",
+                                        id=conf.id))
         except Exception as error:
             app.logger.error('Error updating a configuration : {}\n{}'.format(
                 error, traceback.format_exc()))
@@ -67,7 +68,6 @@ def edit_conf(id):
         type='edit',
         action=url_for('configuration.edit_conf', id=id),
         section='other')
-
 
 
 @configuration.route('/confs/create/', methods=['GET', 'POST'])
@@ -81,7 +81,8 @@ def create_conf():
             form.populate_obj(configuration)
             db.session.add(configuration)
             db.session.commit()
-            return redirect(url_for('configuration.conf_detail', id=configuration.id))
+            return redirect(url_for('configuration.conf_detail',
+                                    id=configuration.id))
         except Exception as error:
             flash("Error creating configuration.", category="danger")
             app.logger.error("Error creating configuration {}\n{}".format(

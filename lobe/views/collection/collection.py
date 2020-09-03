@@ -2,8 +2,8 @@ import os
 import traceback
 import shutil
 
-from flask import (Blueprint, redirect, url_for, request, render_template, flash,
-                   Response)
+from flask import (Blueprint, redirect, url_for, request, render_template,
+                   flash, Response)
 from flask import current_app as app
 from flask_security import login_required, roles_accepted
 
@@ -16,6 +16,7 @@ from lobe.managers import trim_collection_handler, create_collection_zip
 collection = Blueprint(
     'collection', __name__, template_folder='templates')
 
+
 @collection.route('/collections/create/', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin')
@@ -25,7 +26,8 @@ def create_collection():
         try:
             # add collection to database
             collection = insert_collection(form)
-            return redirect(url_for('collection.collection_detail', id=collection.id))
+            return redirect(url_for('collection.collection_detail',
+                                    id=collection.id))
         except Exception as error:
             flash("Error creating collection.", category="danger")
             app.logger.error("Error creating collection {}\n{}".format(

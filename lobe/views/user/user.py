@@ -16,7 +16,6 @@ user = Blueprint(
     'user', __name__, template_folder='templates')
 
 
-
 @user.route('/users/')
 @login_required
 @roles_accepted('admin')

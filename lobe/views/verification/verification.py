@@ -17,7 +17,6 @@ verification = Blueprint(
     'verification', __name__, template_folder='templates')
 
 
-
 @verification.route('/verification/verify_queue')
 @login_required
 def verify_queue():

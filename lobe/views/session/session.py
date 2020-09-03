@@ -12,6 +12,7 @@ from lobe.forms import SessionEditForm
 session = Blueprint(
     'session', __name__, template_folder='templates')
 
+
 @session.route('/sessions/')
 @login_required
 @roles_accepted('admin', 'Notandi')

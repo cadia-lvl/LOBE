@@ -183,7 +183,9 @@ def loot_box(rarity):
     return redirect(url_for('shop.lobe_shop'))
 
 
-@shop.route('/shop/icons/<int:icon_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@shop.route(
+    '/shop/icons/<int:icon_id>/buy/<int:user_id>',
+    methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
 def icon_buy(icon_id, user_id):
@@ -289,7 +291,9 @@ def icon_edit(id):
         type='edit')
 
 
-@shop.route('/shop/titles/<int:title_id>/buy/<int:user_id>', methods=['GET', 'POST'])
+@shop.route(
+    '/shop/titles/<int:title_id>/buy/<int:user_id>',
+    methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Greinir')
 def title_buy(title_id, user_id):

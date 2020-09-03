@@ -10,7 +10,7 @@ from flask_security import login_required, roles_accepted
 from lobe.models import Collection, Token, User, db
 from lobe.db import resolve_order, insert_collection, create_tokens
 from lobe.forms import CollectionForm, BulkTokenForm, collection_edit_form
-from lobe.ListPagination import ListPagination
+from lobe.tools.pagination import ListPagination
 from lobe.managers import trim_collection_handler, create_collection_zip
 
 collection = Blueprint(

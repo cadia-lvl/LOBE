@@ -1,17 +1,22 @@
 import os
 import traceback
 import shutil
-
+import json
+from zipfile import ZipFile
 from flask import (Blueprint, redirect, url_for, request, render_template,
-                   flash, Response)
+                   flash, send_from_directory, Response)
 from flask import current_app as app
 from flask_security import login_required, roles_accepted
 
 from lobe.models import Collection, Token, User, db
-from lobe.db import resolve_order, insert_collection, create_tokens
-from lobe.forms import CollectionForm, BulkTokenForm, collection_edit_form
+from lobe.db import (
+    resolve_order, insert_collection, create_tokens,
+    save_uploaded_lobe_collection, save_uploaded_collection)
+from lobe.forms import (
+    CollectionForm, BulkTokenForm, collection_edit_form, UploadCollectionForm)
 from lobe.tools.pagination import ListPagination
-from lobe.managers import trim_collection_handler, create_collection_zip
+from lobe.managers import (
+    trim_collection_handler, create_collection_zip, create_collection_info)
 
 collection = Blueprint(
     'collection', __name__, template_folder='templates')
@@ -39,10 +44,58 @@ def create_collection():
         section='collection')
 
 
-@collection.route('/collections/')
+@collection.route('/collections/', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('admin', 'Notandi')
 def collection_list():
+    form = UploadCollectionForm()
+    if request.method == 'POST':
+        if form.validate():
+            if form.is_g2p.data:
+                try:
+                    zip_file = request.files.get('files')
+                    with ZipFile(zip_file, 'r') as zip:
+                        zip_name = zip_file.filename[:-4]
+                        tsv_name = '{}/index.tsv'.format(zip_name)
+                        collection = save_uploaded_collection(
+                            zip, zip_name, tsv_name, form)
+                    return redirect(url_for(
+                        'collection.collection_detail',
+                        id=collection.id))
+                except Exception as e:
+                    print(e)
+                    flash(
+                        'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +
+                        ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                        category='warning')
+            elif form.is_lobe_collection:
+                try:
+                    zip_file = request.files.get('files')
+                    with ZipFile(zip_file, 'r') as zip:
+                        zip_name = zip_file.filename[:-4]
+                        json_name = 'info.json'
+                        collection = save_uploaded_lobe_collection(
+                            zip, zip_name, json_name, form)
+                    return redirect(url_for(
+                        'collection.collection_detail',
+                        id=collection.id))
+                except Exception as e:
+                    print(e)
+                    flash(
+                        'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +
+                        ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                        category='warning')
+            else:
+                flash(
+                    'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +
+                    ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                    category='warning')
+        else:
+            flash(
+                'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +
+                ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
+                category='warning')
+
     page = int(request.args.get('page', 1))
     collections = Collection.query.order_by(
         resolve_order(
@@ -52,6 +105,7 @@ def collection_list():
         .paginate(page, per_page=app.config['COLLECTION_PAGINATION'])
     return render_template(
         'collection_list.jinja',
+        form=form,
         collections=collections,
         section='collection')
 
@@ -155,6 +209,42 @@ def stream_collection_zip(id):
             ('Content-Disposition',
                 f"attachment; filename=\"{collection.zip_fname}\"")],
         direct_passthrough=True)
+
+
+@collection.route('/collections/stream_collection_demo')
+@login_required
+@roles_accepted('admin')
+def stream_collection_index_demo():
+    other_dir = app.config["OTHER_PATH"]
+    try:
+        return send_from_directory(
+            other_dir, 'synidaemi_collection.zip',
+            as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading a custom recording : {}\n{}".format(
+                error, traceback.format_exc()))
+
+
+@collection.route('/collections/<int:id>/collection_info')
+@login_required
+@roles_accepted('admin')
+def download_collection_info(id):
+    info = create_collection_info(id)
+    json.dump(
+        info,
+        open(
+            os.path.join(app.config['TEMP_DIR'], f'{id}_info.json'),
+            'w', encoding='utf-8'), ensure_ascii=False, indent=4)
+    try:
+        return send_from_directory(
+            app.config['TEMP_DIR'],
+            f'{id}_info.json',
+            as_attachment=True)
+    except Exception as error:
+        app.logger.error(
+            "Error downloading info : {}\n{}".format(
+                error, traceback.format_exc()))
 
 
 @collection.route('/collections/<int:id>/edit/', methods=['GET', 'POST'])

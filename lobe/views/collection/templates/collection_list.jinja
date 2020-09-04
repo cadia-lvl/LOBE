@@ -16,7 +16,7 @@
                 Hlaða upp söfnun
             </a>
         </div>
-        <a class='btn btn-secondary float-right mr-2' href='{{url_for("collection_zip_list")}}'>
+        <a class='btn btn-secondary float-right mr-2' href='{{url_for("collection.collection_zip_list")}}'>
             {{macros.btn_icon('archive', 'r')}}
             Skjalasöfn
         </a>
@@ -72,7 +72,7 @@
                     {% endwith %}
                 </div>
                 <div class="modal-footer">
-                    <a href='{{url_for("stream_collection_index_demo")}}' class='btn btn-primary float-left mr-2'>
+                    <a href='{{url_for("collection.collection_zip_list")}}' class='btn btn-primary float-left mr-2'>
                         {{macros.btn_icon('download', 'r')}}
                         Sýnidæmi
                     </a>

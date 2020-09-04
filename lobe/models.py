@@ -596,7 +596,7 @@ class CustomToken(BaseModel, db.Model):
         return os.path.dirname(self.path)
 
     def get_download_url(self):
-        return url_for('download_custom_token', id=self.id)
+        return url_for('mos.download_custom_token', id=self.id)
 
     def copyToken(self, token):
         self.fname = token.fname

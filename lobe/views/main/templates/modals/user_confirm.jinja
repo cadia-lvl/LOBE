@@ -24,7 +24,7 @@
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
             {% if collection.has_assigned_user() %}
-                <a href='{{url_for("session.record_session", collection_id=collection.id)}}?user_id={{collection.assigned_user_id}}'
+                <a href='{{url_for("recording.record_session", collection_id=collection.id)}}?user_id={{collection.assigned_user_id}}'
                     class='btn btn-success'>
                     Taka upp
                     {{macros.btn_icon('microphone', 'l')}}

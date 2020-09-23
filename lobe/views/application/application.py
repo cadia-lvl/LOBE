@@ -3,7 +3,7 @@ from flask import current_app as app
 from flask_security import login_required, roles_accepted
 from sqlalchemy.exc import IntegrityError
 
-from lobe.models import Application, Posting, Recording, Token, db
+from lobe.models import Application, Posting, Recording, Token, db, User
 from lobe.db import resolve_order, insert_collection
 from lobe.forms import PostingForm, ApplicationForm, CollectionForm
 
@@ -138,29 +138,31 @@ def new_application(posting_uuid):
             application = Application()
             form.populate_obj(application)
             application.posting_id = posting.id
-            try:
-                new_user = app.user_datastore.create_user(
-                    name=form.data["name"],
-                    email=form.data["email"],
-                    password=None,
-                    roles=[]
-                )
-                form.populate_obj(new_user)
-                db.session.commit()
-            except IntegrityError:
-                app.logger.error(
-                    "Could not create user for application, " +
-                    "email already in use")
-                flash("Þetta netfang er nú þegar í notkun", category='error')
-                return redirect(
-                    url_for("application.new_application",
-                            posting_uuid=posting_uuid))
-            application.user_id = new_user.id
+            user = User.query.filter(User.email == form.data["email"]).first()
+            if not user:
+                try:
+                    user = app.user_datastore.create_user(
+                        name=form.data["name"],
+                        email=form.data["email"],
+                        password=None,
+                        roles=[]
+                    )
+                    form.populate_obj(user)
+                    db.session.commit()
+                except IntegrityError:
+                    app.logger.error(
+                        "Could not create user for application, " +
+                        "email already in use")
+                    flash("Þetta netfang er nú þegar í notkun", category='error')
+                    return redirect(
+                        url_for("application.new_application",
+                                posting_uuid=posting_uuid))
+            application.user_id = user.id
             db.session.add(application)
             db.session.commit()
             return redirect(url_for(
                 "recording.record_session",
-                collection_id=posting.collection) + f"?user_id={new_user.id}")
+                collection_id=posting.collection) + f"?user_id={user.id}")
 
     return render_template(
         'apply.jinja',

@@ -18,7 +18,7 @@ main = Blueprint(
 def index():
     if current_user.has_role('Greinir'):
         return redirect(url_for('verification.verify_index'))
-    return redirect(url_for('collection_list'))
+    return redirect(url_for('collection.collection_list'))
 
 
 @main.route(f"/{os.getenv('LOBE_REDIRECT','lobe')}/")
@@ -26,7 +26,7 @@ def index():
 def index_redirect():
     if current_user.has_role('Greinir'):
         return redirect(url_for('verification.verify_index'))
-    return redirect(url_for('collection_list'))
+    return redirect(url_for('collection.collection_list'))
 
 
 @main.route('/other/lobe_manual/')
@@ -52,14 +52,14 @@ def test_media_device():
 @main.errorhandler(404)
 def page_not_found(error):
     flash("Við fundum ekki síðuna sem þú baðst um.", category="warning")
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
 
 @main.errorhandler(500)
 def internal_server_error(error):
     flash("Alvarleg villa kom upp, vinsamlega reynið aftur", category="danger")
     app.logger.error('Server Error: %s', (error))
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
 
 @main.route('/not-in-chrome/')

@@ -1,0 +1,32 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row mb-3'>
+        <div class='col-12 col-md-6 offset-md-3 mb-3'>
+            <h3 class='font-weight-bold text-center'>
+                Þú virðist ekki vera í<br>
+                Google Chrome
+            </h3>
+            <p class='text-center mt-5'>
+                <i class='fab fa-chrome text-info fa-5x'></i>
+            </p>
+            <p class="text-center mt-5">
+                Vegna stuðnings við upptökuforrit er nauðsynlegt að síðan sé sótt
+                í Google Chrome.
+                Þú getur náð í Google Chrome hér:
+                <ul class="list-group">
+                    <li class="list-group-item"><a href="https://www.google.com/chrome/">www.google.com/chrome/</a></li>
+                    <li class="list-group-item"><a href="https://play.google.com/store/apps/details?id=com.android.chrome">Google Chrome í Android</a></li>
+                    <li class="list-group-item"><a href="https://apps.apple.com/us/app/google-chrome/id535886823">Google chrome í iOS</a></li>
+                </ul>
+            </p>
+            {% if previous %}
+            <p>
+                Ef þú ert í Google chrome og þessi síða kom fyrir slysni getur þú smellt <a href="{{previous}}">hér</a> til að fara til baka.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+{% endblock %}

@@ -58,7 +58,7 @@ def delete_application(id):
         flash("Umsókn var eytt", category='success')
     except Exception:
         flash("Ekki gekk að eyða umsókn", category='warning')
-    return redirect(url_for("applications"))
+    return redirect(url_for("application.applications"))
 
 
 @application.route("/postings/")
@@ -126,7 +126,7 @@ def delete_posting(id):
         flash("Auglýsingu var eytt", category='success')
     except Exception:
         flash("Ekki gekk að eyða auglýsingu", category='warning')
-    return redirect(url_for("postings"))
+    return redirect(url_for("application.postings"))
 
 
 @application.route('/apply/<uuid:posting_uuid>/', methods=['GET', 'POST'])
@@ -216,7 +216,7 @@ def create_posting():
                 token.save_to_disk()
             db.session.commit()
 
-            return redirect(url_for("application.posting", id=posting.id))
+            return redirect(url_for("application.postings", id=posting.id))
 
     return render_template(
         'forms/model.jinja',

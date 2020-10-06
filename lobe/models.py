@@ -5,6 +5,8 @@ import wave
 import json
 import subprocess
 import random
+from collections import Counter
+
 import numpy as np
 from datetime import datetime, timedelta
 
@@ -1705,6 +1707,27 @@ class Posting(BaseModel, db.Model):
     @hybrid_property
     def delete_url(self):
         return url_for("application.delete_posting", id=self.id)
+
+    def unique_applications(self):
+        apps = Application.query.filter(Application.posting_id == self.id).order_by(Application.created_at.asc())
+        unique_apps = dict((app.email, app) for app in apps)
+        return list(unique_apps.values())
+
+    def statistics(self):
+        applications = self.unique_applications()
+        age_counter = Counter(app.age for app in applications).most_common()
+        age_counter.sort(key=lambda i:i[0])
+        age, age_count = zip(*age_counter)
+        info = {
+            "total": len(applications),
+            "sex": Counter(app.sex for app in applications).most_common(),
+            "age": age_counter,
+            "trace": {
+                "age": list(age),
+                "age_count": list(age_count),
+            }
+        }
+        return info
 
 
 class Application(BaseModel, db.Model):

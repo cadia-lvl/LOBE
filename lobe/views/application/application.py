@@ -81,9 +81,12 @@ def postings():
 @login_required
 @roles_accepted('admin')
 def posting_detail(id):
+    posting = Posting.query.get(id)
+    info = posting.statistics()
     return render_template(
         'posting.jinja',
-        posting=Posting.query.get(id),
+        posting=posting,
+        info=info,
         section='posting')
 
 

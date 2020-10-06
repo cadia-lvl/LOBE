@@ -22,7 +22,7 @@ from lobe import app
 from lobe.models import (Recording, Token, User, Role, Collection,
                          Configuration, Session, VerifierProgression,
                          VerifierIcon, VerifierQuote, VerifierTitle, db)
-from lobe.db import get_verifiers
+from lobe.db import get_verifiers, get_admins
 from lobe.tools.analyze import (load_sample, signal_is_too_high,
                                 signal_is_too_low)
 
@@ -500,7 +500,8 @@ def fix_verified_status():
 @manager.command
 def add_progression_to_verifiers():
     verifiers = get_verifiers()
-    for verifier in verifiers:
+    admins = get_admins()
+    for verifier in verifiers + admins:
         if verifier.progression_id is None:
             progression = VerifierProgression()
             db.session.add(progression)

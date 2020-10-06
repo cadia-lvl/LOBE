@@ -684,6 +684,11 @@ def get_verifiers():
             if any(r.name == 'Greinir' for r in u.roles)]
 
 
+def get_admins():
+    return [u for u in User.query.all()
+            if u.is_admin()]
+
+
 def insert_trims(trims, verification_id):
     '''
     trims is a list of dictionaries sorted in time order, e.g.:

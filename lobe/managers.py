@@ -85,7 +85,8 @@ class IndexManager:
 
 
 class RecordingInfoManager:
-    def __init__(self, write_file=True):
+    def __init__(self, colelction_id, write_file=True):
+        self.collection_id = colelction_id
         self.info = {}
         self.write_file = write_file
         if self.write_file:
@@ -144,12 +145,13 @@ def create_collection_info(id):
     dl_tokens = [t for t in collection.tokens if t.num_recordings > 0]
     if not os.path.exists(app.config['TEMP_DIR']):
         os.makedirs(app.config['TEMP_DIR'])
-    recording_info_manager = RecordingInfoManager(write_file=False)
+    recording_info_manager = RecordingInfoManager(id, write_file=False)
     for token in dl_tokens:
         for recording in token.recordings:
             speaker_name = recording.get_user().name
             recording_info_manager.add(recording, token, speaker_name)
     return recording_info_manager.info
+
 
 def create_collection_zip(id):
     collection = Collection.query.get(id)
@@ -157,7 +159,7 @@ def create_collection_zip(id):
     if not os.path.exists(app.config['TEMP_DIR']):
         os.makedirs(app.config['TEMP_DIR'])
     speaker_ids = set()
-    recording_info_manager = RecordingInfoManager()
+    recording_info_manager = RecordingInfoManager(id)
     index_manager = IndexManager()
     zip_manager = ZipManager(collection)
     try:

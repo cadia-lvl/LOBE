@@ -72,6 +72,7 @@
         <script>
             var container = document.getElementById('age_graph');
             var layout = {
+                barmode: 'stack',
                 plot_bgcolor: 'rgba(0, 0, 0, 0)',
                 paper_bgcolor: 'rgba(0, 0, 0, 0)',
                 height: 300,
@@ -101,13 +102,17 @@
             var config = {
                 responsive: true
             }
-            var trace = {
-                x: {{ info.trace.age }},
-                y: {{ info.trace.age_count }},
-                fill: 'tonexty',
-                type: 'bar',
-            };
-            var data = [trace];
+            var data = [
+                {% for trace in info.traces %}
+                {
+                    x: {{ trace.x }},
+                    y: {{ trace.y }},
+                    name: '{{ trace.name }}',
+                    fill: 'tonexty',
+                    type: 'bar',
+                },
+                {% endfor %}
+            ];
             Plotly.newPlot(container, data, layout, config);
         </script>
     </div>

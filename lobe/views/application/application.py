@@ -1,3 +1,5 @@
+import uuid
+
 from flask import Blueprint, redirect, url_for, request, render_template, flash
 from flask import current_app as app
 from flask_security import login_required, roles_accepted
@@ -33,8 +35,7 @@ def applications():
 def application_detail(id):
     page = int(request.args.get('page', 1))
     application = Application.query.get(id)
-    recordings = Recording.query.filter(
-        Recording.user_id == application.user_id).order_by(
+    recordings = application.recordings().order_by(
         resolve_order(
             Recording,
             request.args.get('sort_by', default='created_at'),
@@ -191,6 +192,7 @@ def create_posting():
 
             posting = Posting()
             form.populate_obj(posting)
+            posting.uuid = uuid.uuid4()
             db.session.add(posting)
             db.session.flush()  # To generate defaults for posting
 

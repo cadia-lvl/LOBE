@@ -5,7 +5,7 @@ import wave
 import json
 import subprocess
 import random
-from collections import Counter
+from collections import Counter, defaultdict
 
 import numpy as np
 from datetime import datetime, timedelta
@@ -1714,18 +1714,28 @@ class Posting(BaseModel, db.Model):
         return list(unique_apps.values())
 
     def statistics(self):
-        applications = self.unique_applications()
-        age_counter = Counter(app.age for app in applications).most_common()
-        age_counter.sort(key=lambda i:i[0])
-        age, age_count = zip(*age_counter)
+        applications = [app for app in self.unique_applications() if len(app.recordings().all()) > 0]
+        sexes = defaultdict(list)
+        for application in applications:
+            sexes[application.sex].append(application)
+
+        traces = []
+        for sex, apps in sexes.items():
+            age_counter = Counter(app.age for app in applications).most_common()
+            age_counter.sort(key=lambda i: i[0])
+            age, age_count = zip(*age_counter)
+            trace = {
+                "name": sex,
+                "x": list(age),
+                "y": list(age_count),
+            }
+            traces.append(trace)
+
         info = {
             "total": len(applications),
             "sex": Counter(app.sex for app in applications).most_common(),
             "age": age_counter,
-            "trace": {
-                "age": list(age),
-                "age_count": list(age_count),
-            }
+            "traces": traces
         }
         return info
 
@@ -1770,6 +1780,10 @@ class Application(BaseModel, db.Model):
     @hybrid_property
     def user_url(self):
         return url_for("user.user_detail", id=self.user_id)
+
+    def recordings(self):
+        return Recording.query.filter(
+            Recording.user_id == self.user_id)
 
 
 class Mos(BaseModel, db.Model):

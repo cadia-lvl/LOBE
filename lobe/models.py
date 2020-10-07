@@ -1721,7 +1721,7 @@ class Posting(BaseModel, db.Model):
 
         traces = []
         for sex, apps in sexes.items():
-            age_counter = Counter(app.age for app in applications).most_common()
+            age_counter = Counter(app.age for app in apps).most_common()
             age_counter.sort(key=lambda i: i[0])
             age, age_count = zip(*age_counter)
             trace = {
@@ -1735,7 +1735,7 @@ class Posting(BaseModel, db.Model):
             "total": len(applications),
             "sex": Counter(app.sex for app in applications).most_common(),
             "age": age_counter,
-            "traces": traces
+            "traces": traces,
         }
         return info
 

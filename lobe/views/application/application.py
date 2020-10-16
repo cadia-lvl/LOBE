@@ -70,11 +70,17 @@ def postings():
     postings = Posting.query.order_by(resolve_order(
             Posting,
             request.args.get('sort_by', default='created_at'),
-            order=request.args.get('order', default='desc')))\
-        .paginate(page, per_page=20)
+            order=request.args.get('order', default='desc')))
+
+    applications = []
+    for posting in postings.filter(Posting.dev != True):
+        applications.extend(posting.unique_with_recordings())
+    info = Posting.statistics_for_applications(applications)
+
     return render_template(
         'posting_list.jinja',
-        postings=postings,
+        postings=postings.paginate(page, per_page=20),
+        info=info,
         section='posting')
 
 
@@ -110,7 +116,7 @@ def edit_posting(id):
             form.populate_obj(posting)
             db.session.add(posting)
             db.session.commit()
-            return redirect(url_for("posting", id=posting.id))
+            return redirect(url_for("application.posting_detail", id=posting.id))
 
     return render_template(
         'forms/model.jinja',

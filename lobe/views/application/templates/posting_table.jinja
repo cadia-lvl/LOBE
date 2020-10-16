@@ -18,7 +18,12 @@
             {% for posting in postings %}
                 <tr>
                     <td>{{posting.created_at | datetime(format='low')}}</td>
-                    <td><a href={{posting.get_url()}}>{{posting.name}}</a></td>
+                    <td>
+                        <a href={{posting.get_url()}}>{{posting.name}}</a>
+                        {% if posting.dev %}
+                            <code class="pl-2">DEV</code>
+                        {% endif %}
+                    </td>
                     <td>{{posting.uuid}}</td>
                 </tr>
             {% endfor %}

@@ -1682,6 +1682,8 @@ class Posting(BaseModel, db.Model):
         autoincrement=True)
     name = db.Column(db.String)
     ad_text = db.Column(db.String)
+    active = db.Column(db.Boolean, default=True)
+    dev = db.Column(db.Boolean, default=False)
     utterances = db.Column(db.String)
     collection = db.Column(
         db.Integer,
@@ -1713,8 +1715,14 @@ class Posting(BaseModel, db.Model):
         unique_apps = dict((app.email, app) for app in apps)
         return list(unique_apps.values())
 
+    def unique_with_recordings(self):
+        return [app for app in self.unique_applications() if len(app.recordings().all()) > 0]
+
     def statistics(self):
-        applications = [app for app in self.unique_applications() if len(app.recordings().all()) > 0]
+        return self.statistics_for_applications(self.unique_with_recordings())
+
+    @staticmethod
+    def statistics_for_applications(applications):
         sexes = defaultdict(list)
         for application in applications:
             sexes[application.sex].append(application)
@@ -1734,7 +1742,6 @@ class Posting(BaseModel, db.Model):
         info = {
             "total": len(applications),
             "sex": Counter(app.sex for app in applications).most_common(),
-            "age": age_counter,
             "traces": traces,
         }
         return info

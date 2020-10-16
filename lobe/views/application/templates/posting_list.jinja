@@ -1,6 +1,87 @@
 {% extends "_list.jinja" %}
+{% block headscripts %}
+    {{super()}}
+    <script src='{{url_for("main.static", filename="js/plotly-latest.min.js")}}'></script>
+{% endblock %}
 {% block title %}Auglýsingar{% endblock %}
 {% block total %}{{postings.total}}{% endblock %}
+{% block header_content %}
+
+    <div class='row'>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                <div class='col-7'>
+                    <p>Fjöldi umsókna:</p>
+                </div>
+                <div class='col-5 text-right'>
+                    <p>{{ info.total }}</p>
+                </div>
+                </div>
+        </div>
+        <div class='col-md-6 col-12'>
+            <div class='row'>
+                {% for sex in info.sex %}
+                    <div class='col-7'>
+                        <p>{{ sex[0] }}:</p>
+                    </div>
+                    <div class='col-5 text-right'>
+                        <p>{{ sex[1] }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class='col-12'>
+            <div id='age_graph' class='mb-4'>
+            </div>
+        </div>
+        <script>
+            var container = document.getElementById('age_graph');
+            var layout = {
+                barmode: 'stack',
+                plot_bgcolor: 'rgba(0, 0, 0, 0)',
+                paper_bgcolor: 'rgba(0, 0, 0, 0)',
+                height: 300,
+                margin: {
+                    't': 30,
+                    'b': 30
+                },
+                font: {
+                    color: 'white'
+                },
+                yaxis:{
+                    title:{
+                        text: 'Fjöldi'
+                    },
+                    tick0: 0,
+                    dtick: 1,
+                    tickwidth: 8,
+                    tickcolor: '#0000',
+                    gridcolor: '#444'
+                },
+                xaxis: {
+                    title:{
+                        text: 'Aldur umsækjenda'
+                    }
+                }
+            };
+            var config = {
+                responsive: true
+            }
+            var data = [
+                {% for trace in info.traces %}
+                {
+                    x: {{ trace.x }},
+                    y: {{ trace.y }},
+                    name: '{{ trace.name }}',
+                    fill: 'tonexty',
+                    type: 'bar',
+                },
+                {% endfor %}
+            ];
+            Plotly.newPlot(container, data, layout, config);
+        </script>
+    </div>
+{% endblock %}
 {% block buttons %}
     {% if current_user.is_admin() %}
         <a class='btn btn-secondary text-success float-right' href='{{url_for("application.create_posting")}}'>

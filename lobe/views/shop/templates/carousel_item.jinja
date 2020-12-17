@@ -1,4 +1,6 @@
-
+{% if type == "Lootbox"%}
+    <p>Slembikassar eru ekki virkir</p>
+{% else %}
     <!--Large screen Carousel Wrapper-->
     <div id="{{type}}-carousel-large" class="carousel slide carousel-multi-item d-lg-block d-none" style="margin-bottom:40px" data-interval="false" data-ride='carousel'>
 
@@ -86,3 +88,4 @@
             {% endfor %}
         </ol>
     </div>
+{% endif %}

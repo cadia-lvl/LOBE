@@ -369,7 +369,7 @@ def verify_index():
         progression.has_seen_weekly_prices = True
         db.session.commit()
         show_weekly_prices = True
-    elif current_user.progression.last_spin < datetime.combine(
+    elif not current_user.progression.last_spin or current_user.progression.last_spin < datetime.combine(
             date.today(), datetime.min.time()):
         # we dont want to show weekly prizes and spins at the same time
         # last spin was not today

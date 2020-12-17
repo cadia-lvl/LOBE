@@ -29,7 +29,7 @@ def lobe_shop():
     titles = VerifierTitle.query.order_by(VerifierTitle.price).all()
     quotes = VerifierQuote.query.order_by(VerifierQuote.price).all()
     fonts = VerifierFont.query.order_by(VerifierFont.price).all()
-    loot_boxes = app.config['LOOT_BOXES']
+    loot_boxes = app.config['ECONOMY']['loot_boxes']
 
     loot_box_message = request.args.get('messages', None)
     loot_box_items = []
@@ -61,7 +61,7 @@ def claim_daily_prize():
     form = DailySpinForm(request.form)
     progression = current_user.progression
 
-    if current_user.progression.last_spin < datetime.combine(
+    if not current_user.progression.last_spin or current_user.progression.last_spin < datetime.combine(
             date.today(), datetime.min.time()):
         progression.last_spin = datetime.now()
         if form.prize_type.data == 'coin':

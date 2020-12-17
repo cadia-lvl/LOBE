@@ -43,7 +43,7 @@
             <h2 class='font-weight-bold' style='font-family: "Dancing Script", cursive;'>Lúxusverðlaun</h2>
             <p>Þessi verðlaun eru sérstaklega góð og kosta þar af leiðandi meira en önnur verðlaun. Athugið að lúxusverðlaun fara ekki á útsölu.
                 Drífðu þig að næla þér í lúxusverðlaun því takmarkað magn er í boði!</p>
-            {% if current_user.is_admin() %}
+            {% if current_user.is_admin() and False %}
                 <a href="{{url_for('premium_item_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3 mt-2'>
                     Búa til
                     {{macros.btn_icon('plus', 'l')}}
@@ -64,9 +64,11 @@
             <h3 class='font-weight-bold'>Merki</h3>
             <p class='mb-0'>Merki birtast alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
             <p>Þú átt {{current_user.progression.owned_icons|length}} af {{icons|length}} merkjum.</p>
+            {% if icons|length %}
             <div class="progress" style="height: 10px;">
                 <div class="progress-bar bg-success" role="progressbar" style="width: {{100 * (current_user.progression.owned_icons|length/icons|length)}}%;"></div>
             </div>
+            {% endif %}
             {% if current_user.is_admin() %}
                 <a href="{{url_for('shop.icon_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3 mt-2'>
                     Búa til
@@ -84,9 +86,11 @@
             <h3 class='font-weight-bold'>Titill</h3>
             <p class='mb-0'>Titlar birtast fyrir framan nafnið þitt alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
             <p>Þú átt {{current_user.progression.owned_titles|length}} af {{titles|length}} titlum.</p>
+            {% if titles|length %}
             <div class="progress" style="height: 10px;">
                 <div class="progress-bar bg-success" role="progressbar" style="width: {{100 * (current_user.progression.owned_titles|length/titles|length)}}%;"></div>
             </div>
+            {% endif %}
             {% if current_user.is_admin() %}
                 <a href="{{url_for('shop.title_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3 mt-2'>
                     Búa til
@@ -104,9 +108,11 @@
             <h3 class='font-weight-bold'>Slagorð</h3>
             <p class='mb-0'>Slagorð birtast alls staðar þar sem prófíllinn þinn kemur fyrir.</p>
             <p>Þú átt {{current_user.progression.owned_quotes|length}} af {{quotes|length}} titlum.</p>
+            {% if quotes|length %}
             <div class="progress" style="height: 10px;">
                 <div class="progress-bar bg-success" role="progressbar" style="width: {{100 * (current_user.progression.owned_quotes|length/quotes|length)}}%;"></div>
             </div>
+            {% endif %}
             {% if current_user.is_admin() %}
                 <a href="{{url_for('shop.quote_create')}}" class='mb-2 btn btn-sm btn-secondary rounded-pill text-success float-right px-3 mt-2'>
                     Búa til

@@ -154,6 +154,7 @@ def new_application(posting_uuid):
                     user = app.user_datastore.create_user(
                         name=form.data["name"],
                         email=form.data["email"],
+                        uuid=uuid.uuid4(),
                         password=None,
                         roles=[]
                     )

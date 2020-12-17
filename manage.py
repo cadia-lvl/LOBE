@@ -92,7 +92,8 @@ class AddUser(Command):
             try:
                 app.user_datastore.create_user(
                     email=email, password=hash_password(password),
-                    name=name, roles=selected_roles)
+                    name=name, roles=selected_roles,
+                    uuid=uuid.uuid4())
                 db.session.commit()
                 print("User with email {} has been created".format(email))
             except IntegrityError as e:

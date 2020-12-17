@@ -1,4 +1,5 @@
 import traceback
+import uuid
 
 from flask import redirect, flash, url_for, request, render_template, Blueprint
 from flask import current_app as app
@@ -139,6 +140,7 @@ def user_create():
                 name=form.name.data,
                 email=form.email.data,
                 password=hash_password(form.password.data),
+                uuid=uuid.uuid4(),
                 roles=['admin' if form.is_admin.data else 'Notandi'])
             form.populate_obj(new_user)
             db.session.commit()
@@ -169,6 +171,7 @@ def verifier_create():
                 name=form.name.data,
                 email=form.email.data,
                 password=hash_password(form.password.data),
+                uuid=uuid.uuid4(),
                 roles=['Greinir'])
             form.populate_obj(new_user)
             db.session.commit()

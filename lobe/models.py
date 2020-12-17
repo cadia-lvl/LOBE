@@ -1231,9 +1231,7 @@ class User(db.Model, UserMixin):
         db.Integer,
         primary_key=True,
         autoincrement=True)
-    uuid = db.Column(
-        db.String,
-        default=str(uuid.uuid4()))
+    uuid = db.Column(db.String)
     name = db.Column(db.String(255))
     email = db.Column(
         db.String(255),
@@ -1798,7 +1796,7 @@ class Mos(BaseModel, db.Model):
     id = db.Column(
         db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    uuid = db.Column(db.String, default=str(uuid.uuid4()))
+    uuid = db.Column(db.String)
     collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
     collection = db.relationship(Collection, info={
         'label': 'Söfnun',

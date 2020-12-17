@@ -15,7 +15,7 @@
                             {% for item in item_set %}
                                 {% if item is not none%}
                                     <div class="col-md-4 col-sm-6 d-flex align-items-stretch">
-                                        {%if type == "Icons"%}
+                                        {% if type == "Icons"%}
                                             {{macros.icon_card(item, false, current_user)}}
                                         {% elif type == "Titles" %}
                                             {{macros.title_card(item, false, current_user)}}
@@ -25,7 +25,7 @@
                                             {{macros.loot_card(item, current_user)}}
                                         {% elif type == "Font" %}
                                             {{macros.font_card(item, current_user)}}
-                                        {%endif%}
+                                        {% endif %}
                                     </div>
                                 {% endif %}
                             {% endfor %}
@@ -60,7 +60,7 @@
                     <div class="carousel-item {% if loop.index0==0 %}active{% endif %}">
                         {% for item in item_set %}
                             <div class="col-12 col-md-8 offset-md-2" style="float:left">
-                                {%if type == "Icons"%}
+                                {% if type == "Icons"%}
                                     {{macros.icon_card(item, false, current_user)}}
                                 {% elif type == "Titles" %}
                                     {{macros.title_card(item, false, current_user)}}

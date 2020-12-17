@@ -1,6 +1,7 @@
 import json
 import traceback
 import random
+import uuid
 import numpy as np
 from zipfile import ZipFile
 from operator import itemgetter
@@ -98,7 +99,6 @@ def mos_detail(id):
 
     if request.method == 'POST':
         if form.validate():
-            try:
                 if(form.is_g2p.data):
                     zip_file = request.files.get('files')
                     with ZipFile(zip_file, 'r') as zip:
@@ -117,18 +117,11 @@ def mos_detail(id):
                     return redirect(url_for('mos.mos_detail', id=id))
                 else:
                     flash(
-                        "Ekki tókst að hlaða upp skrá, vinsamlegast" +
-                        "lestu leiðbeiningar og reyndu aftur.",
+                        "Ekki tókst að hlaða inn skrá. Eingögnu hægt að hlaða inn skrám á stöðluðu formi.",
                         category="danger")
-            except Exception as e:
-                print(e)
-                flash(
-                    "Ekki tókst að hlaða upp skrá.",
-                    category="danger")
         else:
             flash(
-                "Ekki tókst að hlaða upp skrá, vinsamlegast lestu" +
-                " leiðbeiningar og reyndu aftur.",
+                "Villa í formi, athugaðu að rétt sé fyllt inn og reyndu aftur.",
                 category="danger")
 
     mos_list = MosInstance.query.filter(MosInstance.mos_id == id).order_by(
@@ -176,6 +169,7 @@ def take_mos_test(mos_uuid):
                     name=form.data["name"],
                     email=form.data["email"],
                     password=None,
+                    uuid=uuid.uuid4(),
                     roles=[]
                 )
                 form.populate_obj(new_user)
@@ -196,7 +190,7 @@ def take_mos_test(mos_uuid):
         form=form,
         type='create',
         mos=mos,
-        action=url_for('take_mos_test', mos_uuid=mos_uuid))
+        action=url_for('mos.take_mos_test', mos_uuid=mos_uuid))
 
 
 @mos.route('/mos/<int:id>/mostest/<string:uuid>', methods=['GET', 'POST'])
@@ -365,7 +359,7 @@ def stream_MOS_zip(id):
 @login_required
 @roles_accepted('admin')
 def stream_MOS_index_demo():
-    other_dir = app.config["OTHER_PATH"]
+    other_dir = app.config["OTHER_DIR"]
     try:
         return send_from_directory(
             other_dir, 'synidaemi_mos.zip', as_attachment=True)
@@ -463,6 +457,7 @@ def delete_mos_instance(id):
 def mos_create():
     try:
         mos = Mos()
+        mos.uuid = uuid.uuid4()
         db.session.add(mos)
         db.session.commit()
         flash("Nýrri MOS prufu bætt við", category="success")
@@ -487,6 +482,7 @@ def mos_create_collection(id):
         try:
             mos = Mos()
             form.populate_obj(mos)
+            mos.uuid = uuid.uuid4()
             mos.collection = Collection.query.get(id)
             mos.collection_id = id
             tokens = Token.query.filter(Token.num_recordings > 0) \

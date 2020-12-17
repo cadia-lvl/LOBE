@@ -539,7 +539,7 @@ class UploadCollectionForm(FlaskForm):
 class MosUploadForm(FlaskForm):
     is_g2p = BooleanField(
         'Staðlað form.',
-        description='Hakið við ef uphleðslan er á stöðluðu formi' +
+        description='Hakið við ef skráin er á stöðluðu formi' +
                     ' samanber lýsingu hér að ofan',
         default=False)
     files = FileField(

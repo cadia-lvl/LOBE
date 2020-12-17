@@ -107,6 +107,11 @@ def insert_collection(form):
 
 
 def save_custom_wav(zip, zip_name, tsv_name, mos, id):
+    # Create parent folders if missing (this should probably be done somewhere else)
+    pathlib.Path(app.config["WAV_CUSTOM_AUDIO_DIR"]).mkdir(exist_ok=True)
+    pathlib.Path(app.config["CUSTOM_RECORDING_DIR"]).mkdir(exist_ok=True)
+    pathlib.Path(app.config["CUSTOM_TOKEN_DIR"]).mkdir(exist_ok=True)
+
     with zip.open(tsv_name) as tsvfile:
         wav_path_dir = app.config["WAV_CUSTOM_AUDIO_DIR"]+"{}".format(id)
         webm_path = app.config["CUSTOM_RECORDING_DIR"]+"{}".format(id)

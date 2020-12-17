@@ -4,6 +4,7 @@
         <div class='col-12'>
             <h1 class='font-weight-bold'>{{user.name if user.name != None else 'Ekki skráð'}}</h1>
             <p>{{user.email}}</p>
+            <p>UUID: {{user.uuid}}</p>
             {% if current_user.is_admin() %}
                 <button type='button' class='btn btn-sm btn-secondary float-right text-warning dropdown-toggle' data-toggle='dropdown'>
                     {{macros.btn_icon('edit', 'r')}}

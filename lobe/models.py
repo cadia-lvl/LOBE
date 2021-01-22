@@ -1202,6 +1202,14 @@ class Verification(BaseModel, db.Model):
             'comment': self.comment,
             'trims': [{'start': t.start, 'end': t.end} for t in self.trims]}
 
+    def as_tsv_line(self):
+        return "\t".join(map(str, [
+            int(self.recording_id),
+            int(self.volume_is_low),
+            int(self.volume_is_high),
+            int(self.recording_has_glitch),
+            int(self.recording_has_wrong_wording),
+        ]))
 
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'

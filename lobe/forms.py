@@ -465,7 +465,7 @@ class MosTestForm(Form):
     name = StringField("Nafn", [validators.required()])
     age = IntegerField("Aldur", [validators.required(),
                        validators.NumberRange(min=10, max=120)])
-    email = EmailField("Netfang", [validators.required()])
+    audio_setup = StringField("Hvers konar heyrnatól/hátalara ertu með?", [validators.required()])
 
 
 class UploadCollectionForm(FlaskForm):

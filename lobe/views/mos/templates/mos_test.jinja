@@ -90,8 +90,6 @@
 {% block scripts %}
     {{super()}}
     <script src='{{url_for("main.static", filename="js/error.js")}}'></script>
-    <script src='{{url_for("static", filename="js/volume-meter.js")}}'></script>
-    <script src='{{url_for("static", filename="js/meter.js")}}'></script>
     <script type='text/javascript'>
         var postRatingsRoute = "{{url_for('mos.post_mos_rating', id=mos.id)}}";
         var user_id = {{user.id}};
@@ -172,15 +170,24 @@
         function nextAction(){
             // Increment the sentence index and update the UI
             if(mosIndex < numMosInstances - 1){
-                mosIndex += 1; updateUI();
+                mosIndex += 1;
+                $( "#mosUI" ).animate({
+                    opacity: 0.0
+                    }, 200, function() {
+                        updateUI();
+                });
             }
-
         }
 
         function prevAction(){
             // Decrement the sentence index and update the UI
             if(mosIndex > 0){
-                mosIndex -= 1; updateUI();
+                mosIndex -= 1;
+                $( "#mosUI" ).animate({
+                    opacity: 0.0
+                    }, 200, function() {
+                        updateUI();
+                });
             }
         }
 
@@ -286,18 +293,15 @@
 
         // ---------------- UI configuration --------------------
         async function updateUI(){
+            setTokenUI();
+            setProgressUI(mosIndex + 1);
+            setButtonUI();
+            setFinishButtonUI();
+            setRadioUI();
+
             $( "#mosUI" ).animate({
-                opacity: 0.0
-                }, 200, function() {
-                    setTokenUI();
-                    setProgressUI(mosIndex + 1);
-                    setButtonUI();
-                    setFinishButtonUI();
-                    setRadioUI();
-                    $( "#mosUI" ).animate({
-                        opacity: 1
-                    }, 300);
-            });
+                opacity: 1.0
+            }, 300);
         }
 
         function setProgressUI(i){

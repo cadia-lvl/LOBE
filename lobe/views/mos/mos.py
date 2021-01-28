@@ -183,11 +183,16 @@ def take_mos_test(mos_uuid):
     if request.method == "POST":
         if form.validate():
             try:
+                # We don't really want to require email ,
+                # but we have to fake one for the user model
+                user_uuid = uuid.uuid4()
+                email = "{}@lobe.is".format(user_uuid)
                 new_user = app.user_datastore.create_user(
                     name=form.data["name"],
-                    email=form.data["email"],
+                    email=email,
                     password=None,
-                    uuid=uuid.uuid4(),
+                    uuid=user_uuid,
+                    audio_setup=form.data["audio_setup"],
                     roles=[]
                 )
                 form.populate_obj(new_user)
@@ -534,7 +539,6 @@ def mos_create_collection(id):
 
 
 @mos.route('/custom-recording/<int:id>/download/')
-@login_required
 def download_custom_recording(id):
     custom_recording = CustomRecording.query.get(id)
     try:

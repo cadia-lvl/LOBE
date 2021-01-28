@@ -1805,6 +1805,9 @@ class Mos(BaseModel, db.Model):
         db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     uuid = db.Column(db.String)
+    question = db.Column(db.String)
+    form_text = db.Column(db.String)
+    help_text = db.Column(db.String)
     collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
     collection = db.relationship(Collection, info={
         'label': 'Söfnun',

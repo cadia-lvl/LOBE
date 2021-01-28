@@ -438,6 +438,23 @@ class MosSelectAllForm(Form):
     select = HiddenField()
 
 
+MosDetailForm = model_form(
+    Mos,
+    db_session=db.session,
+    field_args={
+        "question": {
+            "label": "Spurning",
+        },
+        "form_text": {
+            "label": "Form texti", "widget": widgets.TextArea()
+        },
+        "help_text": {
+            "label": "Hjálpartexti", "widget": widgets.TextArea()
+        },
+    },
+    only=["question", "form_text", "help_text"])
+
+
 class MosItemSelectionForm(ModelForm):
     class Meta:
         model = MosInstance

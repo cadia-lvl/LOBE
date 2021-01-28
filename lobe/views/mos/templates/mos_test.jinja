@@ -1,15 +1,74 @@
 {% extends "__base.jinja" %}
 {% block body %}
+    <style>
+    .btn-outline-primary {
+        color: white;
+    }
+    .btn-outline-primary:not(:disabled):not(.disabled):active, .btn-outline-primary:not(:disabled):not(.disabled).active, .show > .btn-outline-primary.dropdown-toggle {
+        background-color: #00bc8c;
+    }
+    </style>
 
-    <div class='row mb-3 mt-md-0 mt-n4'>
-            <div class='col-12'>
-                <div class="progress">
-                    <div class="progress-bar bg-success" id='tokenProgress' role="progressbar"></div>
-                </div>
+    <div class='row mb-3 mt-md-0 mt-n4 mb-5'>
+        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12'>
+            <p class='text-center'>
+                <span class='rounded-pill bg-secondary text-success px-2 py-1 mt-3'>
+                    <span id='currentIndexSpan'></span>/<span id='totalIndexSpan'></span>
+                </span>
+            </p>
+            <div class="progress">
+                <div class="progress-bar bg-success" id='tokenProgress' role="progressbar"></div>
             </div>
+        </div>
     </div>
+
+    <div id="mosUI">
+        <div class='row'>
+            <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
+                {% if mos.help_text %}
+                    <p class="pt-2">{{ mos.help_text }}</p>
+                {% endif %}
+            </div>
+            <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
+                {% include 'mos_token_card.jinja' %}
+            </div>
+        </div>
+        <div class='row mt-2'>
+            <div class='col-12 text-center'>
+                <audio id="audio-recording" src={{recordings_url[0]}} type="audio/wav"></audio>
+                <button type='button' id="play" class='btn btn-success rounded-pill'>
+                    <i id='playButtonIcon' class='fa fa-play'></i>
+                </button>
+            </div>
+        </div>
+      <div class='my-4'>
+            <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-4'>
+                <h3>{{ mos.question }}</h3>
+            </div>
+            <form class="text-center" id="ratingButtons">
+                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                    <label class="btn btn-outline-primary center-block border-success rounded-pill-left" name="optionsLabel">
+                        <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option1" value="1">1
+                    </label>
+                    <label class="btn btn-outline-primary center-block border-success" name="optionsLabel">
+                        <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option2" value="2">2
+                    </label>
+                    <label class="btn btn-outline-primary center-block border-success" name="optionsLabel">
+                        <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option3" value="3">3
+                    </label>
+                    <label class="btn btn-outline-primary center-block border-success" name="optionsLabel">
+                        <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option4" value="4">4
+                    </label>
+                    <label class="btn btn-outline-primary center-block border-success rounded-pill-right" name="optionsLabel">
+                        <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option5" value="5">5
+                    </label>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class='row'>
-        <div class='col-12 controls mb-3 d-flex justify-content-between'>
+        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 controls mb-3 d-flex justify-content-between'>
             <button id='prev' class='btn btn-sm btn-secondary rounded-pill' type='button'>
                 <i class='fa fa-arrow-left mr-1 ml-1'></i>
                 <span class='font-weight-bold mr-1'>Fyrri</span>
@@ -19,47 +78,7 @@
                 <span class='font-weight-bold ml-1 mr-1'>Næsti</span>
                 <i class='fa fa-arrow-right mr-1'></i>
             </button>
-        </div>
-    </div>
 
-    <div class='row'>
-        <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-2'>
-            {% include 'mos_token_card.jinja' %}
-        </div>
-    </div>
-    <div class='row mt-2'>
-        <div class='col-12 text-center'>
-            <audio id="audio-recording" src={{recordings_url[0]}} type="audio/wav"></audio>
-            <button type='button' id="play" class='btn btn-success rounded-pill'>
-                <i id='playButtonIcon' class='fa fa-play'></i>
-            </button>
-        </div>
-    </div>
-  <div class='mt-4'>
-        <form class="text-center" id="ratingButtons">
-            <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                <label class="btn btn-secondary center-block border-success rounded-pill-left" name="optionsLabel">
-                    <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option1" value="1">1
-                </label>
-                <label class="btn btn-secondary btn-primary center-block border-success" name="optionsLabel">
-                    <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option2" value="2">2
-                </label>
-                <label class="btn btn-secondary btn-primary center-block border-success" name="optionsLabel">
-                    <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option3" value="3">3
-                </label>
-                <label class="btn btn-secondary btn-primary center-block border-success" name="optionsLabel">
-                    <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option4" value="4">4
-                </label>
-                <label class="btn btn-secondary btn-primary center-block border-success rounded-pill-right" name="optionsLabel">
-                    <input class="mx-3 ratingButton" type="radio" name="options" onchange="getRating(value)" id="option5" value="5">5
-                </label>
-            </div>
-        </form>
-    </div>
-
-
-    <div class='row mt-2'>
-        <div class='col-12'>
             <button type='submit' id='send' type='button' class='btn btn-success rounded-pill float-right'>
                 Klára
                 <i id='finishButtonIcon' class='ml-2 fa fa-arrow-right'></i>
@@ -100,7 +119,6 @@
         let meter;
 
         var mosIndex = 0; // At what utterance are we now?
-        var mosIndex = 0;
         var numMosInstances = mos_list.length;
 
         //token stuff
@@ -222,8 +240,10 @@
                 }
                 audio.onended = function(){
                     playButtonIcon.removeClass('fa-stop').addClass('fa-play');
-                    mos_list[mosIndex]['is_played'] = true
-                    setRatingsButtonsOn()
+                    mos_list[mosIndex]['is_played'] = true;
+                    setRatingsButtonsOn();
+                    setButtonUI();
+                    setFinishButtonUI();
                 }
                 // play audio
                 playButtonIcon.removeClass('fa-play').addClass('fa-stop');
@@ -266,10 +286,18 @@
 
         // ---------------- UI configuration --------------------
         async function updateUI(){
-            setTokenUI();
-            setProgressUI(mosIndex + 1);
-            setFinishButtonUI();
-            setRadioUI();
+            $( "#mosUI" ).animate({
+                opacity: 0.0
+                }, 200, function() {
+                    setTokenUI();
+                    setProgressUI(mosIndex + 1);
+                    setButtonUI();
+                    setFinishButtonUI();
+                    setRadioUI();
+                    $( "#mosUI" ).animate({
+                        opacity: 1
+                    }, 300);
+            });
         }
 
         function setProgressUI(i){
@@ -318,18 +346,36 @@
             */
         }
 
-        function setFinishButtonUI(){
-            //only allow if at least one marked token or one recording
-            for(var i=0; i<numMosInstances; i++){
-                if(!('rating' in mos_list[i])){
-                    finishButton.disabled = true;
-                    return false;
-                }
+        function setButtonUI(){
+            prevButton.disabled = false;
+            nextButton.disabled = false;
+            nextButton.style.display = "";
+
+            if (mosIndex == 0) {
+                prevButton.disabled = true;
             }
-            finishButton.disabled = false;
+            if (!mos_list[mosIndex]['is_played']) {
+                nextButton.disabled = true;
+            }
+            if (mosIndex == numMosInstances -1) {
+                nextButton.disabled = true;
+                nextButton.style.display = "none"
+            }
         }
 
-
+        function setFinishButtonUI(){
+            if (mosIndex == numMosInstances -1 && !mos_list[mosIndex]['is_played']) {
+                finishButton.disabled = true;
+                finishButton.style.display = "";
+            } else if (mosIndex == numMosInstances -1) {
+                finishButton.disabled = false;
+                finishButton.style.display = "";
+            } else {
+                finishButton.disabled = true;
+                finishButton.style.display = "none";
+            }
+            return false;
+        }
 
         function setLiveUI(type){
             switch(type){

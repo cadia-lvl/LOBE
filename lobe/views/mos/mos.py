@@ -17,7 +17,7 @@ from lobe.models import (Mos, Collection, MosInstance, User, Token,
 from lobe.db import (resolve_order, save_custom_wav, save_MOS_ratings,
                      delete_mos_instance_db)
 from lobe.forms import (MosSelectAllForm, MosUploadForm, MosItemSelectionForm,
-                        MosTestForm, MosForm)
+                        MosTestForm, MosForm, MosDetailForm)
 
 mos = Blueprint(
     'mos', __name__, template_folder='templates')
@@ -99,26 +99,26 @@ def mos_detail(id):
 
     if request.method == 'POST':
         if form.validate():
-                if(form.is_g2p.data):
-                    zip_file = request.files.get('files')
-                    with ZipFile(zip_file, 'r') as zip:
-                        zip_name = zip_file.filename[:-4]
-                        tsv_name = '{}/index.tsv'.format(zip_name)
-                        successfully_uploaded = save_custom_wav(
-                            zip, zip_name, tsv_name, mos, id)
-                        if len(successfully_uploaded) > 0:
-                            flash("Tókst að hlaða upp {} setningum.".format(
-                                len(successfully_uploaded)),
-                                category="success")
-                        else:
-                            flash(
-                                "Ekki tókst að hlaða upp neinum setningum.",
-                                category="warning")
-                    return redirect(url_for('mos.mos_detail', id=id))
-                else:
-                    flash(
-                        "Ekki tókst að hlaða inn skrá. Eingögnu hægt að hlaða inn skrám á stöðluðu formi.",
-                        category="danger")
+            if(form.is_g2p.data):
+                zip_file = request.files.get('files')
+                with ZipFile(zip_file, 'r') as zip:
+                    zip_name = zip_file.filename[:-4]
+                    tsv_name = '{}/index.tsv'.format(zip_name)
+                    successfully_uploaded = save_custom_wav(
+                        zip, zip_name, tsv_name, mos, id)
+                    if len(successfully_uploaded) > 0:
+                        flash("Tókst að hlaða upp {} setningum.".format(
+                            len(successfully_uploaded)),
+                            category="success")
+                    else:
+                        flash(
+                            "Ekki tókst að hlaða upp neinum setningum.",
+                            category="warning")
+                return redirect(url_for('mos.mos_detail', id=id))
+            else:
+                flash(
+                    "Ekki tókst að hlaða inn skrá. Eingögnu hægt að hlaða inn skrám á stöðluðu formi.",
+                    category="danger")
         else:
             flash(
                 "Villa í formi, athugaðu að rétt sé fyllt inn og reyndu aftur.",
@@ -156,6 +156,24 @@ def mos_detail(id):
         mos_form=form,
         ratings=ratings,
         section='mos')
+
+
+@mos.route('/mos/<int:id>/edit/detail', methods=['GET', 'POST'])
+@login_required
+@roles_accepted('admin')
+def mos_edit_detail(id):
+    mos = Mos.query.get(id)
+    form = MosDetailForm(request.form, obj=mos)
+    if request.method == "POST":
+        if form.validate():
+            form.populate_obj(mos)
+            db.session.commit()
+            return redirect(url_for("mos.mos_detail", id=mos.id))
+    return render_template(
+        'forms/model.jinja',
+        form=form,
+        type='edit',
+        action=url_for('mos.mos_edit_detail', id=mos.id))
 
 
 @mos.route('/mos/take_test/<uuid:mos_uuid>/', methods=['GET', 'POST'])

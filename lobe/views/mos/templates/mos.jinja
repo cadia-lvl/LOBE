@@ -59,7 +59,10 @@
                 Skoða niðurstöður
             </a>
         {% endif %}
-
+        <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("mos.mos_edit_detail", id=mos.id)}}'>
+            {{macros.btn_icon('edit', 'r')}}
+            Breyta texta
+        </a>
     {% endif %}
 {% endblock %}
 

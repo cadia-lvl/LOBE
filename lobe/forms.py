@@ -438,6 +438,23 @@ class MosSelectAllForm(Form):
     select = HiddenField()
 
 
+MosDetailForm = model_form(
+    Mos,
+    db_session=db.session,
+    field_args={
+        "question": {
+            "label": "Spurning",
+        },
+        "form_text": {
+            "label": "Form texti", "widget": widgets.TextArea()
+        },
+        "help_text": {
+            "label": "Hjálpartexti", "widget": widgets.TextArea()
+        },
+    },
+    only=["question", "form_text", "help_text"])
+
+
 class MosItemSelectionForm(ModelForm):
     class Meta:
         model = MosInstance
@@ -448,7 +465,7 @@ class MosTestForm(Form):
     name = StringField("Nafn", [validators.required()])
     age = IntegerField("Aldur", [validators.required(),
                        validators.NumberRange(min=10, max=120)])
-    email = EmailField("Netfang", [validators.required()])
+    audio_setup = StringField("Hvers konar heyrnatól/hátalara ertu með?", [validators.required()])
 
 
 class UploadCollectionForm(FlaskForm):

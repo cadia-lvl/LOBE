@@ -143,6 +143,18 @@ def verification_list():
         section='verification')
 
 
+@verification.route('/verifications/all/', methods=['GET'])
+@login_required
+def download_verifications():
+    verifications = Verification.query.all()
+    response_lines = [
+        verification.as_tsv_line() for verification in verifications
+    ]
+    r = Response(response="\n".join(response_lines), status=200, mimetype="text/plain")
+    r.headers["Content-Type"] = "text/plain; charset=utf-8"
+    return r
+
+
 @verification.route('/verifications/<int:id>/')
 @login_required
 def verification_detail(id):

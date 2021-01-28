@@ -4,6 +4,9 @@
         <div class='col-xl-6 offset-xl-3 col-md-8 offset-md-2 col-12'>
             <div class='card card-body'>
                 <h2>{{mos.printable_id}}</h2>
+                {% if mos.form_text %}
+                <p class="pt-2">{{ mos.form_text }}</p>
+                {% endif %}
             </div>
         </div>
     </div>

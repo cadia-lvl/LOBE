@@ -1202,6 +1202,14 @@ class Verification(BaseModel, db.Model):
             'comment': self.comment,
             'trims': [{'start': t.start, 'end': t.end} for t in self.trims]}
 
+    def as_tsv_line(self):
+        return "\t".join(map(str, [
+            int(self.recording_id),
+            int(self.volume_is_low),
+            int(self.volume_is_high),
+            int(self.recording_has_glitch),
+            int(self.recording_has_wrong_wording),
+        ]))
 
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'
@@ -1240,6 +1248,7 @@ class User(db.Model, UserMixin):
     sex = db.Column(db.String(255))
     age = db.Column(db.Integer)
     dialect = db.Column(db.String(255))
+    audio_setup = db.Column(db.String(255))
     active = db.Column(db.Boolean())
     created_at = db.Column(
         db.DateTime,
@@ -1797,6 +1806,9 @@ class Mos(BaseModel, db.Model):
         db.Integer, primary_key=True, nullable=False, autoincrement=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     uuid = db.Column(db.String)
+    question = db.Column(db.String)
+    form_text = db.Column(db.String)
+    help_text = db.Column(db.String)
     collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
     collection = db.relationship(Collection, info={
         'label': 'Söfnun',

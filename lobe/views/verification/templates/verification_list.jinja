@@ -6,6 +6,13 @@
         {{macros.btn_icon('home', 'r')}}
         Upphafsskjár greinara
     </a>
+    <a class='btn btn-secondary float-right mr-2'
+        href='{{url_for("verification.download_verifications")}}'
+        target='_blank'
+        download='verifications.txt'>
+        {{macros.btn_icon('download', 'r')}}
+        Hlaða niður
+    </a>
 {% endblock %}
 {% block table %}
     {% if verifications.total > 0 %}

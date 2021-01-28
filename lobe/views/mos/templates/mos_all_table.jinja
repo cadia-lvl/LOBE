@@ -9,6 +9,10 @@
                 Auðkenni
                 {{macros.sort_th_a('id')}}
             </th>
+            <th>
+                Spurning
+                {{macros.sort_th_a('question')}}
+            </th>
             {%if is_no_collection%}
             {% else %}
             <th>
@@ -22,6 +26,7 @@
                 <tr>
                     <td>{{mos.created_at | datetime(format='low')}}</td>
                     <td><a href={{mos.url}}>{{mos.printable_id}}</a></td>
+                    <td>{{mos.question|default("-", true)}}</td>
                     {%if is_no_collection%}
         
                     {% else %}

@@ -79,48 +79,52 @@
                 Lotur
             </a>
             {% if current_user.is_admin() %}
-                <button type='button' class='btn btn-sm btn-secondary float-right dropdown-toggle' data-toggle='dropdown'>
-                    {{macros.btn_icon('download', 'r')}}
-                    Sækja
-                </button>
-                <div class='dropdown-menu'>
-                    <button class="dropdown-item" type="button" data-toggle='modal', data-target='#downloadModal'>
-                        Sækja söfnun
+                <div class='btn-group float-right'>
+                    <button type='button' class='btn btn-sm btn-secondary float-right dropdown-toggle' data-toggle='dropdown'>
+                        {{macros.btn_icon('download', 'r')}}
+                        Sækja
                     </button>
-                    <a href="{{url_for('collection.download_collection_info', id=collection.id)}}" class='dropdown-item'>Sækja upplýsingaskjal</a>
-                </div>
-                <button type='button' class='btn btn-sm btn-secondary float-right text-warning dropdown-toggle mr-2' data-toggle='dropdown'>
-                    {{macros.btn_icon('edit', 'r')}}
-                    Breyta
-                </button>
-                <div class='dropdown-menu'>
-                    <a href='{{collection.get_edit_url()}}' class='dropdown-item'>
-                        {{macros.btn_icon("database", "r")}}
-                        Breyta söfnun
-                    </a>
-                    <a href='{{collection.configuration.edit_url}}' class='dropdown-item'>
-                        {{macros.btn_icon("cog", "r")}}
-                        Breyta stillingum
-                    </a>
-                    <button type='button' class='dropdown-item text-warning' data-toggle='modal', data-target='#trimModal'>
-                        {{macros.btn_icon("cut", "r")}}
-                        Klippa söfnun
-                    </button>
-                    <button type='button' class='dropdown-item text-danger' data-toggle='modal', data-target='#deleteModal'>
-                        {{macros.btn_icon("times", "r")}}
-                        Eyða söfnun
-                    </button>
-                    {% if collection.has_zip %}
-                        <button type='button' class='dropdown-item text-danger' data-toggle='modal', data-target='#deleteArchiveModal'>
-                            {{macros.btn_icon("times", "r")}}
-                            Eyða skjalasafni
+                    <div class='dropdown-menu'>
+                        <button class="dropdown-item" type="button" data-toggle='modal', data-target='#downloadModal'>
+                            Sækja söfnun
                         </button>
-                    {% endif %}
-                    <div class='dropdown-divider'></div>
-                    <button type='button' class='dropdown-item' data-toggle='modal', data-target='#addTokensModal'>
-                        {{macros.btn_icon("plus", "r")}}
-                        Bæta við setningum
+                        <a href="{{url_for('collection.download_collection_info', id=collection.id)}}" class='dropdown-item'>Sækja upplýsingaskjal</a>
+                    </div>
+                </div>
+                <div class='btn-group float-right'>
+                    <button type='button' class='btn btn-sm btn-secondary float-right text-warning dropdown-toggle mr-2' data-toggle='dropdown'>
+                        {{macros.btn_icon('edit', 'r')}}
+                        Breyta
                     </button>
+                    <div class='dropdown-menu'>
+                        <a href='{{collection.get_edit_url()}}' class='dropdown-item'>
+                            {{macros.btn_icon("database", "r")}}
+                            Breyta söfnun
+                        </a>
+                        <a href='{{collection.configuration.edit_url}}' class='dropdown-item'>
+                            {{macros.btn_icon("cog", "r")}}
+                            Breyta stillingum
+                        </a>
+                        <button type='button' class='dropdown-item text-warning' data-toggle='modal', data-target='#trimModal'>
+                            {{macros.btn_icon("cut", "r")}}
+                            Klippa söfnun
+                        </button>
+                        <button type='button' class='dropdown-item text-danger' data-toggle='modal', data-target='#deleteModal'>
+                            {{macros.btn_icon("times", "r")}}
+                            Eyða söfnun
+                        </button>
+                        {% if collection.has_zip %}
+                            <button type='button' class='dropdown-item text-danger' data-toggle='modal', data-target='#deleteArchiveModal'>
+                                {{macros.btn_icon("times", "r")}}
+                                Eyða skjalasafni
+                            </button>
+                        {% endif %}
+                        <div class='dropdown-divider'></div>
+                        <button type='button' class='dropdown-item' data-toggle='modal', data-target='#addTokensModal'>
+                            {{macros.btn_icon("plus", "r")}}
+                            Bæta við setningum
+                        </button>
+                    </div>
                 </div>
             {% endif %}
         </div>

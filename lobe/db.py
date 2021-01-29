@@ -122,56 +122,72 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
         pathlib.Path(webm_path).mkdir(exist_ok=True)
         custom_tokens = []
         for row in rd:
-            if row[0] and len(row) == 3:
-                if (row[1].lower() == 's' or row[1].lower() == 'r') and row[2]:
-                    for zip_info in zip.infolist():
-                        if zip_info.filename[-1] == '/':
-                            continue
-                        zip_info.filename = os.path.basename(zip_info.filename)
-                        if zip_info.filename == row[0]:
-                            custom_token_name = '{}_m{:09d}'.format(
-                                zip_name, id)
-                            custom_recording = CustomRecording()
-                            custom_token = CustomToken(
-                                row[2], custom_token_name)
+            if row[0] and (len(row) == 3 or len(row) == 5 or len(row) == 6):
+                if not ((row[1].lower() == 's' or row[1].lower() == 'r') and row[2]):
+                    pass
+                if not (row[3] and row[3].isnumeric() and row[4] and row[4].isnumeric() and row[5]):
+                    pass
+                for zip_info in zip.infolist():
+                    if zip_info.filename[-1] == '/':
+                        continue
+                    zip_info.filename = os.path.basename(zip_info.filename)
+                    if zip_info.filename == row[0]:
+                        custom_token_name = '{}_m{:09d}'.format(
+                            zip_name, id)
+                        custom_recording = CustomRecording()
+                        custom_token = CustomToken(
+                            row[2], custom_token_name)
+                        if len(row) == 3:
                             mos_instance = MosInstance(
                                 custom_token=custom_token,
                                 custom_recording=custom_recording)
-                            db.session.add(custom_token)
-                            db.session.add(custom_recording)
-                            db.session.add(mos_instance)
-                            db.session.flush()
-                            file_id = '{}_s{:09d}_m{:09d}'.format(
-                                os.path.splitext(
-                                    os.path.basename(zip_info.filename))[0],
-                                custom_recording.id, id)
-                            fname = secure_filename(f'{file_id}.webm')
-                            path = os.path.join(
-                                app.config['CUSTOM_RECORDING_DIR'],
-                                str(id), fname)
-                            wav_path = os.path.join(
-                                app.config['WAV_CUSTOM_AUDIO_DIR'],
-                                str(id),
-                                secure_filename(f'{file_id}.wav'))
-                            zip_info.filename = secure_filename(
-                                f'{file_id}.wav')
-                            zip.extract(zip_info, wav_path_dir)
-                            sound = AudioSegment.from_wav(wav_path)
-                            sound.export(path, format="webm")
-                            custom_recording.original_fname = row[0]
-                            custom_recording.user_id = current_user.id
-                            custom_recording.file_id = file_id
-                            custom_recording.fname = fname
-                            custom_recording.path = path
-                            custom_recording.wav_path = wav_path
-                            if row[1].lower() == 's':
-                                mos_instance.is_synth = True
-                            else:
-                                mos_instance.is_synth = False
-                            mos.mos_objects.append(mos_instance)
-                            custom_tokens.append(custom_token)
-                else:
-                    pass
+                        elif len(row) == 5:
+                            mos_instance = MosInstance(
+                                custom_token=custom_token,
+                                custom_recording=custom_recording,
+                                voice_idx=row[3],
+                                utterance_idx=row[4])
+                        elif len(row) == 6:
+                            mos_instance = MosInstance(
+                                custom_token=custom_token,
+                                custom_recording=custom_recording,
+                                voice_idx=row[3],
+                                utterance_idx=row[4],
+                                question=row[5])
+                        db.session.add(custom_token)
+                        db.session.add(custom_recording)
+                        db.session.add(mos_instance)
+                        db.session.flush()
+                        file_id = '{}_s{:09d}_m{:09d}'.format(
+                            os.path.splitext(
+                                os.path.basename(zip_info.filename))[0],
+                            custom_recording.id, id)
+                        fname = secure_filename(f'{file_id}.webm')
+                        path = os.path.join(
+                            app.config['CUSTOM_RECORDING_DIR'],
+                            str(id), fname)
+                        wav_path = os.path.join(
+                            app.config['WAV_CUSTOM_AUDIO_DIR'],
+                            str(id),
+                            secure_filename(f'{file_id}.wav'))
+                        zip_info.filename = secure_filename(
+                            f'{file_id}.wav')
+                        zip.extract(zip_info, wav_path_dir)
+                        sound = AudioSegment.from_wav(wav_path)
+                        sound.export(path, format="webm")
+                        custom_recording.original_fname = row[0]
+                        custom_recording.user_id = current_user.id
+                        custom_recording.file_id = file_id
+                        custom_recording.fname = fname
+                        custom_recording.path = path
+                        custom_recording.wav_path = wav_path
+                        if row[1].lower() == 's':
+                            mos_instance.is_synth = True
+                        else:
+                            mos_instance.is_synth = False
+                        mos.mos_objects.append(mos_instance)
+                        custom_tokens.append(custom_token)
+                
         if len(custom_tokens) > 0:
             custom_token_dir = app.config["CUSTOM_TOKEN_DIR"]+"{}".format(id)
             pathlib.Path(custom_token_dir).mkdir(exist_ok=True)

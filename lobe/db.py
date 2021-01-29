@@ -123,10 +123,12 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
         custom_tokens = []
         for row in rd:
             if row[0] and (len(row) == 3 or len(row) == 5 or len(row) == 6):
+                # Validate columns
                 if not ((row[1].lower() == 's' or row[1].lower() == 'r') and row[2]):
-                    pass
-                if not (row[3] and row[3].isnumeric() and row[4] and row[4].isnumeric() and row[5]):
-                    pass
+                    continue
+                if len(row) >= 5 and not (row[3] and row[3].isnumeric() and row[4] and row[4].isnumeric()):
+                    continue
+
                 for zip_info in zip.infolist():
                     if zip_info.filename[-1] == '/':
                         continue

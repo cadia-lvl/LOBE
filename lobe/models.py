@@ -1869,15 +1869,15 @@ class Mos(BaseModel, db.Model):
         This results in a balanced test, which should minimize the effect of each sentence
         and the carry-over effect of speakers on each other.
         """
-        voices = self.getAllVoiceIndices()
-        utterances = self.getAllUtteranceIndices()
+        voices = list(self.getAllVoiceIndices())
+        utterances = list(self.getAllUtteranceIndices())
         num_voices = len(list(voices))
         latinSquareRows = balanced_latin_squares(num_voices)
         configurations = []
         for row in latinSquareRows:
             configuration = []
             while len(configuration) < len(list(utterances)):
-                configuration.append([x for x in self.mos_objects if (
+                configuration.extend([x for x in self.mos_objects if (
                         x.voice_idx == row[len(configuration) % len(row)]
                         and
                         x.utterance_idx == utterances[len(configuration)]

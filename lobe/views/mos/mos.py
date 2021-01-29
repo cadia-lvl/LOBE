@@ -225,16 +225,12 @@ def mos_test(id, uuid):
             flash("Þú hefur ekki aðgang að þessari síðu", category='error')
             return redirect(url_for("mos", id=id))
     mos = Mos.query.get(id)
-    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).all()
-    mos_list_to_use = []
-    for i in mos_list:
-        if (i.selected and i.path):
-            mos_list_to_use.append(i)
-    random.shuffle(mos_list_to_use)
+    mos_configurations = mos.getConfigurations()
+    mos_list = mos_configurations[(mos.num_participants - 1) % len(mos_configurations)]
     audio = []
     audio_url = []
     info = {'paths': [], 'texts': []}
-    for i in mos_list_to_use:
+    for i in mos_list:
         if i.custom_recording:
             audio.append(i.custom_recording)
             audio_url.append(i.custom_recording.get_download_url())
@@ -243,12 +239,12 @@ def mos_test(id, uuid):
         info['paths'].append(i.path)
         info['texts'].append(i.text)
     audio_json = json.dumps([r.get_dict() for r in audio])
-    mos_list_json = json.dumps([r.get_dict() for r in mos_list_to_use])
+    mos_list_json = json.dumps([r.get_dict() for r in mos_list])
 
     return render_template(
         'mos_test.jinja',
         mos=mos,
-        mos_list=mos_list_to_use,
+        mos_list=mos_list,
         user=user,
         recordings=audio_json,
         recordings_url=audio_url,

@@ -196,6 +196,7 @@ def take_mos_test(mos_uuid):
                     roles=[]
                 )
                 form.populate_obj(new_user)
+                mos.add_participant(new_user)
                 db.session.commit()
             except IntegrityError as e:
                 print(e)

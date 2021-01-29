@@ -1821,6 +1821,7 @@ class Mos(BaseModel, db.Model):
     mos_objects = db.relationship(
         "MosInstance", lazy='joined', backref="mos",
         cascade='all, delete, delete-orphan')
+    num_participants = db.Column(db.Integer, default=0)
 
     def getAllRatings(self):
         ratings = []
@@ -1906,6 +1907,12 @@ class Mos(BaseModel, db.Model):
     @property
     def number_selected(self):
         return sum(r.selected == True for r in self.mos_objects)
+
+    def add_participant(self, user):
+        if not self.num_participants:
+            self.num_participants = 1
+        else:
+            self.num_participants += 1
 
 
 class MosInstance(BaseModel, db.Model):

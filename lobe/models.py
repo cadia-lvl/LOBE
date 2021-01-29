@@ -22,6 +22,8 @@ from werkzeug import secure_filename
 from wtforms_components import ColorField
 from wtforms import validators
 
+from lobe.tools.latin_square import balanced_latin_squares
+
 db = SQLAlchemy()
 
 ADMIN_ROLE_ID = 1
@@ -1843,6 +1845,45 @@ class Mos(BaseModel, db.Model):
         user_ids = list(set(user_ids))
         return user_ids
 
+    def getAllVoiceIndices(self):
+        voices = set()
+        for sample in self.mos_objects:
+            voices.add(sample.voice_idx)
+        return voices
+
+    def getAllUtteranceIndices(self):
+        utterances = set()
+        for sample in self.mos_objects:
+            utterances.add(sample.utterance_idx)
+        return utterances
+
+    def getConfigurations(self):
+        """
+        Generates a Latin square of sentence-system combinations 
+        based on the number of voices/systems being tested.
+
+        Input: none
+        Output: an array of arrays, each containing MosInstance objects, wherein each 
+        MosInstance object refers to a particular voice rendering a particular utterance.
+        This results in a balanced test, which should minimize the effect of each sentence
+        and the carry-over effect of speakers on each other.
+        """
+        voices = self.getAllVoiceIndices()
+        utterances = self.getAllUtteranceIndices()
+        num_voices = len(list(voices))
+        latinSquareRows = balanced_latin_squares(num_voices)
+        configurations = []
+        for row in latinSquareRows:
+            configuration = []
+            while len(configuration) < len(list(utterances)):
+                configuration.append([x for x in self.mos_objects if (
+                        x.voice_idx == row[len(configuration) % len(row)]
+                        and
+                        x.utterance_idx == utterances[len(configuration)]
+                    )])
+            configurations.append(configuration)
+        return configurations
+
     @property
     def custom_tokens(self):
         tokens = []
@@ -1884,12 +1925,17 @@ class MosInstance(BaseModel, db.Model):
         "MosRating", lazy="joined", backref='mosInstance',
         cascade='all, delete, delete-orphan')
     is_synth = db.Column(db.Boolean, default=False)
+    voice_idx = db.Column(db.Integer, default=0)
+    utterance_idx = db.Column(db.Integer, default=0)
+    question = db.Column(db.Text, default="")
     selected = db.Column(db.Boolean, default=False, info={
         'label': 'Hafa upptoku'})
 
-    def __init__(self, custom_token, custom_recording):
+    def __init__(self, custom_token, custom_recording, voice_idx=None, utterance_idx=None):
         self.custom_token = custom_token
         self.custom_recording = custom_recording
+        self.voice_idx = voice_idx
+        self.utterance_idx = utterance_idx
 
     def getUserRating(self, user_id):
         for r in self.ratings:
@@ -1917,6 +1963,8 @@ class MosInstance(BaseModel, db.Model):
             'text': self.text,
             'is_synth': self.is_synth,
             'selected': self.selected,
+            'voice_idx': self.voice_idx,
+            'utterance_idx': self.utterance_idx,
         }
 
     @property

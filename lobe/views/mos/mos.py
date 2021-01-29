@@ -225,16 +225,18 @@ def mos_test(id, uuid):
             flash("Þú hefur ekki aðgang að þessari síðu", category='error')
             return redirect(url_for("mos", id=id))
     mos = Mos.query.get(id)
-    mos_list = MosInstance.query.filter(MosInstance.mos_id == id).all()
-    mos_list_to_use = []
-    for i in mos_list:
-        if (i.selected and i.path):
-            mos_list_to_use.append(i)
-    random.shuffle(mos_list_to_use)
+    if mos.use_latin_square:
+        mos_configurations = mos.getConfigurations()
+        mos_list = mos_configurations[(mos.num_participants - 1) % len(mos_configurations)]
+    else:
+        mos_instances = MosInstance.query.filter(MosInstance.mos_id == id, MosInstance.selected == True)
+        mos_list = [instance for instance in mos_instances if instance.path]
+        random.shuffle(mos_list)
+
     audio = []
     audio_url = []
     info = {'paths': [], 'texts': []}
-    for i in mos_list_to_use:
+    for i in mos_list:
         if i.custom_recording:
             audio.append(i.custom_recording)
             audio_url.append(i.custom_recording.get_download_url())
@@ -243,12 +245,12 @@ def mos_test(id, uuid):
         info['paths'].append(i.path)
         info['texts'].append(i.text)
     audio_json = json.dumps([r.get_dict() for r in audio])
-    mos_list_json = json.dumps([r.get_dict() for r in mos_list_to_use])
+    mos_list_json = json.dumps([r.get_dict() for r in mos_list])
 
     return render_template(
         'mos_test.jinja',
         mos=mos,
-        mos_list=mos_list_to_use,
+        mos_list=mos_list,
         user=user,
         recordings=audio_json,
         recordings_url=audio_url,
@@ -394,7 +396,6 @@ def stream_MOS_index_demo():
 
 
 @mos.route('/mos/post_mos_rating/<int:id>', methods=['POST'])
-@login_required
 def post_mos_rating(id):
     mos_id = id
     try:
@@ -408,14 +409,13 @@ def post_mos_rating(id):
         return Response(str(error), status=500)
     if mos_id is None:
         flash("Engar einkunnir í MOS prófi.", category='warning')
-    if(not current_user.is_admin()):
-        flash("MOS próf klárað", category='success')
-        return Response(
-            url_for('user.user_detail', id=current_user.id), status=200)
-    if mos_id is None:
         return Response(url_for('mos.mos_list'), status=200)
+
+    flash("MOS próf klárað", category='success')
+    if current_user.is_anonymous:
+        return Response(
+            url_for('mos.mos_done', id=mos_id), status=200)
     else:
-        flash("MOS próf klárað", category='success')
         return Response(
             url_for('mos.mos_detail', id=mos_id), status=200)
 
@@ -577,3 +577,9 @@ def download_custom_token(id):
         app.logger.error(
             "Error downloading a token : {}\n{}".format(
                 error, traceback.format_exc()))
+
+
+@mos.route('/mos-done/<int:id>', methods=['GET'])
+def mos_done(id):
+    mos = Mos.query.get(id)
+    return render_template("mos_done.jinja", mos=mos)

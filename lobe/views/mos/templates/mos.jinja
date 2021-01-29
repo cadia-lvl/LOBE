@@ -3,6 +3,7 @@
 {% block total %}{{mos_list|length}}{% endblock %}
 
 {% block header_content %}
+    <p>Þetta próf notar {% if not mos.use_latin_square %}<span class="text-warning">ekki</span> {% endif %}Latin Square</p>
     <div class="float-left text-warning">
         {% if not mos.number_selected > 0%}
             {% if mos_list | length == 0%}
@@ -61,7 +62,7 @@
         {% endif %}
         <a class='btn btn-secondary btn-sm text-success float-right mt-2 mr-2' href='{{url_for("mos.mos_edit_detail", id=mos.id)}}'>
             {{macros.btn_icon('edit', 'r')}}
-            Breyta texta
+            Breyta stillingum
         </a>
     {% endif %}
 {% endblock %}

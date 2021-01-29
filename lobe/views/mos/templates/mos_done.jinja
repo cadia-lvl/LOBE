@@ -1,0 +1,17 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row mb-3'>
+        <div class='col-12 mb-3'>
+        {% if mos.done_text %}
+            {{ mos.done_text }}
+        {% else %}
+            <h1 class='font-weight-bold text-center'>
+                Takk fyrir þátttökuna!
+            </h1>
+        {% endif %}
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+{% endblock %}

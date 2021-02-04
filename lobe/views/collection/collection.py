@@ -151,7 +151,7 @@ def collection_detail(id):
         collection=collection,
         token_form=token_form,
         tokens=tokens,
-        users=User.query.all(),
+        users=User.query.order_by(User.name).all(),
         section='collection')
 
 

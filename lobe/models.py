@@ -1860,6 +1860,14 @@ class Mos(BaseModel, db.Model):
             utterances.add(sample.utterance_idx)
         return utterances
 
+    def getResultsByVoice(self):
+        voice_ratings = defaultdict(list)
+        for obj in self.mos_objects:
+            for rating in obj.ratings:
+                voice_ratings[obj.voice_idx or "No ID"].append(rating)
+        return voice_ratings
+
+
     def getConfigurations(self):
         """
         Generates a Latin square of sentence-system combinations 

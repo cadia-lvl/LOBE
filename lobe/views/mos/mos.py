@@ -278,7 +278,7 @@ def mos_results(id):
         return redirect(url_for('mos.mos_detail', id=mos.id))
     user_ids = mos.getAllUsers()
     users = User.query.filter(User.id.in_(user_ids)).all()
-    rating_json = {}
+
     all_rating_stats = []
     placement = [0]*max_placement
     p_counter = [0]*max_placement
@@ -335,6 +335,16 @@ def mos_results(id):
 
     users_list = sorted(users_list, key=itemgetter('mean'))
 
+    # Average per voice index
+    ratings_by_voice = mos.getResultsByVoice()
+    per_voice_data = {
+        "x": [],
+        "y": [],
+    }
+    for voice_idx, ratings in ratings_by_voice.items():
+        per_voice_data["x"].append(voice_idx)
+        per_voice_data["y"].append(round(np.mean([r.rating for r in ratings])))
+
     return render_template(
         'mos_results.jinja',
         mos=mos,
@@ -344,6 +354,7 @@ def mos_results(id):
         users=users_list,
         rating_json=rating_json,
         users_graph_json=users_graph_json,
+        per_voice_data=per_voice_data,
         mos_list=mos_list,
         section='mos'
     )

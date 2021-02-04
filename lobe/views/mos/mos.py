@@ -360,6 +360,19 @@ def mos_results(id):
     )
 
 
+@mos.route('/mos/<int:id>/mos_results/download', methods=['GET'])
+@login_required
+@roles_accepted('admin')
+def download_mos_data(id):
+    mos = Mos.query.get(id)
+    response_lines = [
+        "\t".join(map(str, line)) for line in mos.getResultData()
+    ]
+    r = Response(response="\n".join(response_lines), status=200, mimetype="text/plain")
+    r.headers["Content-Type"] = "text/plain; charset=utf-8"
+    return r
+
+
 @mos.route('/mos/<int:id>/stream_zip')
 @login_required
 @roles_accepted('admin')

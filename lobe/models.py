@@ -17,6 +17,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 from sqlalchemy import func
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
+from sqlalchemy.orm import relationship
 from werkzeug import secure_filename
 
 from wtforms_components import ColorField
@@ -1867,6 +1868,37 @@ class Mos(BaseModel, db.Model):
                 voice_ratings[obj.voice_idx or "No ID"].append(rating)
         return voice_ratings
 
+    def getResultData(self):
+        mos_data = [[
+            "instance",
+            "question",
+            "utterance_idx",
+            "voice_idx",
+            "is_synth",
+            "user",
+            "age",
+            "name",
+            "audio_setup",
+            "rating",
+            "placement",
+        ]]
+        for obj in self.mos_objects:
+            for rating in obj.ratings:
+                mos_data.append([
+                    obj.id,
+                    obj.question,
+                    obj.utterance_idx,
+                    obj.voice_idx,
+                    int(obj.is_synth),
+                    rating.user_id,
+                    rating.user.name,
+                    rating.user.age,
+                    rating.user.audio_setup,
+                    rating.rating,
+                    rating.placement
+                ])
+        return mos_data
+
 
     def getConfigurations(self):
         """
@@ -2046,6 +2078,7 @@ class MosRating(BaseModel, db.Model):
     })
     mos_instance_id = db.Column(db.Integer, db.ForeignKey("MosInstance.id"))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = relationship("User", backref="parents")
     placement = db.Column(db.Integer)
 
     @property

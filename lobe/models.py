@@ -1865,7 +1865,7 @@ class Mos(BaseModel, db.Model):
         voice_ratings = defaultdict(list)
         for obj in self.mos_objects:
             for rating in obj.ratings:
-                voice_ratings[obj.voice_idx or "No ID"].append(rating)
+                voice_ratings["No ID" if obj.voice_idx is None else obj.voice_idx].append(rating)
         return voice_ratings
 
     def getResultData(self):

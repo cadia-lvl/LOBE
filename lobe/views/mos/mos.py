@@ -343,7 +343,7 @@ def mos_results(id):
     }
     for voice_idx, ratings in ratings_by_voice.items():
         per_voice_data["x"].append(voice_idx)
-        per_voice_data["y"].append(round(np.mean([r.rating for r in ratings])))
+        per_voice_data["y"].append(round(np.mean([r.rating for r in ratings]), 2))
 
     return render_template(
         'mos_results.jinja',

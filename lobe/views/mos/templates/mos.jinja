@@ -4,6 +4,7 @@
 
 {% block header_content %}
     <p>Þetta próf notar {% if not mos.use_latin_square %}<span class="text-warning">ekki</span> {% endif %}Latin Square</p>
+    <p>Þetta próf sýnir {% if not mos.show_text_in_test %}<span class="text-warning">ekki</span> {% endif %}texta setningar sem hlustað er á</p>
     <div class="float-left text-warning">
         {% if not mos.number_selected > 0%}
             {% if mos_list | length == 0%}

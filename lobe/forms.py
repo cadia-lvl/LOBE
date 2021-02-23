@@ -454,8 +454,16 @@ MosDetailForm = model_form(
         "done_text": {
             "label": "Þakkartexti", "widget": widgets.TextArea()
         },
+        "use_latin_square": {
+            "label": "Nota latin-square"
+        },
+        "show_text_in_test": {
+            "label": "Sýna texta við hljóðbút"
+        },
     },
-    only=["question", "form_text", "help_text", "done_text", "use_latin_square"])
+    only=["question", "form_text", "help_text",
+          "done_text", "use_latin_square",
+          "show_text_in_test"])
 
 
 class MosItemSelectionForm(ModelForm):

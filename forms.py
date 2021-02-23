@@ -87,7 +87,7 @@ class MosForm(ModelForm):
     class Meta:
         model = Mos
         exclude = ['uuid']
-        num_samples = IntegerField('Fjöldi setnimmnga', [validators.required()])
+        num_samples = IntegerField('Fjöldi setninga', [validators.required()])
     
     def __init__(self, max_available, *args, **kwargs):
         super(MosForm, self).__init__(*args, **kwargs)

@@ -169,6 +169,9 @@ def mos_edit_detail(id):
             form.populate_obj(mos)
             db.session.commit()
             return redirect(url_for("mos.mos_detail", id=mos.id))
+    
+    form.use_latin_square.data = mos.use_latin_square
+    form.show_text_in_test.data = mos.show_text_in_test
     return render_template(
         'forms/model.jinja',
         form=form,

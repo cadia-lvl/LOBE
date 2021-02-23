@@ -1814,6 +1814,7 @@ class Mos(BaseModel, db.Model):
     help_text = db.Column(db.String)
     done_text = db.Column(db.String)
     use_latin_square = db.Column(db.Boolean, default=False)
+    show_text_in_test = db.Column(db.Boolean, default=True)
     collection_id = db.Column(db.Integer, db.ForeignKey('Collection.id'))
     collection = db.relationship(Collection, info={
         'label': 'Söfnun',

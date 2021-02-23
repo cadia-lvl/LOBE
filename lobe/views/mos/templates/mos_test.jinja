@@ -42,9 +42,11 @@
             </div>
         </div>
       <div class='my-4'>
-            <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-4'>
-                <h3>{{ mos.question }}</h3>
-            </div>
+            {% if mos.question %}
+                <div class='col-xl-6 col-md-8 offset-xl-3 offset-md-2 col-12 mb-4'>
+                    <h3>{{ mos.question }}</h3>
+                </div> 
+            {% endif %}
             <form class="text-center" id="ratingButtons">
                 <div class="btn-group btn-group-toggle" data-toggle="buttons">
                     <label class="btn btn-outline-primary center-block border-success rounded-pill-left" name="optionsLabel">
@@ -157,9 +159,9 @@
                 // spacebar, arrow-up or "w"
                 e.preventDefault()
                 playAction();
-            } else if(e.keyCode === 37 || e.keyCode === 65){ // arrow-left or "a"
+            } else if(e.keyCode === 65){ //"a"
                 prevAction();
-            } else if(e.keyCode === 39 || e.keyCode === 68){ // arrow-right or "d"
+            } else if(e.keyCode === 68){ //"d"
                 nextAction();
             } else if(e.keyCode === 40 || e.keyCode === 83){ // arrow-down or "s"
                 playAction();
@@ -169,7 +171,7 @@
         // ---------------- Actions --------------------
         function nextAction(){
             // Increment the sentence index and update the UI
-            if(mosIndex < numMosInstances - 1){
+            if(mosIndex < numMosInstances - 1 && !nextButton.disabled){
                 mosIndex += 1;
                 $( "#mosUI" ).animate({
                     opacity: 0.0

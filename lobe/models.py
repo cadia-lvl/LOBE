@@ -276,13 +276,9 @@ class Collection(BaseModel, db.Model):
     @property
     def user_ids(self):
         if not self.is_multi_speaker:
-            print(2)
             if self.has_assigned_user():
-                print(3)
-                print(self.has_assigned_user())
                 return [self.assigned_user_id]
             else:
-                print(4)
                 return []
         else:
             user_ids = []
@@ -299,7 +295,6 @@ class Collection(BaseModel, db.Model):
     def users(self):
         user_ids = self.user_ids
         users = []
-        print(user_ids)
         if len(user_ids) == 0:
             return []
         for u in user_ids:

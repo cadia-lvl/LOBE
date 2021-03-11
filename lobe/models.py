@@ -111,8 +111,12 @@ class Collection(BaseModel, db.Model):
         if self.num_tokens == 0:
             ratio = 0
         else:
-            ratio = (self.num_tokens - self.num_nonrecorded_tokens)\
-                    / self.num_tokens
+            if not self.is_multi_speaker:
+                ratio = (self.num_tokens - self.num_nonrecorded_tokens)\
+                        / self.num_tokens
+            else:
+                ratio = (self.number_of_recordings)\
+                        / (self.num_tokens * self.number_of_users)
         if as_percent:
             ratio = round(ratio*100, 3)
         return ratio
@@ -200,8 +204,12 @@ class Collection(BaseModel, db.Model):
         Returns an estimate of hours of speech given the number
         of sentences spoken.
         '''
-        return round((self.num_tokens - self.num_nonrecorded_tokens)
-                     * ESTIMATED_AVERAGE_RECORD_LENGTH / 3600, 1)
+        if not self.is_multi_speaker:
+            return round((self.num_tokens - self.num_nonrecorded_tokens)
+                        * ESTIMATED_AVERAGE_RECORD_LENGTH / 3600, 1)
+        else:
+            return round((self.number_of_recordings)
+                        * ESTIMATED_AVERAGE_RECORD_LENGTH / 3600, 1)
 
     @hybrid_property
     def is_closed(self):
@@ -214,6 +222,22 @@ class Collection(BaseModel, db.Model):
             if application and application.posting_id == self.posting.id:
                 return True
         return False
+
+    def get_user_number_of_recordings(self, user_id):
+        user_ids = self.user_ids
+        if user_id in user_ids:
+            tokens = Token.query.filter(Token.collection_id == self.id)
+            counter = 0
+            for t in tokens:
+                for r in t.recordings:
+                    if r.user_id == user_id:
+                        counter += 1
+            return counter
+        return False
+
+    def get_user_time_estimate(self, user_id):
+        return round(self.get_user_number_of_recordings(user_id)
+                     * ESTIMATED_AVERAGE_RECORD_LENGTH / 3600, 1)
 
     @hybrid_property
     def configuration(self):
@@ -232,6 +256,59 @@ class Collection(BaseModel, db.Model):
     @property
     def mos_url(self):
         return url_for('mos.mos_collection', id=self.id)
+    
+    @property
+    def number_of_users(self):
+        if not self.is_multi_speaker:
+            return 1
+        else:
+            return len(self.user_ids)
+    
+    @property
+    def number_of_recordings(self):
+        tokens = Token.query.filter(Token.collection_id == self.id)
+        counter = 0
+        for t in tokens:
+            for r in t.recordings:
+                counter += 1
+        return counter
+
+    @property
+    def user_ids(self):
+        if not self.is_multi_speaker:
+            print(2)
+            if self.has_assigned_user():
+                print(3)
+                print(self.has_assigned_user())
+                return [self.assigned_user_id]
+            else:
+                print(4)
+                return []
+        else:
+            user_ids = []
+            tokens = Token.query.filter(Token.collection_id == self.id)
+            recorded_tokens = tokens.filter(Token.num_recordings > 0)
+            for token in recorded_tokens:
+                for rec in token.recordings:
+                    if rec.user_id not in user_ids:
+                        user_ids.append(rec.user_id)
+            return user_ids
+           
+
+    @property
+    def users(self):
+        user_ids = self.user_ids
+        users = []
+        print(user_ids)
+        if len(user_ids) == 0:
+            return []
+        for u in user_ids:
+            users.append(User.query.get(u))
+        return users
+            
+
+
+
 
 
 class Configuration(BaseModel, db.Model):
@@ -521,6 +598,20 @@ class Token(BaseModel, db.Model):
     @hybrid_property
     def collection(self):
         return Collection.query.get(self.collection_id)
+
+    def is_recorded_by_user(self, user_id):
+        for r in self.recordings:
+            if r.user_id == user_id:
+                return True
+        return False
+
+    def recorded_by_how_many_users(self, user_ids):
+        recorded = []
+        for u in user_ids:
+            if self.is_recorded_by_user(u):
+                if u not in recorded:
+                    recorded.append(u)
+        return len(recorded)
 
 
 class CustomToken(BaseModel, db.Model):
@@ -884,6 +975,10 @@ class Recording(BaseModel, db.Model):
     @property
     def has_trim(self):
         return self.start is not None and self.end is not None
+    
+    @property
+    def collection_id(self):
+        return self.token.collection_id
 
     def reset_trim(self):
         self.set_trim(None, None)

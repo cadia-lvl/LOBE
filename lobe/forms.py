@@ -85,6 +85,13 @@ class CollectionForm(Form):
     def validate_configuration_id(self, field):
         if field.data is not None:
             field.data = field.data.id
+    
+    def validate_is_multi_speaker(self, field):
+        if field.data:
+            if self.assigned_user_id.data is None:
+                return True
+            raise ValidationError('Ef söfnun notar margar raddir verður "Rödd" valmöguleikinn að vera tómur')
+        return True
 
 
 def collection_edit_form(collection):

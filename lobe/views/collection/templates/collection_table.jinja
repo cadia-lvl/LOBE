@@ -23,6 +23,9 @@
                     <a href={{collection.get_url()}}>
                         {{collection.name}}
                     </a>
+                    {% if collection.is_multi_speaker %}
+                        <code class="text-info">MULTI</code>
+                    {% endif %}
                     {% if collection.is_dev %}
                         <code>DEV</code>
                     {% endif %}

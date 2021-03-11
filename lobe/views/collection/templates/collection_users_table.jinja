@@ -1,0 +1,26 @@
+<table class='table'>
+    <thead>
+        <th>
+            Nafn notanda
+        </th>
+        <th>
+            Fjöldi upptaka
+        </th>
+        <th>
+            Safnaður tími upptaka(klst)
+        </th>
+        <th>
+            Hlutfall búið
+        </th>
+    </thead>
+    <tbody>
+        {% for u in recorded_users %}
+            <tr>
+                <td><a href={{u.user.get_url()}}>{{u.user.get_printable_name()}}</a></td>
+                <td>{{u.number_of_recordings}}</td>
+                <td>{{u.time_estimate}}</td>
+                <td>{{u.percentage}}%</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -6,6 +6,9 @@
                 {% if collection.is_dev %}
                     <code>DEV</code>
                 {% endif %}
+                {% if collection.is_multi_speaker %}
+                    <code class="text-info h3">MULTI</code>
+                {% endif %}
             </h1>
             {% if collection.has_assigned_user() %}
                 <h3 class='font-weight-bold'>Rödd: {{collection.get_assigned_user()}}</h3>
@@ -23,7 +26,11 @@
                     <p>Búið að taka upp:</p>
                 </div>
                 <div class='col-5 text-right'>
-                    <p>{{collection.num_tokens - collection.num_nonrecorded_tokens}} af {{collection.num_tokens}}</p>
+                    {% if collection.is_multi_speaker %}
+                        <p>{{collection.number_of_recordings}}</p>
+                    {% else %}
+                        <p>{{collection.num_tokens - collection.num_nonrecorded_tokens}} af {{collection.num_tokens}}</p>
+                    {% endif %}
                 </div>
                 <div class='col-7'>
                     <p>Klukkutímar kláraðir:</p>
@@ -67,7 +74,11 @@
         </div>
         <div class='col-12'>
             <div class="progress mb-3">
-                <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
+                {% if collection.is_multi_speaker %}
+                    <div class="progress-bar bg-info" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
+                {% else %}
+                    <div class="progress-bar bg-success" role="progressbar" style="width:{{collection.get_complete_ratio(as_percent=True)}}%"></div>
+                {% endif %}
                 <div class="progress-bar bg-warning" role="progressbar" style="width:{{collection.get_invalid_ratio(as_percent=True)}}%"></div>
             </div>
             <button class='btn btn-sm btn-secondary text-success float-right mb-2 ml-2', data-toggle='modal', data-target='#confirmModal'>
@@ -129,14 +140,33 @@
             {% endif %}
         </div>
     </div>
+    {% if collection.is_multi_speaker %}
+        <div class="wrapper">
+            <div style="background-color: #303030; padding-left: 8px;" data-toggle="collapse" data-target="#collapse-users" aria-expanded="false" aria-controls="collapse-users" style="cursor: pointer;">
+                <p class="py-2 text-success"><i class="fas fa-plus mr-2" aria-hidden="true"></i> Notendur</p>
+            </div>
+            <div class="collapse" id="collapse-users">
+                {% if recorded_users|length > 0 %}
+                    {% with recorded_users=recorded_users %}
+                        {% include 'collection_users_table.jinja'%}
+                    {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+    {% endif%}
+
     {% if tokens.total > 0 %}
         <div class='row mt-2'>
             <div class='col-12'>
                 <h3 class='font-weight-bold'>Textar</h3>
             </div>
             <div class='col-12'>
-                {% with tokens=tokens.items %}
-                    {% include 'token_table.jinja'%}
+                {% with tokens=tokens.items, number_of_users=collection.number_of_users, collection=collection%}
+                    {% if collection.is_multi_speaker%}
+                        {% include 'collection_token_table.jinja'%}
+                    {% else %}
+                        {% include 'token_table.jinja'%}
+                    {% endif %}
                 {% endwith %}
             </div>
         </div>
@@ -351,6 +381,24 @@
             var fileName = $(this).val();
             //replace the "Choose a file" label
             $(this).next('.custom-file-label').html(fileName);
+        });
+
+        $(document).ready(function () {
+            $('.collapse')
+                .on('shown.bs.collapse', function() {
+                    $(this)
+                        .parent()
+                        .find(".fa-plus")
+                        .removeClass("fa-plus")
+                        .addClass("fa-minus");
+                })
+                .on('hidden.bs.collapse', function() {
+                    $(this)
+                        .parent()
+                        .find(".fa-minus")
+                        .removeClass("fa-minus")
+                        .addClass("fa-plus");
+                });
         });
     </script>
 {% endblock %}

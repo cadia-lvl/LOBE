@@ -136,6 +136,17 @@ def collection_detail(id):
             token_form.is_g2p.data)
 
     collection = Collection.query.get(id)
+    recorded_users = []
+    all_users = collection.users
+    for u in all_users:
+        num = collection.get_user_number_of_recordings(u.id)
+        json_user = {'user': u,
+                    'number_of_recordings': num,
+                    'time_estimate': collection.get_user_time_estimate(u.id),
+                    'percentage': round((num/collection.num_tokens)*100)
+                    }
+
+        recorded_users.append(json_user)
 
     tokens = Token.query.filter(Token.collection_id == collection.id)\
         .order_by(resolve_order(
@@ -150,6 +161,7 @@ def collection_detail(id):
         'collection.jinja',
         collection=collection,
         token_form=token_form,
+        recorded_users=recorded_users,
         tokens=tokens,
         users=User.query.order_by(User.name).all(),
         section='collection')
@@ -265,6 +277,9 @@ def edit_collection(id):
         except Exception as error:
             app.logger.error('Error updating a collection : {}\n{}'.format(
                 error, traceback.format_exc()))
+
+    form.is_multi_speaker.data = collection.is_multi_speaker
+    form.is_dev.data = collection.is_dev
 
     return render_template(
         'forms/model.jinja',

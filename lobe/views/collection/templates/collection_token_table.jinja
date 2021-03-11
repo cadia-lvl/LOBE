@@ -1,0 +1,40 @@
+<div class='table-responsive table-sm'>
+    <table class='table table-no-break'>
+        <thead>
+            <th>
+                Auðkenni
+                {{macros.sort_th_a('id')}}
+                </a>
+            </th>
+            <th>
+                Lengd
+            </th>
+            <th>Skráð þann
+                {{macros.sort_th_a('created_at')}}
+            </th>
+            <th>
+                # upptökur
+                {{macros.sort_th_a('num_recordings')}}
+            </th>
+            <th>Röðunarstuðull
+                {{macros.sort_th_a('score')}}
+            </th>
+            <th>
+                Texti
+                {{macros.sort_th_a('text')}}
+            </th>
+        </thead>
+        <tbody>
+            {% for token in tokens %}
+                <tr>
+                    <td><a href={{token.get_url()}} class='{% if token.marked_as_bad %} text-warning {% endif %}'><code>{{token.get_printable_id()}}</code></a></td>
+                    <td class='text-right'>{{token.length}}</td>
+                    <td>{{token.created_at | datetime('med-low')}}</td>
+                    <td class='text-right'>{{token.recordings | length}}/{{number_of_users}}</td>
+                    <td class='text-right'>{% if token.score is not none %}{{token.get_printable_score()}}{% endif %}</td>
+                    <td>{{token.text}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

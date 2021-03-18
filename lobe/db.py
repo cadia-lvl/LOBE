@@ -547,11 +547,12 @@ def save_recording_session(form, files):
         token.update_numbers()
     db.session.commit()
 
-    for token_id in skipped:
-        # this token was skipped and has no token
-        token = Token.query.get(int(token_id))
-        token.marked_as_bad = True
-        token.marked_as_bad_session_id = record_session.id
+    if not collection.is_multi_speaker:
+        for token_id in skipped:
+            # this token was skipped and has no token
+            token = Token.query.get(int(token_id))
+            token.marked_as_bad = True
+            token.marked_as_bad_session_id = record_session.id
     db.session.commit()
 
     # then update the numbers of the collection

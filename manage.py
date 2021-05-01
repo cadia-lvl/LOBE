@@ -8,6 +8,7 @@ import traceback
 import datetime
 from shutil import copyfile
 from tqdm import tqdm
+from random import randrange
 
 from flask_migrate import Migrate, MigrateCommand
 from flask_script import Command, Manager
@@ -21,7 +22,8 @@ from collections import defaultdict
 from lobe import app
 from lobe.models import (Recording, Token, User, Role, Collection,
                          Configuration, Session, VerifierProgression,
-                         VerifierIcon, VerifierQuote, VerifierTitle, db)
+                         VerifierIcon, VerifierQuote, VerifierTitle, db,
+                         MosInstance)
 from lobe.db import get_verifiers, get_admins
 from lobe.tools.analyze import (load_sample, signal_is_too_high,
                                 signal_is_too_low)
@@ -510,6 +512,13 @@ def add_progression_to_verifiers():
             verifier.progression_id = progression.id
         db.session.commit()
 
+@manager.command
+def add_mos_dummy_voice_ids():
+    mos_instances = MosInstance.query.all()
+    for m in mos_instances:
+        if m.voice_idx is None:
+            m.voice_idx = randrange(4)
+        db.session.commit()
 
 @manager.command
 def set_rarity():
@@ -752,6 +761,7 @@ manager.add_command('change_dataroot', changeDataRoot)
 manager.add_command('add_default_roles', AddDefaultRoles)
 manager.add_command('add_default_configuration', AddDefaultConfiguration)
 manager.add_command('add_column_defaults', AddColumnDefaults)
+#manager.add_command('add_mos_dummy_voice_ids', AddVoiceIds)
 
 
 if __name__ == '__main__':

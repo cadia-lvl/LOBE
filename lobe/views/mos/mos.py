@@ -338,15 +338,27 @@ def mos_results(id):
 
     users_list = sorted(users_list, key=itemgetter('mean'))
 
+    all_usernames_list = []
+    user_name_dict = {}
+    for u in users_graph_json:
+        all_usernames_list.append(u['user_ratings']['username'])
+        user_name_dict[u['user_ratings']['username']] = {'fullrating': u['user_ratings']['ratings']}
+        indices = [i for i, x in enumerate(u['user_ratings']['ratings']) if x != '']
+        user_name_dict[u['user_ratings']['username']]['selectiveRatings'] = [u['user_ratings']['ratings'][i] for i in indices]
+        user_name_dict[u['user_ratings']['username']]['selectiveMosIds'] = [mos_stats['names'][i] for i in indices]
+        user_name_dict[u['user_ratings']['username']]['selectiveMosMeans'] = [mos_stats['means'][i] for i in indices]
+
     # Average per voice index
     ratings_by_voice = mos.getResultsByVoice()
     per_voice_data = {
         "x": [],
         "y": [],
+        "std": [],
     }
     for voice_idx, ratings in ratings_by_voice.items():
         per_voice_data["x"].append(voice_idx)
         per_voice_data["y"].append(round(np.mean([r.rating for r in ratings]), 2))
+        per_voice_data["std"].append(round(np.std([r.rating for r in ratings]), 2))
 
     return render_template(
         'mos_results.jinja',
@@ -354,6 +366,8 @@ def mos_results(id):
         mos_stats=mos_stats,
         ratings=ratings,
         placement_info=placement_info,
+        all_usernames_list=all_usernames_list,
+        user_name_dict=user_name_dict,
         users=users_list,
         rating_json=rating_json,
         users_graph_json=users_graph_json,
@@ -575,6 +589,7 @@ def download_custom_recording(id):
             custom_recording.fname,
             as_attachment=True)
     except Exception as error:
+        flash("Error in finding recording.", category="warning")
         app.logger.error(
             "Error downloading a custom recording : {}\n{}".format(
                 error, traceback.format_exc()))

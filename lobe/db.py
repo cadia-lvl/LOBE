@@ -143,6 +143,11 @@ def save_custom_wav(zip, zip_name, tsv_name, mos, id):
                             mos_instance = MosInstance(
                                 custom_token=custom_token,
                                 custom_recording=custom_recording)
+                        elif len(row) == 4:
+                            mos_instance = MosInstance(
+                                custom_token=custom_token,
+                                custom_recording=custom_recording,
+                                voice_idx=row[3])
                         elif len(row) == 5:
                             mos_instance = MosInstance(
                                 custom_token=custom_token,

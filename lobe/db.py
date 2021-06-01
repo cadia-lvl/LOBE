@@ -709,7 +709,7 @@ def resolve_order(object, sort_by, order='desc'):
 
 
 def get_verifiers():
-    return [u for u in User.query.all()
+    return [u for u in User.query.filter(User.active == True)
             if any(r.name == 'Greinir' for r in u.roles)]
 
 

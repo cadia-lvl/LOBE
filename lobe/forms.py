@@ -192,6 +192,7 @@ class UserEditForm(Form):
             ('Karl', 'Karl'),
             ('Annað', 'Annað')])
     age = IntegerField('Aldur')
+    active = BooleanField("Virkur")
 
 
 class SessionEditForm(Form):

@@ -126,7 +126,10 @@ class Collection(BaseModel, db.Model):
         if self.num_tokens == 0:
             ratio = 0
         else:
-            ratio = (self.num_invalid_tokens) / self.num_tokens
+            if self.is_multi_speaker:
+                ratio = (self.num_invalid_tokens) / (self.num_tokens)
+            else:
+                ratio = (self.num_invalid_tokens) / self.num_tokens
         if as_percent:
             ratio = round(ratio*100, 3)
         return ratio
@@ -1967,8 +1970,8 @@ class Mos(BaseModel, db.Model):
             "voice_idx",
             "is_synth",
             "user",
-            "age",
             "name",
+            "age",
             "audio_setup",
             "rating",
             "placement",

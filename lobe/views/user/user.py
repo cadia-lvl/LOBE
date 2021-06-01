@@ -9,7 +9,7 @@ from flask_security.utils import hash_password
 from sqlalchemy import or_
 
 from lobe.models import User, Recording, Session, Role, db
-from lobe.db import resolve_order, sessions_day_info
+from lobe.db import resolve_order, sessions_day_info, add_progression_on_user
 from lobe.forms import (UserEditForm, ExtendedRegisterForm,
                         VerifierRegisterForm, RoleForm)
 
@@ -174,7 +174,8 @@ def verifier_create():
                 uuid=uuid.uuid4(),
                 roles=['Greinir'])
             form.populate_obj(new_user)
-            db.session.commit()
+            add_progression_on_user(new_user)
+
             flash("Nýr greinir var búinn til", category='success')
             return redirect(url_for('user.user_list'))
 

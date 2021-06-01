@@ -72,16 +72,44 @@
         </div>
     </div>
 
+    {% if per_voice_data.x |length > 1 %}
+        <div class="wrapper" style="margin-top: 10px;">
+            <div style="background-color: #303030; padding-left: 8px;" data-toggle="collapse" data-target="#collapse-voices" aria-expanded="false" aria-controls="collapse-ratings" style="cursor: pointer;">
+                <p class="py-2 text-success"><i class="fas fa-plus mr-2" aria-hidden="true"></i> Raddir</p>
+            </div>
+            <div class="collapse" id="collapse-voices">
+                {% if per_voice_data|length > 0 %}
+                    {% with per_voice_data=per_voice_data %}
+                        {% include 'mos_results_voices_table.jinja'%}
+                    {% endwith %}
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
     <div class='col-12' style="margin-top: 50px;">
         <h3 class='font-weight-bold'>Notendahegðun</h3>
-        <p>Hver lína sýnir einkunnagjöf ákveðins notenda fyrir þær upptökur sem sem hlustandi hefur hlýtt á</p>
+        <p>Hver lína sýnir einkunnagjöf ákveðins notenda fyrir þær upptökur sem sem hlustandi hefur hlýtt á. Hægt er að velja sérstakan notanda til að skoða með meðaltal allra notenda til hliðsjónar. Það er einnig hægt að velja hvaða notendur eru sjáanlegir með því að smella á notendurna hægra megin við grafið.</p>
         <div class='card'>
             <div class='card-body'>
-                <div id='line-chart'>
+                <div class="row">
+                    <div class="col-1 ml-5 mr-5">
+                        <div class="row mb-3">
+                           Notandi:
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="row mb-3">
+                            <select class="allUsers"></select>
+                        </div>
+                    </div>
+                </div>
+                <div id='all-users-line'>
                 </div>
             </div>
         </div>
     </div>
+
 
     <div class='col-12' style="margin-top: 50px;">
         <h3 class='font-weight-bold'>Meðaleinkunn setninga</h3>
@@ -156,6 +184,123 @@
                         .addClass("fa-plus");
                 });
         });
+
+        function assignOptions(textArray, selector) {
+            for (var i = 0; i < textArray.length;  i++) {
+                var currentOption = document.createElement('option');
+                currentOption.text = textArray[i];
+                selector.appendChild(currentOption);
+            }
+        }
+
+        var names = {{all_usernames_list}}
+        var names_len = names.unshift('Allir notendur')
+        setBubblePlot(names[0]);
+        function setBubblePlot(chosenName) {
+
+           var layout = {
+                plot_bgcolor: 'rgba(0, 0, 0, 0)',
+                paper_bgcolor: 'rgba(0, 0, 0, 0)',
+                margin: {
+                    'l': 30,
+                    'r': 30,
+                    't': 30,
+                    'b': 30
+                },
+                font: {
+                    family: 'Courier New, monospace',
+                    size: 12,
+                    color: '#4d4d4d'
+                },
+                yaxis:{
+                    title:{
+                        text: 'Einkunn'
+                    },
+                    range: [0,5]
+                },
+                xaxis:{
+                    title:{
+                        text: 'Drykkur'
+                    },
+                    type: 'category',
+                    tickmode:'linear'
+                }
+            };
+            var config = {
+                responsive: true
+            }
+            var data = [];
+            if(chosenName == "Allir notendur"){
+                var users = {{users_graph_json}}
+                var placement = {{placement_info}}
+                var mos_stats = {{mos_stats}}
+                users.forEach( user => {
+                    var trace = {
+                        x: {{mos_stats}}['names'],
+                        y: user.user_ratings.ratings,
+                        visible: 'legendonly',
+                        fill: 'scatter',
+                        marker: {
+                            size: 12
+                        },
+                        connectgaps: true,
+                        name: user.user_ratings.username
+                    };
+                    
+                    data.push(trace)
+                });
+                var trace2 = {
+                    x: {{mos_stats}}['names'],
+                    y: {{mos_stats}}['means'],
+                    fill: 'scatter',
+                    marker: {
+                        size: 12
+                    },
+                    connectgaps: true,
+                    name: 'Meðaltal allra notenda'
+                };
+                data.push(trace2)
+            }
+            else{
+                var trace = {
+                    x: {{user_name_dict}}[chosenName]['selectiveMosIds'],
+                    y: {{user_name_dict}}[chosenName]['selectiveRatings'],
+                    fill: 'scatter',
+                    marker: {
+                        size: 12
+                    },
+                    connectgaps: true,
+                    name: chosenName
+                };
+                data.push(trace)
+                var trace2 = {
+                    x: {{user_name_dict}}[chosenName]['selectiveMosIds'],
+                    y: {{user_name_dict}}[chosenName]['selectiveMosMeans'],
+                    fill: 'scatter',
+                    marker: {
+                        size: 12
+                    },
+                    connectgaps: true,
+                    name: 'Meðaltal allra notenda'
+                };
+                data.push(trace2)
+
+            }
+            Plotly.newPlot('all-users-line', data, layout, config);
+        };
+        
+        var userSelector = document.querySelector('.allUsers');
+
+        assignOptions(names, userSelector);
+        
+        function updateBubbleLine(){
+            setBubblePlot(userSelector.value);
+        }
+        userSelector.addEventListener('change', updateBubbleLine, false);
+
+
+
+        // next
         var width;
         var container = document.getElementById('line-chart');
         var layout = {
@@ -190,24 +335,6 @@
         var users = {{users_graph_json}}
         var placement = {{placement_info}}
         var mos_stats = {{mos_stats}}
-        var temp = []
-        users.forEach( user => {
-            var trace = {
-                x: mos_stats['names'],
-                y: user.user_ratings.ratings,
-                fill: 'scatter',
-                marker: {
-                    size: 12
-                },
-                connectgaps: true,
-                name: user.user_ratings.username
-
-
-            };
-            data.push(trace)
-        });
-
-        Plotly.newPlot(container, data, layout, config);
 
         var container_bar = document.getElementById('bar-chart');
         var layout_bar = {
@@ -257,7 +384,8 @@
 
         Plotly.newPlot(container_bar, data, layout_bar, config);
 
-       var container_bar = document.getElementById('bar-chart-total-number');
+        var container_bar = document.getElementById('bar-chart-total-number');
+        var y_scale_max = Math.max(5, Math.max.apply(Math, mos_stats['total_amount']))
         var layout_bar = {
             plot_bgcolor: 'rgba(0, 0, 0, 0)',
             paper_bgcolor: 'rgba(0, 0, 0, 0)',
@@ -274,7 +402,7 @@
                 title:{
                     text: 'Fjöldi'
                 },
-                range: [0,5]
+                range: [0, y_scale_max]
 
             },
             xaxis:{
@@ -298,9 +426,6 @@
             //}
         }
 
-
-        console.log(mos_stats['names'])
-        console.log(width)
         var trace1 = {
             x: mos_stats['names'],
             y:  mos_stats['total_amount'],
@@ -351,7 +476,7 @@
         else{
             width = Array(mos_stats['names'].length).fill(0.3);
         }
-        console.log(width)
+
 
         var trace1 = {
             x: placement['p_nums'],

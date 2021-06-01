@@ -1,0 +1,22 @@
+<table class='table'>    
+    <thead>
+        <th>
+            Rödd
+        </th>
+        <th>
+            Meðaleinkunn
+        </th>
+        <th>
+            Staðalfrávik
+        </th>
+    </thead>
+    <tbody>
+        {% for r in range(per_voice_data.x |length ) %}
+            <tr>
+                <td>{{per_voice_data.x[r]}}</td>
+                <td>{{per_voice_data.y[r]}}</td>
+                <td>{{per_voice_data.std[r]}}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

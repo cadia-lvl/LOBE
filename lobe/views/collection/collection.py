@@ -280,6 +280,7 @@ def edit_collection(id):
 
     form.is_multi_speaker.data = collection.is_multi_speaker
     form.is_dev.data = collection.is_dev
+    form.verify.data = collection.verify
 
     return render_template(
         'forms/model.jinja',

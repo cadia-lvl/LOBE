@@ -101,6 +101,7 @@ class Collection(BaseModel, db.Model):
     is_dev = db.Column(
         db.Boolean,
         default=False)
+    verify = db.Column(db.Boolean, default=False)
 
     @hybrid_property
     def num_nonrecorded_tokens(self):
@@ -108,7 +109,7 @@ class Collection(BaseModel, db.Model):
 
     @hybrid_method
     def get_complete_ratio(self, as_percent=False):
-        if self.num_tokens == 0:
+        if self.num_tokens == 0 or self.number_of_users == 0:
             ratio = 0
         else:
             if not self.is_multi_speaker:

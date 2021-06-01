@@ -1,4 +1,5 @@
 import json
+import random
 import traceback
 from datetime import date, datetime
 
@@ -11,7 +12,7 @@ from sqlalchemy import and_, or_
 
 from lobe.db import get_verifiers, activity, insert_trims, resolve_order
 from lobe.forms import DailySpinForm, SessionVerifyForm, DeleteVerificationForm
-from lobe.models import PrioritySession, Verification, Session, User, Recording, db
+from lobe.models import PrioritySession, Verification, Session, User, Recording, db, Collection
 
 verification = Blueprint(
     'verification', __name__, template_folder='templates')
@@ -38,14 +39,14 @@ def verify_queue():
     4. Check if any of those are not assigned to other users
     '''
 
-    unverified_sessions = Session.query.filter(and_(
-            Session.is_verified == False, Session.is_dev == False))
     chosen_session = None
     is_secondary = False
     priority_session, is_secondary, normal_session = check_priority_session()
     if priority_session:
         chosen_session = priority_session
     else:
+        unverified_sessions = Session.query.join(Session.collection).filter(and_(
+            Session.is_verified == False, Session.is_dev == False), Collection.verify == True)
         if unverified_sessions.count() > 0:
             available_sessions = unverified_sessions.filter(
                 or_(
@@ -56,7 +57,8 @@ def verify_queue():
 
             if available_sessions.count() > 0:
                 # we have an available session
-                chosen_session = available_sessions[0]
+                random_session_index = random.randrange(available_sessions.count())
+                chosen_session = available_sessions[random_session_index]
                 chosen_session.verified_by = current_user.id
 
         else:

@@ -795,6 +795,9 @@ class Recording(BaseModel, db.Model):
     session_id = db.Column(
         db.Integer,
         db.ForeignKey('Session.id'))
+    priority_session_id = db.Column(
+        db.Integer,
+        db.ForeignKey('PrioritySession.id'))
     sr = db.Column(db.Integer)
     num_channels = db.Column(
         db.Integer,
@@ -1155,6 +1158,9 @@ class Session(BaseModel, db.Model):
     is_verified = db.Column(
         db.Boolean,
         default=False)
+    has_priority = db.Column(
+        db.Boolean,
+        default=False)
     verified_by = db.Column(
         db.Integer,
         db.ForeignKey('user.id', ondelete='SET NULL'),
@@ -1172,6 +1178,107 @@ class Session(BaseModel, db.Model):
 
     def get_url(self):
         return url_for('session.rec_session_detail', id=self.id)
+
+    def get_printable_duration(self):
+        if self.duration is not None:
+            return str(timedelta(seconds=int(self.duration)))
+        else:
+            return 'n/a'
+
+    @hybrid_property
+    def get_start_time(self):
+        if self.duration is not None:
+            return self.created_at - timedelta(seconds=int(self.duration))
+        return None
+
+    @hybrid_property
+    def num_recordings(self):
+        return len(self.recordings)
+
+    @hybrid_property
+    def get_user(self):
+        if self.user_id is not None:
+            return User.query.get(self.user_id)
+        return "n/a"
+
+    @hybrid_property
+    def get_manager(self):
+        if self.manager_id is not None:
+            return User.query.get(self.manager_id)
+        return "n/a"
+
+
+class PrioritySession(BaseModel, db.Model):
+    __tablename__ = 'PrioritySession'
+
+    def __init__(
+        self,
+        user_id,
+        collection_id,
+        manager_id,
+        duration=None,
+        has_video=False,
+        is_dev=False
+    ):
+        self.user_id = user_id
+        self.manager_id = manager_id
+        self.collection_id = collection_id
+        self.has_video = has_video
+        self.is_dev = is_dev
+        if duration is not None:
+            self.duration = duration
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    manager_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    collection_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Collection.id'))
+    duration = db.Column(db.Float)
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
+    has_video = db.Column(
+        db.Boolean,
+        default=False)
+    recordings = db.relationship(
+        "Recording",
+        lazy='joined',
+        backref='prioritySession',
+        cascade='all, delete, delete-orphan')
+
+    is_secondarily_verified = db.Column(
+        db.Boolean,
+        default=False)
+    is_verified = db.Column(
+        db.Boolean,
+        default=False)
+    verified_by = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    secondarily_verified_by = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    is_dev = db.Column(
+        db.Boolean,
+        default=False)
+
+    def get_printable_id(self):
+        return "PS-{:06d}".format(self.id)
+
+    def get_url(self):
+        return url_for('session.rec_priority_session_detail', id=self.id)
 
     def get_printable_duration(self):
         if self.duration is not None:
@@ -1306,6 +1413,7 @@ class Verification(BaseModel, db.Model):
             int(self.recording_has_glitch),
             int(self.recording_has_wrong_wording),
         ]))
+
 
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'

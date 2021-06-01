@@ -8,7 +8,7 @@ from flask import (Blueprint, redirect, url_for, request, render_template,
 from flask import current_app as app
 from flask_security import current_user, login_required, roles_accepted
 
-from lobe.models import Collection, Recording, User, Token, db
+from lobe.models import Collection, Recording, User, Token, db, Session, PrioritySession
 from lobe.tools.analyze import (find_segment, load_sample, signal_is_too_high,
                                 signal_is_too_low)
 from lobe.db import resolve_order, delete_recording_db, save_recording_session
@@ -53,9 +53,11 @@ def recording_list():
 @roles_accepted('admin', 'Notandi')
 def recording_detail(id):
     recording = Recording.query.get(id)
+    prioritySessions = PrioritySession.query.all()
     return render_template(
         'recording.jinja',
         recording=recording,
+        prioritySessions=prioritySessions,
         section='recording')
 
 

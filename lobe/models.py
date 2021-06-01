@@ -1640,6 +1640,7 @@ class VerifierIcon(BaseModel, db.Model):
                 (1, 'Rare'),
                 (2, 'Epic'),
                 (3, 'Legendary')]})
+    for_sale = db.Column(db.Boolean(), default=True, info={'label': 'Til sölu'})
 
     @property
     def edit_url(self):
@@ -1673,6 +1674,7 @@ class VerifierTitle(BaseModel, db.Model):
                 (1, 'Rare'),
                 (2, 'Epic'),
                 (3, 'Legendary')]})
+    for_sale = db.Column(db.Boolean(), default=True, info={'label': 'Til sölu'})
 
     @property
     def edit_url(self):
@@ -1702,6 +1704,7 @@ class VerifierQuote(BaseModel, db.Model):
                 (1, 'Rare'),
                 (2, 'Epic'),
                 (3, 'Legendary')]})
+    for_sale = db.Column(db.Boolean(), default=True, info={'label': 'Til sölu'})
 
     @property
     def edit_url(self):
@@ -1749,6 +1752,7 @@ class VerifierFont(BaseModel, db.Model):
                 (1, 'Rare'),
                 (2, 'Epic'),
                 (3, 'Legendary')]})
+    for_sale = db.Column(db.Boolean(), default=True, info={'label': 'Til sölu'})
 
     @property
     def edit_url(self):
@@ -1769,6 +1773,7 @@ class PremiumItem(BaseModel, db.Model):
         'label': 'Fjöldi í boði'})
     wheel_modifier = db.Column(db.Boolean(), default=False, info={
         'label': 'Breyta þessi verðlaun lukkuhjólinu?'})
+    for_sale = db.Column(db.Boolean(), default=True, info={'label': 'Til sölu'})
 
     @property
     def edit_url(self):

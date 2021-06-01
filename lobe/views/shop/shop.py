@@ -25,11 +25,22 @@ shop = Blueprint(
 @login_required
 @roles_accepted('Greinir', 'admin')
 def lobe_shop():
-    icons = VerifierIcon.query.order_by(VerifierIcon.price).all()
-    titles = VerifierTitle.query.order_by(VerifierTitle.price).all()
-    quotes = VerifierQuote.query.order_by(VerifierQuote.price).all()
-    fonts = VerifierFont.query.order_by(VerifierFont.price).all()
+    icons = VerifierIcon.query.order_by(VerifierIcon.price)
+    titles = VerifierTitle.query.order_by(VerifierTitle.price)
+    quotes = VerifierQuote.query.order_by(VerifierQuote.price)
+    fonts = VerifierFont.query.order_by(VerifierFont.price)
     loot_boxes = app.config['ECONOMY']['loot_boxes']
+
+    if current_user.is_admin():
+        icons = icons.all()
+        titles = titles.all()
+        quotes = quotes.all()
+        fonts = fonts.all()
+    else:
+        icons = icons.filter(VerifierIcon.for_sale == True).all()
+        titles = titles.filter(VerifierTitle.for_sale == True).all()
+        quotes = quotes.filter(VerifierQuote.for_sale == True).all()
+        fonts = fonts.filter(VerifierFont.for_sale == True).all()
 
     loot_box_message = request.args.get('messages', None)
     loot_box_items = []

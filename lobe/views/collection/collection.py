@@ -227,7 +227,7 @@ def stream_collection_zip(id):
 @login_required
 @roles_accepted('admin')
 def stream_collection_index_demo():
-    other_dir = app.config["OTHER_PATH"]
+    other_dir = app.config["OTHER_DIR"]
     try:
         return send_from_directory(
             other_dir, 'synidaemi_collection.zip',

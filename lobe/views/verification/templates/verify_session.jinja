@@ -1,6 +1,7 @@
 {% extends "__base.jinja" %}
 {% block headscripts %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/3.3.3/wavesurfer.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/3.3.3/wavesurfer.min.js"></script> -->
+    <script src="https://unpkg.com/wavesurfer.js"></script>
     <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.regions.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js/dist/plugin/wavesurfer.timeline.min.js"></script>
 {% endblock %}
@@ -104,6 +105,7 @@
         {{ form.num_verifies }}
         {{ form.cut }}
         {{ form.session}}
+        {{ form.isPriority}}
         <div class="row mt-1">
             <div class="col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12">
                 {{ form.quality }}
@@ -271,6 +273,7 @@
         var recIndex = 0;
         var numRecordings = recordings.length
         var regionsUpdated = false;
+        var isPriority = "{{isPriority}}"
 
         const tokenText = document.querySelector("#tokenText");
         const tokenIDSpan = document.querySelector("#tokenID");
@@ -388,6 +391,7 @@
         }
 
         function cutAction(){
+            console.log(wavesurfer.regions.list)
             if(Object.keys(wavesurfer.regions.list).length > 0){
                 if(regionsUpdated){
                     const playList = getTrimPlayList();
@@ -507,7 +511,7 @@
             form.querySelector("input[name=num_verifies]").value = recordings[recIndex].rec_num_verifies;
             form.querySelector("input[name=cut]").value = generateCutFormInput();
             form.querySelector("input[name=session]").value = session.id;
-
+            form.querySelector("input[name=isPriority]").value = isPriority;
             let formData = new FormData(form);
             xhr.open("POST", form.action, true);
             xhr.send(formData);
@@ -550,6 +554,7 @@
         }
 
         async function playAction(){
+            console.log('asdf')
             // Play the recording for the sentence at the current index.
 
             if(arePlaying()){
@@ -699,7 +704,7 @@
 
             cleanForm();
             updateFormUI();
-
+            console.log('asdfasfd')
             setCutUI();
         }
 

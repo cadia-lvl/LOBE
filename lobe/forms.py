@@ -260,6 +260,9 @@ class SessionVerifyForm(Form):
     cut = HiddenField(
         "cut",
         validators=[InputRequired()])
+    isPriority = HiddenField(
+        "isPriority",
+        validators=[InputRequired()])
 
     def validate_quality(self, field):
         data = self.quality.data

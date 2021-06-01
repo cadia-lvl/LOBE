@@ -62,6 +62,32 @@
                     </a>
                 {% endif%}
             </form>
+            {% if not recording.session.has_priority %}
+                <div class="dropdown float-right ml-1">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Setja í forgangslotu
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        {% if prioritySessions | length == 0 %}
+                            <a class="dropdown-item disabled">Engin forgangslota í boði</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href='{{url_for("session.create_priority_session", recording_id=recording.id)}}'>
+                                {{macros.btn_icon('plus', 'r')}}
+                                Búa til forgangslotu
+                            </a>                              
+                        {% else %}
+                            {% for b in prioritySessions %}
+                                <a class="dropdown-item" href='{{url_for("session.add_recording_to_priority_session", recording_id=recording.id, session_id=b.id)}}'>{{b.get_printable_id()}}</a>
+                            {% endfor%}
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href='{{url_for("session.create_priority_session", recording_id=recording.id)}}'>
+                                {{macros.btn_icon('plus', 'r')}}
+                                Búa til forgangslotu
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
     <div class='row'>
@@ -100,9 +126,7 @@
         </div>
     {% endif %}
 {% endblock %}
-{% block modals %}
 
-{% endblock %}
 {% block scripts %}
     {{super()}}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/3.3.3/wavesurfer.min.js"></script>

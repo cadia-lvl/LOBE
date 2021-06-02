@@ -210,6 +210,7 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
     form.populate_obj(collection)
     db.session.add(collection)
     db.session.flush()
+    
 
     dirs = [
             collection.get_record_dir(),
@@ -235,6 +236,7 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
                 Perhaps some of the source folders have never been created
                 before.
                 """.format(dir))
+
 
     with zip.open(tsv_name) as tsvfile:
         mc = tsvfile.read()
@@ -266,7 +268,7 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
                             if not row[1]:
                                 continue
                             text = row[1]
-                            src = row[2] if row[2] else None
+                            src = row[2] if row[2] else None            # Error if tsv file does not contain column
                             scr = row[3] if row[3] else None
                             pron = row[4] if row[4] else None
                             token = Token(

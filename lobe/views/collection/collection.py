@@ -63,9 +63,10 @@ def collection_list():
                         'collection.collection_detail',
                         id=collection.id))
                 except Exception as e:
-                    print(e)
+                    print(e)                                                  # "list index out of range"
+                    traceback.print_exc()
                     flash(
-                        'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +
+                        'Ekki tókst að hlaða söfnun upp. Athugaðu hvort' +    # It's failing here
                         ' öllum leiðbeiningum sé fylgt og reyndu aftur.',
                         category='warning')
             elif form.is_lobe_collection:
@@ -227,7 +228,7 @@ def stream_collection_zip(id):
 @login_required
 @roles_accepted('admin')
 def stream_collection_index_demo():
-    other_dir = app.config["OTHER_PATH"]
+    other_dir = app.config["OTHER_DIR"]
     try:
         return send_from_directory(
             other_dir, 'synidaemi_collection.zip',

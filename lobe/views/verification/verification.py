@@ -277,7 +277,7 @@ def create_verification():
     form = SessionVerifyForm(request.form)
     try:
         if form.validate():
-            is_priority = form.data['isPriority'] 
+            is_priority = form.data['isPriority'] == "True"
             is_secondary = int(form.data['num_verifies']) > 0
             verification = Verification()
             verification.set_quality(form.data['quality'])

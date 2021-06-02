@@ -632,7 +632,7 @@ def reset_weekly_challenge():
     # check for price and award
     coin_price, experience_price = 0, 0
     weekly_verifies = sum([v.progression.weekly_verifies for v in verifiers])
-    weekly_params = app.config['ECONOMY']['weekly_Challenge']
+    weekly_params = app.config['ECONOMY']['weekly_challenge']
     weekly_goal = weekly_params['goal']
     if weekly_verifies > weekly_goal:
         coin_price = weekly_params['coin_reward']

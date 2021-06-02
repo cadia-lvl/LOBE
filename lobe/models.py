@@ -230,13 +230,11 @@ class Collection(BaseModel, db.Model):
     def get_user_number_of_recordings(self, user_id):
         user_ids = self.user_ids
         if user_id in user_ids:
-            tokens = Token.query.filter(Token.collection_id == self.id)
-            counter = 0
-            for t in tokens:
-                for r in t.recordings:
-                    if r.user_id == user_id:
-                        counter += 1
-            return counter
+            recordings = Recording.query.join(Recording.token).filter(
+                Token.collection_id == self.id,
+                Recording.user_id == user_id
+            ).count()
+            return recordings
         return False
 
     def get_user_time_estimate(self, user_id):
@@ -270,12 +268,10 @@ class Collection(BaseModel, db.Model):
     
     @property
     def number_of_recordings(self):
-        tokens = Token.query.filter(Token.collection_id == self.id)
-        counter = 0
-        for t in tokens:
-            for r in t.recordings:
-                counter += 1
-        return counter
+        recordings = Recording.query.join(Recording.token).filter(
+            Token.collection_id == self.id
+        ).count()
+        return recordings
 
     @property
     def user_ids(self):
@@ -285,15 +281,11 @@ class Collection(BaseModel, db.Model):
             else:
                 return []
         else:
-            user_ids = []
-            tokens = Token.query.filter(Token.collection_id == self.id)
-            recorded_tokens = tokens.filter(Token.num_recordings > 0)
-            for token in recorded_tokens:
-                for rec in token.recordings:
-                    if rec.user_id not in user_ids:
-                        user_ids.append(rec.user_id)
-            return user_ids
-           
+            user_ids = Recording.query.join(Recording.token).filter(
+                Token.collection_id == self.id,
+                Token.num_recordings > 0
+            ).with_entities(Recording.user_id).distinct(Recording.user_id).all()
+            return list(set(row[0] for row in user_ids))
 
     @property
     def users(self):

@@ -75,7 +75,6 @@ class CollectionForm(Form):
             ('random', 'Slembiröðun')])
     is_dev = BooleanField('Tilraunarsöfnun')
     is_multi_speaker = BooleanField("Margar raddir")
-    verify = BooleanField("Greina")
 
     def validate_assigned_user_id(self, field):
         # HACK to user the QuerySelectField on User objects

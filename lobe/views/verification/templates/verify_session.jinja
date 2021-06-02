@@ -517,10 +517,13 @@
 
             function generateCutFormInput(){
                 let input = [];
-                for(var i=0; i<recordings[recIndex].cut.length; i++){
-                    input.push({
-                        'start': recordings[recIndex].cut[i].start,
-                        'end': recordings[recIndex].cut[i].end})
+                if(recordings[recIndex].cut){
+                    for(var i=0; i<recordings[recIndex].cut.length; i++){
+                        input.push({
+                            'start': recordings[recIndex].cut[i].start,
+                            'end': recordings[recIndex].cut[i].end})
+                    }
+                    
                 }
                 return JSON.stringify(input)
             }
@@ -590,7 +593,7 @@
                 qualitySelectors.forEach(function(checkbox) {
                     checkbox.checked = recordings[recIndex].verdict[checkbox.value] || false;
                 });
-            } else if(recordings[recIndex].hasTrim && recordings[recIndex].hasPlayed){
+            } else if(recordings[recIndex].hasPlayed){
                 $("#verificationForm").css('display', 'block');
                 $("#verificationForm :input").prop("disabled", false);
             } else{

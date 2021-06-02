@@ -237,9 +237,9 @@ class Collection(BaseModel, db.Model):
             return recordings
         return False
 
-    def get_user_time_estimate(self, user_id):
-        return round(self.get_user_number_of_recordings(user_id)
-                     * ESTIMATED_AVERAGE_RECORD_LENGTH / 3600, 1)
+    def get_user_time_estimate(self, user_id, num_recordings=None):
+        num = num_recordings if num_recordings else self.get_user_number_of_recordings(user_id)
+        return round(num * ESTIMATED_AVERAGE_RECORD_LENGTH / 3600, 1)
 
     @hybrid_property
     def configuration(self):

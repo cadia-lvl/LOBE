@@ -142,7 +142,7 @@ def collection_detail(id):
         num = collection.get_user_number_of_recordings(u.id)
         json_user = {'user': u,
                     'number_of_recordings': num,
-                    'time_estimate': collection.get_user_time_estimate(u.id),
+                    'time_estimate': collection.get_user_time_estimate(u.id, num_recordings=num),
                     'percentage': round((num/collection.num_tokens)*100)
                     }
 

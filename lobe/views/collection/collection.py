@@ -138,8 +138,14 @@ def collection_detail(id):
     collection = Collection.query.get(id)
     recorded_users = []
     all_users = collection.users
+    nums = collection.get_users_number_of_recordings([u.id for u in all_users])
     for u in all_users:
-        num = collection.get_user_number_of_recordings(u.id)
+        try:
+            num = next(filter(lambda r: r[0] == u.id, nums))[1]
+        except StopIteration:
+            # This probably only happens if no recordings for user
+            num = collection.get_user_number_of_recordings(u.id)
+
         json_user = {'user': u,
                     'number_of_recordings': num,
                     'time_estimate': collection.get_user_time_estimate(u.id, num_recordings=num),

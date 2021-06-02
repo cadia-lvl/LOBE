@@ -237,6 +237,15 @@ class Collection(BaseModel, db.Model):
             return recordings
         return False
 
+    def get_users_number_of_recordings(self, user_ids):
+        recordings = Recording.query.join(Recording.token).filter(
+            Token.collection_id == self.id,
+            Recording.user_id.in_(user_ids)
+        ).with_entities(
+            Recording.user_id, func.count(Recording.id)
+        ).group_by(Recording.user_id).all()
+        return recordings
+
     def get_user_time_estimate(self, user_id, num_recordings=None):
         num = num_recordings if num_recordings else self.get_user_number_of_recordings(user_id)
         return round(num * ESTIMATED_AVERAGE_RECORD_LENGTH / 3600, 1)

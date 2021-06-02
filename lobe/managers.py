@@ -102,22 +102,28 @@ class RecordingInfoManager:
                 'user_id': recording.user_id,
                 'session_id': recording.session.id
                 if recording.session else 'n/a'
-            }, 'text_info': {
+            },
+            'text_info': {
                 'id': token.id,
                 'fname': token.get_fname(),
                 'score': token.score,
                 'text': token.text,
                 'pron': token.pron
-            }, 'recording_info': {
+            },
+            'recording_info': {
                 'recording_fname': recording.get_zip_fname(),
                 'sr': recording.sr,
                 'num_channels': recording.num_channels,
                 'bit_depth': recording.bit_depth,
                 'duration': recording.duration,
-            }, 'other': {
+            },
+            'other': {
                 'transcription': recording.transcription,
                 'recording_marked_bad': recording.marked_as_bad,
-                'text_marked_bad': token.marked_as_bad}}
+                'text_marked_bad': token.marked_as_bad
+            },
+            'verifications': [verification.dict for verification in recording.verifications],
+        }
         if recording.start is not None and recording.end is not None:
             self.info[recording.id]['recording_info']['start']\
                 = recording.start

@@ -250,8 +250,6 @@ def verification_list():
 @login_required
 def download_verifications():
     verifications = Verification.query.all()
-    for v in verifications:
-        print(v) 
     response_lines = [
         verification.as_tsv_line() for verification in verifications
     ]

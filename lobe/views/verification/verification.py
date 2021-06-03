@@ -47,6 +47,7 @@ def verify_queue():
     if priority_session:
         chosen_session = priority_session
     else:
+        # Has the user already started a session?
         unverified_sessions = Session.query.join(Session.collection).filter(and_(
             Session.is_verified == False, Session.is_dev == False), Collection.verify == True)
         if unverified_sessions.count() > 0:
@@ -58,10 +59,13 @@ def verify_queue():
                     Session.verified_by)
 
             if available_sessions.count() > 0:
-                # we have an available session
-                random_session_index = random.randrange(available_sessions.count())
-                chosen_session = available_sessions[random_session_index]
-                chosen_session.verified_by = current_user.id
+                # We have available sessions
+                if available_sessions[0].verified_by == current_user.id:
+                    chosen_session = available_sessions[0]
+                else:
+                    random_session_index = random.randrange(available_sessions.count())
+                    chosen_session = available_sessions[random_session_index]
+                    chosen_session.verified_by = current_user.id
 
         else:
             # check if we can secondarily verify any sesssions

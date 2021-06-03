@@ -41,7 +41,9 @@ def verify_queue():
 
     chosen_session = None
     is_secondary = False
-    priority_session, is_secondary, normal_session = check_priority_session()
+    #priority_session, is_secondary, normal_session = check_priority_session()
+    priority_session = None
+
     if priority_session:
         chosen_session = priority_session
     else:

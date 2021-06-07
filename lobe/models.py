@@ -1414,6 +1414,7 @@ class Verification(BaseModel, db.Model):
             int(self.volume_is_high),
             int(self.recording_has_glitch),
             int(self.recording_has_wrong_wording),
+            self.comment.replace("\n","\\n"),
         ]))
 
 

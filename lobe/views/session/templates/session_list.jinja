@@ -1,6 +1,19 @@
 {% extends "_list.jinja" %}
-{% block title %}Lotur{% endblock %}
+
+{% block title %}{% if isPriority %}Forgangs lotur{% else %}Lotur{% endif %}{% endblock %}
 {% block total %}{{sessions.total}}{% endblock %}
+{% block buttons %}
+        {% if isPriority %}
+        <a href='{{url_for("session.rec_session_list")}}' class='btn btn-success float-right mb-2 ml-2'>
+            Venjulegar lotur
+        </a>
+        {% else %}
+        <a href='{{url_for("session.priority_session_list")}}' class='btn btn-success float-right mb-2 ml-2'>
+            Forgangslotur
+        </a>
+        {% endif %}
+{% endblock %}
+
 {% block table %}
     {% if sessions.total > 0 %}
         {% with sessions=sessions.items %}

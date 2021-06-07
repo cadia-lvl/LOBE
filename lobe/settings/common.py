@@ -22,7 +22,7 @@ LOG_PATH = os.path.join(APP_ROOT, os.pardir, 'logs', 'info.log')
 OTHER_DIR = os.path.join(APP_ROOT, os.pardir, 'other')
 MANUAL_FNAME = 'LOBE_manual.pdf'
 
-TOKEN_PAGINATION = 500
+TOKEN_PAGINATION = 50
 VERIFICATION_PAGINATION = 100
 RECORDING_PAGINATION = 20
 COLLECTION_PAGINATION = 20

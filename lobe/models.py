@@ -101,6 +101,7 @@ class Collection(BaseModel, db.Model):
     is_dev = db.Column(
         db.Boolean,
         default=False)
+    verify = db.Column(db.Boolean, default=False)
 
     @hybrid_property
     def num_nonrecorded_tokens(self):
@@ -108,7 +109,7 @@ class Collection(BaseModel, db.Model):
 
     @hybrid_method
     def get_complete_ratio(self, as_percent=False):
-        if self.num_tokens == 0:
+        if self.num_tokens == 0 or self.number_of_users == 0:
             ratio = 0
         else:
             if not self.is_multi_speaker:
@@ -229,18 +230,25 @@ class Collection(BaseModel, db.Model):
     def get_user_number_of_recordings(self, user_id):
         user_ids = self.user_ids
         if user_id in user_ids:
-            tokens = Token.query.filter(Token.collection_id == self.id)
-            counter = 0
-            for t in tokens:
-                for r in t.recordings:
-                    if r.user_id == user_id:
-                        counter += 1
-            return counter
+            recordings = Recording.query.join(Recording.token).filter(
+                Token.collection_id == self.id,
+                Recording.user_id == user_id
+            ).count()
+            return recordings
         return False
 
-    def get_user_time_estimate(self, user_id):
-        return round(self.get_user_number_of_recordings(user_id)
-                     * ESTIMATED_AVERAGE_RECORD_LENGTH / 3600, 1)
+    def get_users_number_of_recordings(self, user_ids):
+        recordings = Recording.query.join(Recording.token).filter(
+            Token.collection_id == self.id,
+            Recording.user_id.in_(user_ids)
+        ).with_entities(
+            Recording.user_id, func.count(Recording.id)
+        ).group_by(Recording.user_id).all()
+        return recordings
+
+    def get_user_time_estimate(self, user_id, num_recordings=None):
+        num = num_recordings if num_recordings else self.get_user_number_of_recordings(user_id)
+        return round(num * ESTIMATED_AVERAGE_RECORD_LENGTH / 3600, 1)
 
     @hybrid_property
     def configuration(self):
@@ -269,12 +277,10 @@ class Collection(BaseModel, db.Model):
     
     @property
     def number_of_recordings(self):
-        tokens = Token.query.filter(Token.collection_id == self.id)
-        counter = 0
-        for t in tokens:
-            for r in t.recordings:
-                counter += 1
-        return counter
+        recordings = Recording.query.join(Recording.token).filter(
+            Token.collection_id == self.id
+        ).count()
+        return recordings
 
     @property
     def user_ids(self):
@@ -284,15 +290,11 @@ class Collection(BaseModel, db.Model):
             else:
                 return []
         else:
-            user_ids = []
-            tokens = Token.query.filter(Token.collection_id == self.id)
-            recorded_tokens = tokens.filter(Token.num_recordings > 0)
-            for token in recorded_tokens:
-                for rec in token.recordings:
-                    if rec.user_id not in user_ids:
-                        user_ids.append(rec.user_id)
-            return user_ids
-           
+            user_ids = Recording.query.join(Recording.token).filter(
+                Token.collection_id == self.id,
+                Token.num_recordings > 0
+            ).with_entities(Recording.user_id).distinct(Recording.user_id).all()
+            return list(set(row[0] for row in user_ids))
 
     @property
     def users(self):
@@ -795,6 +797,9 @@ class Recording(BaseModel, db.Model):
     session_id = db.Column(
         db.Integer,
         db.ForeignKey('Session.id'))
+    priority_session_id = db.Column(
+        db.Integer,
+        db.ForeignKey('PrioritySession.id'))
     sr = db.Column(db.Integer)
     num_channels = db.Column(
         db.Integer,
@@ -1155,6 +1160,9 @@ class Session(BaseModel, db.Model):
     is_verified = db.Column(
         db.Boolean,
         default=False)
+    has_priority = db.Column(
+        db.Boolean,
+        default=False)
     verified_by = db.Column(
         db.Integer,
         db.ForeignKey('user.id', ondelete='SET NULL'),
@@ -1172,6 +1180,107 @@ class Session(BaseModel, db.Model):
 
     def get_url(self):
         return url_for('session.rec_session_detail', id=self.id)
+
+    def get_printable_duration(self):
+        if self.duration is not None:
+            return str(timedelta(seconds=int(self.duration)))
+        else:
+            return 'n/a'
+
+    @hybrid_property
+    def get_start_time(self):
+        if self.duration is not None:
+            return self.created_at - timedelta(seconds=int(self.duration))
+        return None
+
+    @hybrid_property
+    def num_recordings(self):
+        return len(self.recordings)
+
+    @hybrid_property
+    def get_user(self):
+        if self.user_id is not None:
+            return User.query.get(self.user_id)
+        return "n/a"
+
+    @hybrid_property
+    def get_manager(self):
+        if self.manager_id is not None:
+            return User.query.get(self.manager_id)
+        return "n/a"
+
+
+class PrioritySession(BaseModel, db.Model):
+    __tablename__ = 'PrioritySession'
+
+    def __init__(
+        self,
+        user_id,
+        collection_id,
+        manager_id,
+        duration=None,
+        has_video=False,
+        is_dev=False
+    ):
+        self.user_id = user_id
+        self.manager_id = manager_id
+        self.collection_id = collection_id
+        self.has_video = has_video
+        self.is_dev = is_dev
+        if duration is not None:
+            self.duration = duration
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    manager_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    collection_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Collection.id'))
+    duration = db.Column(db.Float)
+    created_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp())
+    has_video = db.Column(
+        db.Boolean,
+        default=False)
+    recordings = db.relationship(
+        "Recording",
+        lazy='joined',
+        backref='prioritySession',
+        cascade='all, delete, delete-orphan')
+
+    is_secondarily_verified = db.Column(
+        db.Boolean,
+        default=False)
+    is_verified = db.Column(
+        db.Boolean,
+        default=False)
+    verified_by = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    secondarily_verified_by = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True)
+    is_dev = db.Column(
+        db.Boolean,
+        default=False)
+
+    def get_printable_id(self):
+        return "PS-{:06d}".format(self.id)
+
+    def get_url(self):
+        return url_for('session.rec_priority_session_detail', id=self.id)
 
     def get_printable_duration(self):
         if self.duration is not None:
@@ -1306,6 +1415,7 @@ class Verification(BaseModel, db.Model):
             int(self.recording_has_glitch),
             int(self.recording_has_wrong_wording),
         ]))
+
 
 class Trim(BaseModel, db.Model):
     __tablename__ = 'Trim'
@@ -1640,6 +1750,7 @@ class VerifierIcon(BaseModel, db.Model):
                 (1, 'Rare'),
                 (2, 'Epic'),
                 (3, 'Legendary')]})
+    for_sale = db.Column(db.Boolean(), default=True, info={'label': 'Til sölu'})
 
     @property
     def edit_url(self):
@@ -1673,6 +1784,7 @@ class VerifierTitle(BaseModel, db.Model):
                 (1, 'Rare'),
                 (2, 'Epic'),
                 (3, 'Legendary')]})
+    for_sale = db.Column(db.Boolean(), default=True, info={'label': 'Til sölu'})
 
     @property
     def edit_url(self):
@@ -1702,6 +1814,7 @@ class VerifierQuote(BaseModel, db.Model):
                 (1, 'Rare'),
                 (2, 'Epic'),
                 (3, 'Legendary')]})
+    for_sale = db.Column(db.Boolean(), default=True, info={'label': 'Til sölu'})
 
     @property
     def edit_url(self):
@@ -1749,6 +1862,7 @@ class VerifierFont(BaseModel, db.Model):
                 (1, 'Rare'),
                 (2, 'Epic'),
                 (3, 'Legendary')]})
+    for_sale = db.Column(db.Boolean(), default=True, info={'label': 'Til sölu'})
 
     @property
     def edit_url(self):
@@ -1769,6 +1883,7 @@ class PremiumItem(BaseModel, db.Model):
         'label': 'Fjöldi í boði'})
     wheel_modifier = db.Column(db.Boolean(), default=False, info={
         'label': 'Breyta þessi verðlaun lukkuhjólinu?'})
+    for_sale = db.Column(db.Boolean(), default=True, info={'label': 'Til sölu'})
 
     @property
     def edit_url(self):

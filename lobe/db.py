@@ -250,13 +250,20 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
         has_video = False
 
         # creating session
-        record_session = Session(
+        """ record_session = Session(
             user_id, collection_id, manager_id,
             duration=duration, has_video=has_video, is_dev=collection.is_dev)
         db.session.add(record_session)
-        db.session.flush()
+        db.session.flush() """
 
-        for row in rd:
+        max_session_size:int = 150
+        for cntr, row in enumerate(rd):
+            if cntr % max_session_size == 0:
+                record_session = Session(
+                    user_id, collection_id, manager_id,
+                    duration=duration, has_video=has_video, is_dev=collection.is_dev)
+                db.session.add(record_session)
+                db.session.flush()
             if row[0] and len(row) >= 2:
                 for zip_info in zip.infolist():
                     if zip_info.filename[-1] == '/':
@@ -297,8 +304,12 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
                         export_to_path = os.path.join(dirs[0], export_to_path)
 
                         zip.extract(zip_info, dirs[3])
-                        sound = AudioSegment.from_wav(recording.wav_path)
-                        sound.export(recording.path, format="webm")
+                        
+                        try:
+                            sound = AudioSegment.from_wav(recording.wav_path)
+                            sound.export(recording.path, format="webm")
+                        except Exception:
+                            print(f'{recording.fname} failed!')
 
                         info = mediainfo(recording.path)
 
@@ -711,7 +722,7 @@ def resolve_order(object, sort_by, order='desc'):
 
 
 def get_verifiers():
-    return [u for u in User.query.all()
+    return [u for u in User.query.filter(User.active == True)
             if any(r.name == 'Greinir' for r in u.roles)]
 
 

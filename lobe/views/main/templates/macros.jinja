@@ -165,6 +165,9 @@
                 {% endif %}
 
                 {% if current_user.is_admin() %}
+                    {% if not icon.for_sale %}
+                    <span class="text-danger">Ekki í sölu</span>
+                    {% endif %}
                     <a href="{{icon.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
                         <span class="mr-2 ml-2 font-weight-bold">
                             <i class='fa fa-edit'></i>
@@ -231,6 +234,9 @@
 
 
                 {% if current_user.is_admin() %}
+                    {% if not title.for_sale %}
+                    <span class="text-danger">Ekki í sölu</span>
+                    {% endif %}
                     <a href="{{title.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
                         <span class="mr-2 ml-2 font-weight-bold">
                             <i class='fa fa-edit'></i>
@@ -294,6 +300,9 @@
                 {% endif %}
 
                 {% if current_user.is_admin() %}
+                    {% if not quote.for_sale %}
+                    <span class="text-danger">Ekki í sölu</span>
+                    {% endif %}
                     <a href="{{quote.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
                         <span class="mr-2 ml-2 font-weight-bold">
                             <i class='fa fa-edit'></i>
@@ -412,6 +421,9 @@
                 {% endif %}
 
                 {% if current_user.is_admin() %}
+                    {% if not font.for_sale %}
+                    <span class="text-danger">Ekki í sölu</span>
+                    {% endif %}
                     <a href="{{font.edit_url}}" class="mr-1 btn btn-secondary text-warning btn-sm rounded-pill text-center float-right">
                         <span class="mr-2 ml-2 font-weight-bold">
                             <i class='fa fa-edit'></i>

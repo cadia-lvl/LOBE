@@ -9,6 +9,9 @@
                 {% if collection.is_multi_speaker %}
                     <code class="text-info h3">MULTI</code>
                 {% endif %}
+                {% if collection.verify %}
+                    <code class="text-warning h3">VERIFY</code>
+                {% endif %}
             </h1>
             {% if collection.has_assigned_user() %}
                 <h3 class='font-weight-bold'>Rödd: {{collection.get_assigned_user()}}</h3>

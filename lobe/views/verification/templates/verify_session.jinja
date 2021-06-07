@@ -58,6 +58,7 @@
         <div class='col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12 mb-2'>
             <div id='tokenCard' class="card">
                 <div class="card-body d-flex flex-column justify-content-between">
+                    <h5 id='nameText'>Upptaka:</h5>
                     <h3 class='card-text' id='tokenText'></h3>
                     <p class='card-text mb-0'>
 
@@ -105,6 +106,7 @@
         {{ form.num_verifies }}
         {{ form.cut }}
         {{ form.session}}
+        {{ form.isPriority}}
         <div class="row mt-1">
             <div class="col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12">
                 {{ form.quality }}
@@ -272,7 +274,9 @@
         var recIndex = 0;
         var numRecordings = recordings.length
         var regionsUpdated = false;
+        var isPriority = "{{isPriority}}"
 
+        const nameText = document.querySelector("#nameText");
         const tokenText = document.querySelector("#tokenText");
         const tokenIDSpan = document.querySelector("#tokenID");
         const tokenHref= document.querySelector("#tokenHref");
@@ -389,6 +393,7 @@
         }
 
         function cutAction(){
+            console.log(wavesurfer.regions.list)
             if(Object.keys(wavesurfer.regions.list).length > 0){
                 if(regionsUpdated){
                     const playList = getTrimPlayList();
@@ -508,7 +513,7 @@
             form.querySelector("input[name=num_verifies]").value = recordings[recIndex].rec_num_verifies;
             form.querySelector("input[name=cut]").value = generateCutFormInput();
             form.querySelector("input[name=session]").value = session.id;
-
+            form.querySelector("input[name=isPriority]").value = isPriority;
             let formData = new FormData(form);
             xhr.open("POST", form.action, true);
             xhr.send(formData);
@@ -599,6 +604,8 @@
 
         function updateTokenUI(){
             tokenText.innerHTML = recordings[recIndex]['text'];
+            nameText.innerHTML = 'Upptaka: ' + recordings[recIndex]['rec_fname'].substring(0, 14);
+            console.log(recordings[recIndex]);
         }
 
         function updateCoinVal(value){
@@ -700,7 +707,6 @@
 
             cleanForm();
             updateFormUI();
-
             setCutUI();
         }
 

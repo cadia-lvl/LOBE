@@ -85,10 +85,10 @@
                             {% endif %}
                         </span>
                         <div class='btn-group float-right' role='group'>
-                            <button id='cut' type='button' class='btn btn-secondary btn-sm'>
+                            {# <button id='cut' type='button' class='btn btn-secondary btn-sm'>
                                 <span id='cutButtonText'>Klippa</span>
                                 <i id='cutButtonIcon' class='fa fa-cut text-success ml-1'></i>
-                            </button>
+                            </button> #}
                             <button id='play' type='button' class='btn btn-secondary btn-sm'>
                                 <i id='playButtonIcon' class='fa fa-play'></i>
                             </button>
@@ -293,7 +293,7 @@
         //buttons
         const nextButton = document.querySelector('button#next');
         const prevButton = document.querySelector('button#prev');
-        const cutButton = document.querySelector('button#cut');
+        // const cutButton = document.querySelector('button#cut');
         const downloadButton = document.querySelector('button#download');
         const playButton = document.querySelector('button#play');
         const playButtonIcon = document.querySelector('#playButtonIcon');
@@ -301,7 +301,7 @@
 
         nextButton.addEventListener('click', nextAction);
         prevButton.addEventListener('click', prevAction);
-        cutButton.addEventListener('click', cutAction);
+        // cutButton.addEventListener('click', cutAction);
         downloadButton.addEventListener('click', downloadAction);
         playButton.addEventListener('click', playAction);
         restartButton.addEventListener('click', restartAction);
@@ -344,23 +344,30 @@
             else if(e.key === "w"){
                 playAction();
             }
-            else if(e.key === " "){
-                cutAction();
-            }
+            // else if(e.key === " "){
+            //     cutAction();
+            // }
             else if(recordings[recIndex].hasPlayed){
                 if(e.keyCode === 39 || e.key === "e"){ // arrow-right or "e"
                     nextAction();
-                } else if(e.key === "a"){
+                } 
+                /* else if(e.key === "a"){
                     formAction("low");
                 } else if(e.key === "s"){
                     formAction("high");
-                } else if(e.key === "d"){
+                } */ 
+                
+                else if(e.key === "d"){
                     formAction("wrong");
-                } else if(e.key === "f"){
+                } 
+                
+                /* else if(e.key === "f"){
                     formAction("glitch");
                 } else if(e.key === "v"){
                     formAction("glitch-outside");
-                } else if(e.key === "g"){
+                } */
+                
+                else if(e.key === "g"){
                     formAction("ok");
                 } else if(e.key === "Enter" && !disableEnterAction) {
                     postForm();
@@ -428,7 +435,8 @@
         }
 
         function setCutUI(newRegion=false){
-            if(newRegion || (wavesurfer && areRegions())){
+            console.log('Cut is disabled.')
+            /*if(newRegion || (wavesurfer && areRegions())){
                 cutButton.disabled = false;
                 if(newRegion){
                     cutButtonIcon.classList.remove('text-danger');
@@ -444,7 +452,7 @@
                 cutButtonIcon.classList.add('text-success');
                 cutButtonText.innerHTML = 'Klippa';
                 cutButton.disabled = true;
-            }
+            }*/
         }
 
         function formAction(value) {

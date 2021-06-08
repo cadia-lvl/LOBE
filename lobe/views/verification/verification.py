@@ -256,9 +256,13 @@ def verification_list():
 @login_required
 def download_verifications():
     verifications = Verification.query.all()
+    
+    header = 'id\tgood\tbad'
     response_lines = [
         verification.as_tsv_line() for verification in verifications
     ]
+    response_lines.insert(0, header)
+
     r = Response(response="\n".join(response_lines), status=200, mimetype="text/plain")
     r.headers["Content-Type"] = "text/plain; charset=utf-8"
     return r

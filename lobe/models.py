@@ -975,6 +975,9 @@ class Recording(BaseModel, db.Model):
         self.start = start
         self.end = end
 
+    def get_original_fname(self):
+        return self.original_fname
+
     @property
     def has_trim(self):
         return self.start is not None and self.end is not None
@@ -1409,12 +1412,19 @@ class Verification(BaseModel, db.Model):
 
     def as_tsv_line(self):
         return "\t".join(map(str, [
-            int(self.recording_id),
-            int(self.volume_is_low),
-            int(self.volume_is_high),
-            int(self.recording_has_glitch),
-            int(self.recording_has_wrong_wording),
+            self.recording.get_original_fname(),
+            1 if int(self.recording_has_wrong_wording) == 0 else 0,        # Good
+            int(self.recording_has_wrong_wording)                          # Bad
         ]))
+
+        """ def as_tsv_line(self):
+            return "\t".join(map(str, [
+                int(self.recording_id),
+                int(self.volume_is_low),
+                int(self.volume_is_high),
+                int(self.recording_has_glitch),
+                int(self.recording_has_wrong_wording),
+            ])) """
 
 
 class Trim(BaseModel, db.Model):

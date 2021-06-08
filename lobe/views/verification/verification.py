@@ -505,7 +505,7 @@ def verify_index():
         show_daily_spin = True
 
     activity_days, activity_counts = activity(Verification)
-    show_weekly_prices, show_daily_spin = False, False #disable prizes when not in use
+    #show_weekly_prices, show_daily_spin = False, False #disable prizes when not in use
 
     # get the number of verifications per user
     return render_template(

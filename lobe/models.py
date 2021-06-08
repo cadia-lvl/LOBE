@@ -1414,7 +1414,9 @@ class Verification(BaseModel, db.Model):
         return "\t".join(map(str, [
             self.recording.get_original_fname(),
             1 if int(self.recording_has_wrong_wording) == 0 else 0,        # Good
-            int(self.recording_has_wrong_wording)                          # Bad
+            int(self.recording_has_wrong_wording),                         # Bad
+            self.comment.replace("\n","\\n"),                              # Was added in last pull, needs a header! 
+                                                                           # Here we should also add the results from the demographic info checkboxes
         ]))
 
         """ def as_tsv_line(self):

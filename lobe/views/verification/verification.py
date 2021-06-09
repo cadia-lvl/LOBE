@@ -215,6 +215,12 @@ def verify_session(id):
                 'rec_url': recording.get_download_url(),
                 'rec_num_verifies': len(recording.verifications),
                 'text': recording.token.text,
+                
+                # Added for Samrómur
+                'speaker_age': recording.token.age,
+                'speaker_gender': recording.token.gender,
+                'speaker_natLang': recording.token.natLang,
+
                 'text_file_id': recording.token.fname,
                 'text_url': recording.token.get_url(),
                 'token_id': recording.token.id})

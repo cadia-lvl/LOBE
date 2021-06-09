@@ -468,7 +468,12 @@ class Token(BaseModel, db.Model):
         collection_id,
         score: float = -1,
         pron: str = None,
-        source: str = None
+        source: str = None,
+        
+        # Added for Samrómur
+        age: str = None,
+        gender: str = None,
+        natLang: str = None,
     ):
         self.text = text
         self.original_fname = original_fname
@@ -479,6 +484,10 @@ class Token(BaseModel, db.Model):
             self.pron = pron
         if source is not None:
             self.source = source
+
+        self.age = age
+        self.gender = gender
+        self.natLang = natLang
 
     id = db.Column(
         db.Integer,
@@ -496,6 +505,12 @@ class Token(BaseModel, db.Model):
     collection_id = db.Column(
         db.Integer,
         db.ForeignKey('Collection.id'))
+
+    # Added for Samrómur
+    age = db.Column(db.String)
+    gender = db.Column(db.String)
+    natLang = db.Column(db.String)
+
     fname = db.Column(db.String)
     path = db.Column(db.String)
     marked_as_bad = db.Column(

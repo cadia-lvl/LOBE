@@ -258,12 +258,15 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
 
         max_session_size:int = 150
         for cntr, row in enumerate(rd):
+            
+            # Create a new session for every 150 clip
             if cntr % max_session_size == 0:
                 record_session = Session(
                     user_id, collection_id, manager_id,
                     duration=duration, has_video=has_video, is_dev=collection.is_dev)
                 db.session.add(record_session)
                 db.session.flush()
+
             if row[0] and len(row) >= 2:
                 for zip_info in zip.infolist():
                     if zip_info.filename[-1] == '/':
@@ -276,10 +279,17 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
                                 continue
                             text = row[1]
                             src = row[2] if row[2] else None            # Error if tsv file does not contain column
-                            scr = row[3] if row[3] else None
+                            scr = row[3] if row[3] else None            # FIX PROPOSAL: Check for len(row) rather than row[x].
                             pron = row[4] if row[4] else None
+
+                            # Added for Samrómur
+                            age = row[5] if row[5] else None            # Same here ^
+                            gender = row[6] if row[6] else None
+                            natLang = row[7] if row[7] else None
+
                             token = Token(
-                                text, zip_name, collection.id, score=scr,
+                                text, zip_name, collection.id, age=age, 
+                                gender=gender, natLang=natLang, score=scr,
                                 pron=pron, source=src)
                             tokens.append(token)
                             db.session.add(token)

@@ -58,7 +58,10 @@
         <div class='col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12 mb-2'>
             <div id='tokenCard' class="card">
                 <div class="card-body d-flex flex-column justify-content-between">
-                    <h5 id='nameText'>Upptaka:</h5>
+                    <h5>Upptaka: <b id='nameText'></b></h5>
+                    <h5>Aldur: <b id='ageText'></b></h5>
+                    <h5>Kyn: <b id='genderText'></b></h5>
+                    <h5>Móðurmál: <b id='nativeLangText'></b></h5>
                     <h3 class='card-text' id='tokenText'></h3>
                     <p class='card-text mb-0'>
 
@@ -263,7 +266,12 @@
         var regionsUpdated = false;
         var isPriority = "{{isPriority}}"
 
+        // Added for Samrómur
         const nameText = document.querySelector("#nameText");
+        const ageText = document.querySelector("#ageText");
+        const genderText = document.querySelector("#genderText");
+        const nativeLangText = document.querySelector("#nativeLangText");
+        
         const tokenText = document.querySelector("#tokenText");
         const tokenIDSpan = document.querySelector("#tokenID");
         const tokenHref= document.querySelector("#tokenHref");
@@ -602,7 +610,10 @@
 
         function updateTokenUI(){
             tokenText.innerHTML = recordings[recIndex]['text'];
-            nameText.innerHTML = 'Upptaka: ' + recordings[recIndex]['rec_fname'].substring(0, 14);
+            nameText.innerHTML = recordings[recIndex]['rec_fname'].substring(0, 14);
+            ageText.innerHTML = recordings[recIndex]['speaker_age'];
+            genderText.innerHTML = recordings[recIndex]['speaker_gender'];;
+            nativeLangText.innerHTML = recordings[recIndex]['speaker_natLang'];;
             console.log(recordings[recIndex]);
         }
 

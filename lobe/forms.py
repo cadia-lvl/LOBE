@@ -239,6 +239,24 @@ class SessionVerifyForm(Form):
             "<i class='fa fa-check mr-1 text-success'></i> Góð (g)"),
     ]
 
+    INCORRECT_AGE = 'inc-age'
+    INCORRECT_GENDER = 'inc-gender'
+    INCORRECT_NATLANG = 'inc-natlang'
+
+    CHOICES_METADATA = [
+        (INCORRECT_AGE,
+            "<i class='fa fa-baby text-warning mr-1'></i>" +
+            "Rangur aldur"),
+        (INCORRECT_GENDER,
+            "<i class='fa fa-venus-mars text-warning mr-1'></i>" +
+            "Rangt kyn"),
+        (INCORRECT_NATLANG,
+            "<i class='fa fa-globe-europe text-warning mr-1'></i>" +
+            "Rangt móðurmál"),
+    ]
+
+    # HÉR
+
     quality = MultiCheckboxField(
         "Gæði",
         choices=CHOICES,

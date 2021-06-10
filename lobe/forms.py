@@ -246,15 +246,14 @@ class SessionVerifyForm(Form):
     CHOICES_METADATA = [
         (INCORRECT_META_AGE,
             "<i class='fa fa-baby text-warning mr-1'></i>" +
-            "Rangur aldur"),
+            "Rangur aldur (1)"),
         (INCORRECT_META_GENDER,
             "<i class='fa fa-venus-mars text-warning mr-1'></i>" +
-            "Rangt kyn"),
+            "Rangt kyn (2)"),
         (INCORRECT_META_NATLANG,
             "<i class='fa fa-globe-europe text-warning mr-1'></i>" +
-            "Rangt móðurmál"),
+            "Rangt móðurmál (3)"),
     ]
-
 
     quality = MultiCheckboxField(
         "Gæði",

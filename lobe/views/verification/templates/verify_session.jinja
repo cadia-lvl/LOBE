@@ -163,8 +163,23 @@
                     Við viljum að tækin okkar skilji okkur í þeim aðstæðum sem við erum í. Því er allt í lagi að 
                     það heyrist smá kliður eða bakgrunnshljóð, svo lengi sem það yfirgnæfir ekki þann sem les. 
                 </p>
+                <h5>Notendaupplýsingar</h5>
+                <p>
+                    Oft laumast inn upptökur þar sem lesandinn hefur gefið upp rangar upplýsingar um sig. Um er að ræða
+                    upplýsingar eins og <b>aldur</b> hans, <b>kyn</b> eða <b>móðurmál</b>. Dæmi um slíka upptöku er þegar
+                    það stendur að aldur og kyn viðkomandi sé 8 ára stelpa en í upptökunni heyrist skýrt að um fullorðinn
+                    karlmann er að ræða. Í slíkum tilfellum skal haka við viðeigandi reiti um leið og upptakan er merkt góð
+                    eða slæm. 
+                </p>
+                <p>
+                    <b>
+                        Athugið að þó svo að notendaupplýsingar séu rangar þá getur upptakan vel verið góð ef hún uppfyllir
+                        annars að öðru leyti þær kröfur sem við gerum. Þ.e.a.s. rangar notendaupplýsingar stýra því ekki
+                        hvort upptaka sé góð eða slæm.
+                    </b>
+                </p>
                 <h5>Dæmi</h5>
-                <p>Til að sjá dæmi um ofantalin atriði, vinsamlega skoðið hér inni á <a href='https://samromur.is/hlusta'>vef Samróms</a>.</p>
+                <p>Til að sjá dæmi um slæmar og góðar upptökur, vinsamlega skoðið hér inni á <a href='https://samromur.is/hlusta'>vef Samróms</a>.</p>
             </div>
         </div>
         <div class='row'>
@@ -366,6 +381,17 @@
                 else if(e.key === "d"){
                     formAction("wrong");
                 } 
+
+                // Added for Samrómur
+                else if(e.key === "1"){
+                    metadataFormAction("inc-meta-age");
+                }
+                else if(e.key === "2"){
+                    metadataFormAction("inc-meta-gender");
+                }
+                else if(e.key === "3"){
+                    metadataFormAction("inc-meta-natlang");
+                }
                 
                 /* else if(e.key === "f"){
                     formAction("glitch");

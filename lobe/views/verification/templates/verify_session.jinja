@@ -114,6 +114,9 @@
             <div class="col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12">
                 {{ form.quality }}
             </div>
+            <div class="col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12">
+                {{ form.metadata_quality }}
+            </div>
         </div>
         <div class="row">
             <div class="col-xl-8 col-md-8 offset-xl-2 offset-md-2 col-12 mb-2">
@@ -311,6 +314,17 @@
             });
         });
 
+        // Added for Samrómur
+        const metadataQualitySelectors = document.querySelectorAll("#metadata_quality input");
+        const metadataQualityLabels = document.querySelectorAll("#metadata_quality label");
+        metadataQualityLabels.forEach(function(checkbox) {
+            checkbox.addEventListener('click', function(e) {
+                e.preventDefault();
+                let value = document.getElementById(e.target.htmlFor).value
+                metadataFormAction(value);
+            });
+        });
+
         const commentField = document.querySelector("textarea#comment");
         commentField.addEventListener('focus', function() { disableShortcuts = true; });
         commentField.addEventListener('blur', function() { disableShortcuts = false; });
@@ -447,6 +461,11 @@
             }*/
         }
 
+        function metadataFormAction(value) {
+            let field = document.querySelector("#metadata_quality input[value=" + value + "]");
+            field.checked = !field.checked;
+        }
+
         function formAction(value) {
             // Check/uncheck form fields
             if (value == "ok") {
@@ -466,6 +485,7 @@
         function cleanForm() {
             commentField.value = "";
             qualitySelectors.forEach(function(input){ input.checked = false; });
+            metadataQualitySelectors.forEach(function(input){ input.checked = false; });
             document.querySelector("input[name=recording]").value = "";
         }
 
@@ -483,6 +503,14 @@
                                 recordings[recIndex].verdict[input.value] = input.checked;
                             }
                         )
+
+                        recordings[recIndex].metadataVerdict = {};
+                        document.querySelectorAll("#metadata_quality input").forEach(
+                            function(input){
+                                recordings[recIndex].metadataVerdict[input.value] = input.checked;
+                            }
+                        )
+
                         updateExperienceVal(response.experience);
                         updateCoinVal(response.coins);
 
@@ -598,6 +626,9 @@
                 commentField.value = recordings[recIndex].verdictComment;
                 qualitySelectors.forEach(function(checkbox) {
                     checkbox.checked = recordings[recIndex].verdict[checkbox.value] || false;
+                });
+                metadataQualitySelectors.forEach(function(checkbox) {
+                    checkbox.checked = recordings[recIndex].metadataVerdict[checkbox.value] || false;
                 });
             } else if(recordings[recIndex].hasPlayed){
                 $("#verificationForm").css('display', 'block');

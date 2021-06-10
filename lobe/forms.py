@@ -239,28 +239,30 @@ class SessionVerifyForm(Form):
             "<i class='fa fa-check mr-1 text-success'></i> Góð (g)"),
     ]
 
-    INCORRECT_AGE = 'inc-age'
-    INCORRECT_GENDER = 'inc-gender'
-    INCORRECT_NATLANG = 'inc-natlang'
+    INCORRECT_META_AGE = 'inc-meta-age'
+    INCORRECT_META_GENDER = 'inc-meta-gender'
+    INCORRECT_META_NATLANG = 'inc-meta-natlang'
 
     CHOICES_METADATA = [
-        (INCORRECT_AGE,
+        (INCORRECT_META_AGE,
             "<i class='fa fa-baby text-warning mr-1'></i>" +
             "Rangur aldur"),
-        (INCORRECT_GENDER,
+        (INCORRECT_META_GENDER,
             "<i class='fa fa-venus-mars text-warning mr-1'></i>" +
             "Rangt kyn"),
-        (INCORRECT_NATLANG,
+        (INCORRECT_META_NATLANG,
             "<i class='fa fa-globe-europe text-warning mr-1'></i>" +
             "Rangt móðurmál"),
     ]
 
-    # HÉR
 
     quality = MultiCheckboxField(
         "Gæði",
         choices=CHOICES,
         validators=[InputRequired()])
+    metadata_quality = MultiCheckboxField(
+        "Gæði_Metadata",
+        choices=CHOICES_METADATA)
     comment = StringField(
         "Athugasemd",
         widget=widgets.TextArea())

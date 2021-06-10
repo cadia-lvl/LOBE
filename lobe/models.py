@@ -1368,6 +1368,17 @@ class Verification(BaseModel, db.Model):
         backref='verification',
         cascade='all, delete, delete-orphan')
 
+    # Added for Samrómur
+    metadata_incorrect_age = db.Column(
+        db.Boolean,
+        default=False)
+    metadata_incorrect_gender = db.Column(
+        db.Boolean,
+        default=False)
+    metadata_incorrect_natlang = db.Column(
+        db.Boolean,
+        default=False)
+
     @property
     def url(self):
         return url_for('verification.verification_detail', id=self.id)
@@ -1415,6 +1426,24 @@ class Verification(BaseModel, db.Model):
             elif data == 'glitch-outside':
                 self.recording_has_glitch_outside_trimming = True
 
+    # Added for Samrómur
+    def set_metadata_quality(self, metadata_quality_field_data):
+        '''
+        metadata_quality_field_data is a list of string values with
+        the following correspondance::
+        * 'inc-meta-age'      -> self.metadata_incorrect_age
+        * 'inc-meta-gender'   -> self.metadata_incorrect_gender
+        * 'inc-meta-natlang   -> self.metadata_incorrect_natlang
+        '''
+
+        for data in metadata_quality_field_data:
+            if data == 'inc-meta-age':
+                self.metadata_incorrect_age = True
+            elif data == 'inc-meta-gender':
+                self.metadata_incorrect_gender = True
+            elif data == 'inc-meta-natlang':
+                self.metadata_incorrect_natlang = True
+
     @hybrid_property
     def dict(self):
         return {
@@ -1423,15 +1452,29 @@ class Verification(BaseModel, db.Model):
             'recording_has_glitch': self.recording_has_glitch,
             'recording_has_wrong_wording': self.recording_has_wrong_wording,
             'comment': self.comment,
-            'trims': [{'start': t.start, 'end': t.end} for t in self.trims]}
+            'trims': [{'start': t.start, 'end': t.end} for t in self.trims],
+            'metadata_incorrect_age': self.metadata_incorrect_age,
+            'metadata_incorrect_gender': self.metadata_incorrect_gender,
+            'metadata_incorrect_natlang': self.metadata_incorrect_natlang
+        }
 
     def as_tsv_line(self):
+        speaker_id, clip_id = self.recording.get_original_fname().split('-')
+        clip_id = clip_id.split('.')[0]
+
+        # The header looks like this:
+        # 'id\tspeaker_id\tfilename\tgood\tbad\tage_inc\tgender_inc\tnatlang_inc\tcomment'
+
         return "\t".join(map(str, [
-            self.recording.get_original_fname(),
+            clip_id,                                                       # Samrómur clip id
+            speaker_id,                                                    # Samrómur speaker id
+            self.recording.get_original_fname(),                           # Samrómur filename
             1 if int(self.recording_has_wrong_wording) == 0 else 0,        # Good
             int(self.recording_has_wrong_wording),                         # Bad
-            self.comment.replace("\n","\\n"),                              # Was added in last pull, needs a header! 
-                                                                           # Here we should also add the results from the demographic info checkboxes
+            self.metadata_incorrect_age,                                   # Samrómur age metadata correct bool
+            self.metadata_incorrect_gender,                                # Samrómur gender metadata correct bool
+            self.metadata_incorrect_natlang,                               # Samrómur native language metadata correct bool
+            self.comment.replace("\n","\\n"),                              # Comment
         ]))
 
         """ def as_tsv_line(self):

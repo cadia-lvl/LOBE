@@ -93,12 +93,14 @@ video{
 }
 
 /* Verify form */
-ul#quality {
+ul#quality, 
+ul#metadata_quality {
     display: block;
     padding: 0;
     margin-bottom: 0;
 }
-ul#quality li {
+ul#quality li, 
+ul#metadata_quality li {
     display: inline;
     margin-right: 10px;
 }
@@ -106,7 +108,8 @@ ul#quality li:last-child {
     float: right;
     margin-right: 0;
 }
-ul#quality li label {
+ul#quality li label, 
+ul#metadata_quality li label {
     display: inline-block;
     padding: 0.25rem 0.5rem;
     font-size: 0.8203125rem;
@@ -115,10 +118,12 @@ ul#quality li label {
     border-radius: 50rem !important;
     font-size: .8em;
 }
-ul#quality li input[type=checkbox] {
+ul#quality li input[type=checkbox], 
+ul#metadata_quality li input[type=checkbox] {
     display: none;
 }
-ul#quality li input[type=checkbox]:checked + label {
+ul#quality li input[type=checkbox]:checked + label, 
+ul#metadata_quality li input[type=checkbox]:checked + label {
     background: #666;
 }
 

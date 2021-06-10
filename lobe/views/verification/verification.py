@@ -263,7 +263,7 @@ def verification_list():
 def download_verifications():
     verifications = Verification.query.all()
     
-    header = 'id\tgood\tbad'
+    header = 'id\tspeaker_id\tfilename\tgood\tbad\tage_inc\tgender_inc\tnatlang_inc\tcomment'
     response_lines = [
         verification.as_tsv_line() for verification in verifications
     ]
@@ -297,6 +297,7 @@ def create_verification():
             is_secondary = int(form.data['num_verifies']) > 0
             verification = Verification()
             verification.set_quality(form.data['quality'])
+            verification.set_metadata_quality(form.data['metadata_quality'])
             verification.comment = form.data['comment']
             verification.recording_id = int(form.data['recording'])
             verification.is_secondary = is_secondary

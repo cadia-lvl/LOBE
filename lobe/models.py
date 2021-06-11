@@ -1461,20 +1461,26 @@ class Verification(BaseModel, db.Model):
     def as_tsv_line(self):
         speaker_id, clip_id = self.recording.get_original_fname().split('-')
         clip_id = clip_id.split('.')[0]
+        nan = 'NAN'
 
         # The header looks like this:
         # 'id\tspeaker_id\tfilename\tgood\tbad\tage_inc\tgender_inc\tnatlang_inc\tcomment'
 
         return "\t".join(map(str, [
-            clip_id,                                                       # Samrómur clip id
-            speaker_id,                                                    # Samrómur speaker id
-            self.recording.get_original_fname(),                           # Samrómur filename
-            1 if int(self.recording_has_wrong_wording) == 0 else 0,        # Good
-            int(self.recording_has_wrong_wording),                         # Bad
-            self.metadata_incorrect_age,                                   # Samrómur age metadata correct bool
-            self.metadata_incorrect_gender,                                # Samrómur gender metadata correct bool
-            self.metadata_incorrect_natlang,                               # Samrómur native language metadata correct bool
-            self.comment.replace("\n","\\n"),                              # Comment
+            clip_id,                                                                                        # Samrómur clip id
+            speaker_id,                                                                                     # Samrómur speaker id
+            self.recording.get_original_fname(),                                                            # Samrómur filename
+            1 if int(self.recording_has_wrong_wording) == 0 else 0,                                         # Good
+            int(self.recording_has_wrong_wording),                                                          # Bad
+            
+            # These None checks should not be needed. They were put here to handle old data in the
+            # database - where these three values did not exist and are therefore None.
+            # For instance, "int(self.metadata_incorrect_age)" should be enough.
+            int(self.metadata_incorrect_age)        if self.metadata_incorrect_age      != None else nan,   # Samrómur age metadata correct bool
+            int(self.metadata_incorrect_gender)     if self.metadata_incorrect_gender   != None else nan,   # Samrómur gender metadata correct bool
+            int(self.metadata_incorrect_natlang)    if self.metadata_incorrect_natlang  != None else nan,   # Samrómur native language metadata correct bool
+
+            self.comment.replace("\n","\\n")        if self.comment != '' else nan,                         # Comment
         ]))
 
         """ def as_tsv_line(self):

@@ -256,7 +256,8 @@ def save_uploaded_collection(zip, zip_name, tsv_name, form):
         db.session.add(record_session)
         db.session.flush() """
 
-        max_session_size:int = 150
+        # For summer 2021: 220
+        max_session_size:int = 220
         for cntr, row in enumerate(rd):
             
             # Create a new session for every 150 clip

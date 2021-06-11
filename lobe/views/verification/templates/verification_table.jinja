@@ -11,7 +11,6 @@
             </th>
             <th>
                 Upptaka
-                {{macros.sort_th_a('recording_id')}}
             </th>
             <th>
                 Greinandi
@@ -23,7 +22,7 @@
                 <tr>
                     <td>{{verification.created_at | datetime(format='low')}}</td>
                     <td><a href={{verification.url}}>{{verification.printable_id}}</a></td>
-                    <td></a href={{verification.recording.get_url()}}>{{verification.recording.get_printable_id()}}</a></td>
+                    <td></a href={{verification.recording.get_url()}}>{{verification.recording.get_original_fname()}}</a></td>
                     <td></a href={{verification.verifier.get_url()}}>{{verification.verifier.name}}</a></td>
                 </tr>
             {% endfor %}

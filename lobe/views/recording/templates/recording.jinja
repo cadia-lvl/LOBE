@@ -88,6 +88,10 @@
                     </div>
                 </div>
             {% endif %}
+            <a href="{{url_for('feed.post_recording_feed', recording_id=recording.id)}}" class='btn btn-sm btn-secondary text-info float-right ml-1'>
+                {{macros.btn_icon('concierge-bell', 'r')}}
+                Hengja á vegg
+            </a>
         </div>
     </div>
     <div class='row'>

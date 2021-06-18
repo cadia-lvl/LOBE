@@ -1,0 +1,52 @@
+<div class="w-50 bg-secondary mb-5">
+    <div class="w-100 d-flex flex-row py-2 bg-dark">
+        <div class='mx-3 my-auto'>
+            {% if post.user.progression.equipped_icon.title %}
+                {{macros.verifier_icon(post.user.progression.equipped_icon.fa_id, post.user.progression.equipped_icon.color, '2x')}}
+            {% else %}
+                {{macros.verifier_icon('fa fa-post.user', '#fff', '2x')}}
+            {% endif %}
+        </div>
+        <div class="d-flex flex-column ml-2">
+            <p class='mb-0'>
+                <a href="#" data-toggle="modal" data-target="#userModal-{{post.user.id}}">
+                    {{post.user.progression.equipped_title.title}}
+                    {{post.user.name}}
+                </a>
+            </p>
+            <p class='mb-0'>
+                <small class='font-italic'>
+                    {% if post.user.progression.equipped_quote.quote %}
+                        {{post.user.progression.equipped_quote.quote}}
+                    {% else %}
+                        Ég var að byrja að greina!
+                    {% endif %}
+                </small>
+            </p>
+        </div>
+        <div class="border border-danger rounded-pill mr-2 ml-auto" style='height: 100%; width:10%'>
+            <p class="text-center m-auto">
+                {{post.total_awards}}
+            </p>
+        </div> 
+    </div>
+    <div class="w-100 d-flex flex-row py-2 ml-3">
+        <div class="w-10 border-right border-dark mr-3">
+            <audio id="audio-{{post.recording.id}}" src={{post.recording.get_download_url()}} type="audio/wav"></audio>
+            <button type='button' class='btn btn-link btn-sm' onClick="play({{post.recording.id}})">
+                <i id='playButtonIcon-{{post.recording.id}}' class='fa fa-play'></i>
+            </button>
+        </div>
+        <div class="w-80 my-auto">
+            {{post.recording.token_text}}
+        </div>
+    </div>
+    <div class="w-100 border-top border-dark py-2 pl-3">
+         <a href="{{url_for('feed.basic_award_post', post_id=post.id)}}" class='btn btn-dark rounded-pill text-warning'>
+            Verðlauna
+            <i class="fas fa-gem ml-2"></i>
+        </a>
+    </div>
+    <div class="w-100">
+    </div>
+</div>

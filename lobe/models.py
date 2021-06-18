@@ -949,6 +949,10 @@ class Recording(BaseModel, db.Model):
         if self.token_id is not None:
             return Token.query.get(self.token_id)
         return None
+    
+    @property
+    def token_text(self):
+        return self.get_token().text
 
     def get_printable_id(self):
         return "R-{:09d}".format(self.id)
@@ -1472,6 +1476,9 @@ class User(db.Model, UserMixin):
     progression_id = db.Column(
         db.Integer,
         db.ForeignKey('verifier_progression.id'))
+    social_posts = db.relationship(
+        "SocialPost", lazy="joined", back_populates='user',
+        cascade='all, delete, delete-orphan')
 
     @property
     def progression(self):
@@ -2298,3 +2305,56 @@ class MosRating(BaseModel, db.Model):
     @property
     def get_instance(self):
         return MosInstance.query.get(self.mos_instance_id)
+    
+
+class SocialPost(BaseModel, db.Model):
+    __tablename__ = 'SocialPost'
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = relationship("User", back_populates="social_posts")
+    recording_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Recording.id'))
+    link = db.Column(db.String(255))
+    text = db.Column(db.String(255))
+    awards = db.relationship(
+        "PostAward", lazy="joined", back_populates='post',
+        cascade='all, delete, delete-orphan')
+
+    def __init__(self, user_id, recording_id):
+        self.user_id = user_id
+        self.recording_id = recording_id
+
+    @property
+    def recording(self):
+        return Recording.query.get(self.recording_id)
+
+    @property
+    def total_awards(self):
+        total = 0
+        for a in self.awards:
+            total += a.amount
+        return total
+
+
+class PostAward(BaseModel, db.Model):
+    __tablename__ = 'PostAward'
+    #__table_args__ = (
+    #    db.UniqueConstraint('post_id', 'user_id'),
+    #  )
+    id = db.Column(
+        db.Integer, primary_key=True, nullable=False, autoincrement=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    amount = db.Column(db.Integer, default=50)
+    icon = db.Column(db.Integer, default=0)
+    post_id = db.Column(db.Integer, db.ForeignKey("SocialPost.id"))
+    post = db.relationship("SocialPost", back_populates="awards")
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    
+    def __init__(self, user_id, post, amount):
+        self.user_id = user_id
+        self.post = post
+        self.amount = amount
+

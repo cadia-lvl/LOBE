@@ -1,0 +1,37 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class="h2 mb-3">
+        Velkomin/n í samkunduna {{current_user.name}}
+    </div>
+    {% for post in posts %}
+        {% with post=post%}
+            {% include 'social_post.jinja'%}
+        {% endwith %}
+    {% endfor %}
+    <script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>
+{% endblock %}
+{% block modals %}
+    {% for verifier in verifiers %}
+        <div class="modal fade" id="userModal-{{verifier.id}}" tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Notandi</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    {{macros.verifier_card(verifier)}}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+{% endblock %}

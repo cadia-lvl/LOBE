@@ -1,13 +1,20 @@
 {% extends "__base.jinja" %}
 {% block body %}
-    <div class="h2 mb-3">
-        Velkomin/n í samkunduna {{current_user.name}}
+    <div class="mb-4 flex flex-colunm">
+        <p class="h2">
+            SAMKUNDAN
+        </p>
+        <p class="h4">
+            {{current_user.name}}
+        </p>
     </div>
-    {% for post in posts %}
-        {% with post=post%}
-            {% include 'social_post.jinja'%}
-        {% endwith %}
-    {% endfor %}
+    <div class="overflow-auto w-75" style="height: 500px">
+        {% for post in posts %}
+            {% with post=post%}
+                {% include 'social_post.jinja'%}
+            {% endwith %}
+        {% endfor %}
+    </div>
     <script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>
 {% endblock %}
 {% block modals %}

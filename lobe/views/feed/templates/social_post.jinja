@@ -1,4 +1,4 @@
-<div class="w-50 bg-secondary mb-5">
+<div class="w-100 bg-secondary mb-5">
     <div class="w-100 d-flex flex-row py-2 bg-dark">
         <div class='mx-3 my-auto'>
             {% if post.user.progression.equipped_icon.title %}
@@ -42,9 +42,15 @@
         </div>
     </div>
     <div class="w-100 border-top border-dark py-2 pl-3">
-         <a href="{{url_for('feed.basic_award_post', post_id=post.id)}}" class='btn btn-dark rounded-pill text-warning'>
-            Verðlauna
+        <a href="{{url_for('feed.basic_award_post', post_id=post.id)}}" class='btn btn-dark rounded-pill text-warning'>
+            Verðlaun
             <i class="fas fa-gem ml-2"></i>
+            50
+        </a>
+        <a href="{{url_for('feed.super_award_post', post_id=post.id)}}" class='btn btn-dark rounded-pill text-warning'>
+            Ofur veðlaun
+            <i class="fas fa-gem ml-2"></i>
+            100
         </a>
     </div>
     <div class="w-100">

@@ -76,3 +76,22 @@ def basic_award_post(post_id):
         flash("Ekki næg innistæða", category="warning")
     return redirect(url_for('feed.lobe_feed'))
         
+@feed.route('/feed/award_post/<int:post_id>/super', methods=['GET'])
+@login_required
+@roles_accepted('Greinir', 'admin')
+def super_award_post(post_id):
+    if current_user.progression.experience >= 100:
+        post = SocialPost.query.get(post_id)
+        award = PostAward(current_user.id, post, 100)
+        db.session.add(award)
+        db.session.commit()
+        if award:
+            current_user.progression.experience -= 100
+            post.user.progression.experience += 100
+            flash("Verðlaunað", category="success")
+        else:
+            flash("Ekki tókst að verðlauna", category="warning")
+    else:
+        flash("Ekki næg innistæða", category="warning")
+    return redirect(url_for('feed.lobe_feed'))
+        

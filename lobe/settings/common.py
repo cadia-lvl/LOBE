@@ -20,6 +20,7 @@ LOG_PATH = os.path.join(APP_ROOT, os.pardir, 'logs', 'info.log')
 
 # For other static files, like the LOBE manual
 OTHER_DIR = os.path.join(APP_ROOT, os.pardir, 'other')
+STATIC_DATA_DIR = os.path.join(OTHER_DIR, 'static_data/')
 MANUAL_FNAME = 'LOBE_manual.pdf'
 
 TOKEN_PAGINATION = 50

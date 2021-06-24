@@ -31,6 +31,7 @@
         </div> 
     </div>
     <div class="w-100 d-flex flex-row py-2 ml-3">
+        {% if not post.link %}
         <div class="w-10 border-right border-dark mr-3">
             <audio id="audio-{{post.recording.id}}" src={{post.recording.get_download_url()}} type="audio/wav"></audio>
             <button type='button' class='btn btn-link btn-sm' onClick="play({{post.recording.id}})">
@@ -40,6 +41,11 @@
         <div class="w-80 my-auto">
             {{post.recording.token_text}}
         </div>
+        {% elif post.link%}
+            <div class="embed-responsive embed-responsive-16by9" style="width: 95%">
+                <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/{{post.link}}?rel=0" allowfullscreen></iframe>
+            </div>
+        {% endif%}
     </div>
     <div class="w-100 border-top border-dark py-2 pl-3">
         <a href="{{url_for('feed.basic_award_post', post_id=post.id)}}" class='btn btn-dark rounded-pill text-warning'>
@@ -52,6 +58,13 @@
             <i class="fas fa-gem ml-2"></i>
             100
         </a>
+        {% if current_user.id == post.user.id or current_user.is_admin()%}
+            <div class="float-right pr-3">
+                <a class="text-center m-auto btn btn-secondary text-danger" href="{{url_for('feed.delete_social_post', post_id=post.id)}}">
+                    {{macros.btn_icon('trash', 'r')}} Eyða
+                </a>
+            </div> 
+        {% endif %}
     </div>
     <div class="w-100">
     </div>

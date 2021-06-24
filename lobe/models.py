@@ -2323,9 +2323,10 @@ class SocialPost(BaseModel, db.Model):
         "PostAward", lazy="joined", back_populates='post',
         cascade='all, delete, delete-orphan')
 
-    def __init__(self, user_id, recording_id):
+    def __init__(self, user_id, recording_id=None, link=None):
         self.user_id = user_id
         self.recording_id = recording_id
+        self.link = link
 
     @property
     def recording(self):

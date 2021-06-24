@@ -1,34 +1,43 @@
 <div class="w-100 bg-secondary mb-5">
-    <div class="w-100 d-flex flex-row py-2 bg-dark">
-        <div class='mx-3 my-auto'>
-            {% if post.user.progression.equipped_icon.title %}
-                {{macros.verifier_icon(post.user.progression.equipped_icon.fa_id, post.user.progression.equipped_icon.color, '2x')}}
-            {% else %}
-                {{macros.verifier_icon('fa fa-post.user', '#fff', '2x')}}
-            {% endif %}
+    <div class='container bg-dark'>
+        <div class="row py-2 bg-dark">
+            <div class='col-1 my-auto'>
+                {% if post.user.progression.equipped_icon.title %}
+                    {{macros.verifier_icon(post.user.progression.equipped_icon.fa_id, post.user.progression.equipped_icon.color, '2x')}}
+                {% else %}
+                    {{macros.verifier_icon('fa fa-post.user', '#fff', '2x')}}
+                {% endif %}
+            </div>
+            <div class="col-7 flex flex-column">
+                <p class='mb-0'>
+                    <a href="#" data-toggle="modal" data-target="#userModal-{{post.user.id}}">
+                        {{post.user.progression.equipped_title.title}}
+                        {{post.user.name}}
+                    </a>
+                </p>
+                <p class='mb-0'>
+                    <small class='font-italic'>
+                        {% if post.user.progression.equipped_quote.quote %}
+                            {{post.user.progression.equipped_quote.quote}}
+                        {% else %}
+                            Ég var að byrja að greina!
+                        {% endif %}
+                    </small>
+                </p>
+            </div>
+            <div class="col-4 flex flex-column w-100">
+                <div class="border border-danger rounded-pill ml-auto" style='width:30%'>
+                    <p class="text-center m-auto">
+                        {{post.total_awards}}
+                    </p>
+                </div> 
+                <div class="ml-auto my-1">
+                    <p class="text-right m-auto">
+                        {{post.created_at | datetime(format='medium')}}
+                    </p>
+                </div>
+            </div>
         </div>
-        <div class="d-flex flex-column ml-2">
-            <p class='mb-0'>
-                <a href="#" data-toggle="modal" data-target="#userModal-{{post.user.id}}">
-                    {{post.user.progression.equipped_title.title}}
-                    {{post.user.name}}
-                </a>
-            </p>
-            <p class='mb-0'>
-                <small class='font-italic'>
-                    {% if post.user.progression.equipped_quote.quote %}
-                        {{post.user.progression.equipped_quote.quote}}
-                    {% else %}
-                        Ég var að byrja að greina!
-                    {% endif %}
-                </small>
-            </p>
-        </div>
-        <div class="border border-danger rounded-pill mr-2 ml-auto" style='height: 100%; width:10%'>
-            <p class="text-center m-auto">
-                {{post.total_awards}}
-            </p>
-        </div> 
     </div>
     <div class="w-100 d-flex flex-row py-2 ml-3">
         {% if not post.link %}

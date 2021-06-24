@@ -11,7 +11,7 @@ from flask import redirect, url_for, send_from_directory, request, render_templa
 from flask import current_app as app
 from flask_security import current_user, login_required, roles_accepted
 
-from lobe.db import get_verifiers, get_verifiers_and_admins
+from lobe.db import get_verifiers, get_verifiers_and_admins, resolve_order
 from lobe.models import (PostAward, User, VerifierIcon, VerifierFont, VerifierTitle,
                          VerifierQuote, VerifierProgression, Recording, db,
                          SocialPost, PostAward)
@@ -28,7 +28,11 @@ feed = Blueprint(
 @login_required
 @roles_accepted('Greinir', 'admin')
 def lobe_feed():
-    posts = SocialPost.query.order_by(SocialPost.created_at)
+    posts = SocialPost.query.order_by(
+            resolve_order(
+                SocialPost,
+                request.args.get('sort_by', default='created_at'),
+                order=request.args.get('order', default='desc')))
     verifiers = sorted(
         get_verifiers_and_admins(),
         key=lambda v: -v.progression.weekly_verifies)
@@ -86,6 +90,7 @@ def basic_award_post(post_id):
         if award:
             current_user.progression.experience -= 50
             post.user.progression.experience += 50
+            db.session.commit()
             flash("Verðlaunað", category="success")
         else:
             flash("Ekki tókst að verðlauna", category="warning")
@@ -105,6 +110,7 @@ def super_award_post(post_id):
         if award:
             current_user.progression.experience -= 100
             post.user.progression.experience += 100
+            db.session.commit()
             flash("Verðlaunað", category="success")
         else:
             flash("Ekki tókst að verðlauna", category="warning")
@@ -118,24 +124,30 @@ def super_award_post(post_id):
 def feed_create_link():
     form = PostLinkForm(request.form)
     if request.method == 'POST' and form.validate():
-        try:
-            video_id = validate_youtube_link(form.link.data)
-            if video_id:
-                post = SocialPost(current_user.id, link=video_id)
-                db.session.add(post)
-                db.session.commit()
-                if post:
-                    flash("Hlekkur hengdur á vegg", category='success')
-                return redirect(url_for('feed.lobe_feed'))
-            else:
-                flash("Hlekkur ekki á réttu sniði, aðeins youtube myndbönd passa hér", category='warning')
-                return redirect(url_for('feed.lobe_feed'))
-        except Exception as error:
-            app.logger.error('Error posting link: {}\n{}'.format(
-                error, traceback.format_exc()))
-            flash(
-                "Villa kom upp við að hengja hlekk upp",
-                category='warning')
+        if current_user.progression.experience >= 500:
+            try:
+                video_id = validate_youtube_link(form.link.data)
+                if video_id:
+                    post = SocialPost(current_user.id, link=video_id)
+                    db.session.add(post)
+                    db.session.commit()
+                    if post:
+                        current_user.progression.experience -= 500
+                        db.session.commit()
+                        flash("Hlekkur hengdur á vegg", category='success')
+                    return redirect(url_for('feed.lobe_feed'))
+                else:
+                    flash("Hlekkur ekki á réttu sniði, aðeins youtube myndbönd passa hér", category='warning')
+                    return redirect(url_for('feed.lobe_feed'))
+            except Exception as error:
+                app.logger.error('Error posting link: {}\n{}'.format(
+                    error, traceback.format_exc()))
+                flash(
+                    "Villa kom upp við að hengja hlekk upp",
+                    category='warning')
+        else:
+            flash("Ekki næg innistæða fyrir aðgerð", category='warning')
+            return redirect(url_for('feed.lobe_feed'))
     return render_template(
         'forms/model.jinja',
         form=form,

@@ -1,10 +1,11 @@
 {% extends "__base.jinja" %}
 {% block body %}
     <div class="mb-4 flex flex-colunm">
-        <p class="h2">
+        <p class="h1 rainbow-text">
             SAMKUNDAN
         </p>
-        <p class="h4">
+        <p class="h4 rainbow-text">
+            {{current_user.progression.equipped_title.title}}
             {{current_user.name}}
         </p>
     </div>
@@ -29,7 +30,7 @@
             </div>
             <div class="col-3">
                 <div class="" style="">
-                    <img class='img-fluid' src={{ url_for("feed.send_banner") }} alt='banner' loading="lazy" />
+                    <img class='img-fluid' src='{{url_for("feed.static", filename="img/banner.png")}}' alt='banner' loading="lazy" />
                 </div>
             </div>
         </div>

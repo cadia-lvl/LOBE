@@ -175,3 +175,7 @@ textarea#comment:disabled {
 .accordion-icons .card-header .btn:focus  {
     text-decoration:none;
 }
+
+.daterangepicker{
+    color:#000 !important;
+}

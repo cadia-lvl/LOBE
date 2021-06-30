@@ -59,13 +59,13 @@
     <div class="w-100 border-top border-dark py-2 pl-3">
         <a href="{{url_for('feed.basic_award_post', post_id=post.id)}}" class='btn btn-dark rounded-pill text-warning'>
             Verðlaun
-            <i class="fas fa-gem ml-2"></i>
-            50
+            <i class="text-danger fas fa-gem ml-2"></i>
+            {{social_prices['like']}}
         </a>
         <a href="{{url_for('feed.super_award_post', post_id=post.id)}}" class='btn btn-dark rounded-pill text-warning'>
             Ofur veðlaun
-            <i class="fas fa-gem ml-2"></i>
-            100
+            <i class="text-danger fas fa-gem ml-2"></i>
+            {{social_prices['super_like']}}
         </a>
         {% if current_user.id == post.user.id or current_user.is_admin()%}
             <div class="float-right pr-3">

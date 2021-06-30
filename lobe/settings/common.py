@@ -59,6 +59,12 @@ COLORS = {
 }
 
 ECONOMY = {
+    'social_feed': {
+        'post_youtube': 1000,
+        'like': 100,
+        'super_like': 250,
+        'post_recording': 500,
+    },
     'weekly_challenge': {
         'goal': 5000,
         'coin_reward': 300,

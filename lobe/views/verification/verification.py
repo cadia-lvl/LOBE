@@ -232,6 +232,7 @@ def verify_session(id):
         delete_form=DeleteVerificationForm(),
         json_session=json.dumps(session_dict),
         is_secondary=is_secondary,
+        social_prices=app.config['ECONOMY']['social_feed'],
         progression_view=True)
 
 

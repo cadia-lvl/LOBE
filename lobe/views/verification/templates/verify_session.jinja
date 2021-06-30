@@ -266,10 +266,10 @@
                 </div>
                 <div class="modal-body">
                     <p>Ertu viss um að þú viljir hengja þessa upptöku upp á vegginn?</p>
-                    <p>Það kostar 100 {{macros.btn_icon('gem', 'l')}}</p>
+                    <p>Það kostar {{social_prices['post_recording']}} <i class='text-danger fa fa-gem'></i></p>
                 </div>
                 <div class="modal-footer">
-                    {% if current_user.progression.experience >= 100 %}
+                    {% if current_user.progression.experience >= {{social_prices['post_recording']}} %}
                         <button id='postSocial' class='btn btn-secondary text-info btn-sm rounded-pill' data-dismiss="modal">
                             {{macros.btn_icon('concierge-bell', 'r')}}
                             Hengja á vegg

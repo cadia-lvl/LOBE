@@ -590,6 +590,6 @@ class MosUploadForm(FlaskForm):
 
 class PostLinkForm(FlaskForm):
     link = TextField(
-        'Youtube hlekkur. Þetta kostar 500 demanta',
+        'Youtube hlekkur:',
         [validators.required()])
         

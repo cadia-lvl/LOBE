@@ -39,6 +39,7 @@ def lobe_feed():
     return render_template(
         'lobe_feed.jinja',
         posts=posts,
+        social_prices=app.config['ECONOMY']['social_feed'],
         verifiers=verifiers,
         )
      
@@ -47,14 +48,15 @@ def lobe_feed():
 @login_required
 @roles_accepted('Greinir', 'admin')
 def post_recording_feed(recording_id):
-    if current_user.progression.experience >= 100:
+    social_feed = app.config['ECONOMY']['social_feed']
+    if current_user.progression.experience >= social_feed['post_recording']:
         recording = Recording.query.get(recording_id)
         post = SocialPost(current_user.id, recording_id=recording.id)
         db.session.add(post)
         db.session.commit()
         if post:
             flash("Upptaka hengd á vegg", category="success")
-            current_user.progression.experience -= 100
+            current_user.progression.experience -= social_feed['post_recording']
             db.session.commit()
         else:
             flash("Ekki tókst að hengja upptöu á vegg", category="warning")
@@ -82,14 +84,15 @@ def delete_social_post(post_id):
 @login_required
 @roles_accepted('Greinir', 'admin')
 def basic_award_post(post_id):
-    if current_user.progression.experience >= 50:
+    social_feed = app.config['ECONOMY']['social_feed']
+    if current_user.progression.experience >= social_feed['like']:
         post = SocialPost.query.get(post_id)
-        award = PostAward(current_user.id, post, 50)
+        award = PostAward(current_user.id, post, social_feed['like'])
         db.session.add(award)
         db.session.commit()
         if award:
-            current_user.progression.experience -= 50
-            post.user.progression.experience += 50
+            current_user.progression.experience -= social_feed['like']
+            post.user.progression.experience += social_feed['like']
             db.session.commit()
             flash("Verðlaunað", category="success")
         else:
@@ -98,18 +101,20 @@ def basic_award_post(post_id):
         flash("Ekki næg innistæða", category="warning")
     return redirect(url_for('feed.lobe_feed'))
         
+
 @feed.route('/feed/award_post/<int:post_id>/super', methods=['GET'])
 @login_required
 @roles_accepted('Greinir', 'admin')
 def super_award_post(post_id):
-    if current_user.progression.experience >= 100:
+    social_feed = app.config['ECONOMY']['social_feed']
+    if current_user.progression.experience >= social_feed['super_like']:
         post = SocialPost.query.get(post_id)
-        award = PostAward(current_user.id, post, 100)
+        award = PostAward(current_user.id, post, social_feed['super_like'])
         db.session.add(award)
         db.session.commit()
         if award:
-            current_user.progression.experience -= 100
-            post.user.progression.experience += 100
+            current_user.progression.experience -= social_feed['super_like']
+            post.user.progression.experience += social_feed['super_like']
             db.session.commit()
             flash("Verðlaunað", category="success")
         else:
@@ -124,7 +129,7 @@ def super_award_post(post_id):
 def feed_create_link():
     form = PostLinkForm(request.form)
     if request.method == 'POST' and form.validate():
-        if current_user.progression.experience >= 500:
+        if current_user.progression.experience >= app.config['ECONOMY']['social_feed']['post_youtube']:
             try:
                 video_id = validate_youtube_link(form.link.data)
                 if video_id:
@@ -132,7 +137,7 @@ def feed_create_link():
                     db.session.add(post)
                     db.session.commit()
                     if post:
-                        current_user.progression.experience -= 500
+                        current_user.progression.experience -= app.config['ECONOMY']['social_feed']['post_youtube']
                         db.session.commit()
                         flash("Hlekkur hengdur á vegg", category='success')
                     return redirect(url_for('feed.lobe_feed'))
@@ -149,9 +154,10 @@ def feed_create_link():
             flash("Ekki næg innistæða fyrir aðgerð", category='warning')
             return redirect(url_for('feed.lobe_feed'))
     return render_template(
-        'forms/model.jinja',
+        'youtube_form.jinja',
         form=form,
         type='create',
+        social_prices=app.config['ECONOMY']['social_feed'],
         action=url_for('feed.feed_create_link'),
         section='verification')
 

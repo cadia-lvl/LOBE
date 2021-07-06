@@ -9,7 +9,7 @@
             {{current_user.name}}
         </p>
     </div>
-    <div class="container w-100">
+    <div class="container w-100 d-none d-lg-block">
         <div class="row my-3">
             <div class="col-7">
             </div>
@@ -32,6 +32,28 @@
                 <div class="" style="">
                     <img class='img-fluid' src='{{url_for("feed.static", filename="img/banner.png")}}' alt='banner' loading="lazy" />
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container w-100 d-lg-none">
+        <div class="row my-3">
+            <div class="col-7">
+            </div>
+            <div class="col-5"> 
+                <a href='{{url_for("feed.feed_create_link")}}' class='btn text-success btn-secondary float-right'>
+                    <i class="fab fa-youtube"></i>
+                    Hengja upp myndband
+                </a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="overflow-auto col-12" style="">
+                {% for post in posts %}
+                    {% with post=post%}
+                        {% include 'social_post.jinja'%}
+                    {% endwith %}
+                {% endfor %}
             </div>
         </div>
     </div>

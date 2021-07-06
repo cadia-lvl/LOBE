@@ -87,16 +87,19 @@ def basic_award_post(post_id):
     social_feed = app.config['ECONOMY']['social_feed']
     if current_user.progression.experience >= social_feed['like']:
         post = SocialPost.query.get(post_id)
-        award = PostAward(current_user.id, post, social_feed['like'])
-        db.session.add(award)
-        db.session.commit()
-        if award:
-            current_user.progression.experience -= social_feed['like']
-            post.user.progression.experience += social_feed['like']
+        if not current_user.id == post.user.id:
+            award = PostAward(current_user.id, post, social_feed['like'])
+            db.session.add(award)
             db.session.commit()
-            flash("Verðlaunað", category="success")
+            if award:
+                current_user.progression.experience -= social_feed['like']
+                post.user.progression.experience += social_feed['like']
+                db.session.commit()
+                flash("Verðlaunað", category="success")
+            else:
+                flash("Ekki tókst að verðlauna", category="warning")
         else:
-            flash("Ekki tókst að verðlauna", category="warning")
+            flash("Ekki er hægt að gefa sjálfum sér verðlaun", category="warning")
     else:
         flash("Ekki næg innistæða", category="warning")
     return redirect(url_for('feed.lobe_feed'))
@@ -109,16 +112,19 @@ def super_award_post(post_id):
     social_feed = app.config['ECONOMY']['social_feed']
     if current_user.progression.experience >= social_feed['super_like']:
         post = SocialPost.query.get(post_id)
-        award = PostAward(current_user.id, post, social_feed['super_like'])
-        db.session.add(award)
-        db.session.commit()
-        if award:
-            current_user.progression.experience -= social_feed['super_like']
-            post.user.progression.experience += social_feed['super_like']
+        if not current_user.id == post.user.id:
+            award = PostAward(current_user.id, post, social_feed['super_like'])
+            db.session.add(award)
             db.session.commit()
-            flash("Verðlaunað", category="success")
+            if award:
+                current_user.progression.experience -= social_feed['super_like']
+                post.user.progression.experience += social_feed['super_like']
+                db.session.commit()
+                flash("Verðlaunað", category="success")
+            else:
+                flash("Ekki tókst að verðlauna", category="warning")
         else:
-            flash("Ekki tókst að verðlauna", category="warning")
+            flash("Ekki er hægt að gefa sjálfum sér verðlaun", category="warning")
     else:
         flash("Ekki næg innistæða", category="warning")
     return redirect(url_for('feed.lobe_feed'))

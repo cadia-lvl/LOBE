@@ -269,7 +269,7 @@
                     <p>Það kostar {{social_prices['post_recording']}} <i class='text-danger fa fa-gem'></i></p>
                 </div>
                 <div class="modal-footer">
-                    {% if current_user.progression.experience >= {{social_prices['post_recording']}} %}
+                    {% if current_user.progression.experience >= social_prices['post_recording'] %}
                         <button id='postSocial' class='btn btn-secondary text-info btn-sm rounded-pill' data-dismiss="modal">
                             {{macros.btn_icon('concierge-bell', 'r')}}
                             Hengja á vegg

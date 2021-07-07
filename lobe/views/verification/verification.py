@@ -29,7 +29,7 @@ def verify_queue():
 
     '''
     First checks if there are any priority sessions,
-    then it uses the following list to prioritise 
+    then it uses the following list to priorities 
     those available. 
 
     Logic of queue priority:
@@ -41,10 +41,9 @@ def verify_queue():
 
     chosen_session = None
     is_secondary = False
+    priority_session = None
     normal_session = True
     #priority_session, is_secondary, normal_session = check_priority_session()
-    priority_session = None
-
     if priority_session:
         chosen_session = priority_session
     else:
@@ -65,7 +64,7 @@ def verify_queue():
 
             if available_sessions.count() > 0:
                 # We have available sessions
-                if available_sessions[0].verified_by == current_user.id:
+                if available_sessions[0].verified_by == current_user.id:                    
                     chosen_session = available_sessions[0]
                 else:
                     random_session_index = random.randrange(available_sessions.count())
@@ -134,30 +133,10 @@ def check_priority_session():
             chosen_session = available_sessions[0]
             chosen_session.verified_by = current_user.id
 
-    else:
-        # check if we can secondarily verify any sesssions
-        secondarily_unverified_sessions = PrioritySession.query.filter(and_(
-                PrioritySession.is_secondarily_verified == False,
-                PrioritySession.verified_by != current_user.id,
-                PrioritySession.is_dev == False))
-
-        if secondarily_unverified_sessions.count() > 0:
-            available_sessions = secondarily_unverified_sessions.filter(or_(
-                    PrioritySession.secondarily_verified_by == None,
-                    PrioritySession.secondarily_verified_by == current_user.id))\
-                .order_by(PrioritySession.verified_by)
-
-            if available_sessions.count() > 0:
-                # we have an available session
-                chosen_session = available_sessions[0]
-                is_secondary = True
-                chosen_session.secondarily_verified_by = current_user.id
-
     if not chosen_session:
         unverified_sessions = Session.query.filter(and_(
-                Session.is_verified == False, Session.is_dev == False, 
+                Session.is_verified == False, Session.is_dev == False,
                 Session.has_priority == True))
-
         if unverified_sessions.count() > 0:
             available_sessions = unverified_sessions.filter(
                 or_(
@@ -165,32 +144,11 @@ def check_priority_session():
                     Session.verified_by == current_user.id))\
                 .order_by(
                     Session.verified_by)
-
             if available_sessions.count() > 0:
                 # we have an available session
                 chosen_session = available_sessions[0]
                 chosen_session.verified_by = current_user.id
                 normal_session = True
-
-        else:
-            # check if we can secondarily verify any sesssions
-            secondarily_unverified_sessions = Session.query.filter(and_(
-                    Session.is_secondarily_verified == False,
-                    Session.verified_by != current_user.id,
-                    Session.is_dev == False))
-
-            if secondarily_unverified_sessions.count() > 0:
-                available_sessions = secondarily_unverified_sessions.filter(or_(
-                        Session.secondarily_verified_by == None,
-                        Session.secondarily_verified_by == current_user.id))\
-                    .order_by(Session.verified_by)
-
-                if available_sessions.count() > 0:
-                    # we have an available session
-                    chosen_session = available_sessions[0]
-                    is_secondary = True
-                    chosen_session.secondarily_verified_by = current_user.id
-                    normal_session = True
     db.session.commit()
 
     return chosen_session, is_secondary, normal_session

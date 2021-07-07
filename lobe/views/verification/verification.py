@@ -1,12 +1,16 @@
 import json
 import random
+import re
+import datetime
+from datetime import datetime, timedelta
+
 import traceback
 from datetime import date, datetime
 
 from flask import (render_template, flash, request, redirect, url_for,
                    Response, Blueprint)
 from flask import current_app as app
-from flask_security import current_user, login_required
+from flask_security import current_user, login_required, roles_accepted
 
 from sqlalchemy import and_, or_
 
@@ -490,3 +494,69 @@ def verify_index():
         show_daily_spin=show_daily_spin,
         activity_days=activity_days,
         activity_counts=activity_counts)
+
+
+@verification.route('/verification/stats', methods=['GET'])
+@login_required
+@roles_accepted('admin')
+def verify_stats():
+    '''
+    Statistics screen of the verifiers
+    '''
+    verifiers = sorted(
+        get_verifiers(),
+        key=lambda v: -v.progression.weekly_verifies)
+    
+    verifications = Verification.query
+    verifications_all = verifications.all()
+    verify_stats = {
+        "total_count": len(verifications_all),
+        "double_verified": verifications.filter(Verification.is_secondary == True).count(),
+        "single_verified": verifications.filter(Verification.is_secondary == False).count(),
+        "count_past_week": verifications.filter(Verification.created_at >= datetime.now() - timedelta(days=7)).count(),
+        "count_good": verifications.filter(and_(
+            Verification.volume_is_low == False,
+            Verification.volume_is_high == False,
+            Verification.recording_has_wrong_wording == False,
+            Verification.recording_has_glitch == False)).count(),
+        "count_bad": verifications.filter(or_(
+            Verification.volume_is_low == True,
+            Verification.volume_is_high == True,
+            Verification.recording_has_wrong_wording == True,
+            Verification.recording_has_glitch == True)).count(),
+    }
+    from_arg = request.args.get('from')
+    to_arg = request.args.get('to')
+    if valid_dates([from_arg, to_arg]):
+        custon_dates = Verification.query.filter(db.func.date(Verification.created_at).between(from_arg, to_arg))
+        date_selection = {
+            'from': from_arg,
+            'to': to_arg,
+            'number': custon_dates.count()
+        }
+        verify_stats['date_selection'] = date_selection
+
+    activity_days, activity_counts = activity(Verification)
+
+    return render_template(
+        'verify_stats.jinja',
+        verifiers=verifiers,
+        verify_stats=verify_stats,
+        activity_days=activity_days,
+        activity_counts=activity_counts)
+
+
+def valid_dates(dates):
+    if len(dates) != 2 or None in dates:
+        return False
+
+    new_dates = []
+    for d in dates:
+        try:
+            new_dates.append(datetime.strptime(d, '%Y-%m-%d'))
+        except ValueError:
+            return False
+            #raise ValueError("Dagsetning ekki á réttu formi, ætti að vera: YYYY-MM-DD")
+    if sorted(dates) == dates:
+        return True
+    return False

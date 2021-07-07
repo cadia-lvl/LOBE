@@ -42,13 +42,18 @@ def verify_queue():
     chosen_session = None
     is_secondary = False
     priority_session = None
-    priority_session, is_secondary, normal_session = check_priority_session()
+    normal_session = True
+    #priority_session, is_secondary, normal_session = check_priority_session()
     if priority_session:
         chosen_session = priority_session
     else:
         # Has the user already started a session?
-        unverified_sessions = Session.query.join(Session.collection).filter(and_(
-            Session.is_verified == False, Session.is_dev == False), Collection.verify == True)
+        unverified_sessions = Session.query.join(Session.collection).filter(
+            and_(
+                Session.is_verified == False,
+                Session.is_dev == False
+            ),
+            Collection.verify == True)
         if unverified_sessions.count() > 0:
             available_sessions = unverified_sessions.filter(
                 or_(
@@ -68,22 +73,30 @@ def verify_queue():
 
         else:
             # check if we can secondarily verify any sesssions
-            secondarily_unverified_sessions = Session.query.filter(and_(
+            secondarily_unverified_sessions = Session.query.join(Session.collection).filter(
+                and_(
                     Session.is_secondarily_verified == False,
                     Session.verified_by != current_user.id,
-                    Session.is_dev == False))
+                    Session.is_dev == False
+                ),
+                Collection.verify == True)
 
             if secondarily_unverified_sessions.count() > 0:
-                available_sessions = secondarily_unverified_sessions.filter(or_(
+                available_sessions = secondarily_unverified_sessions.filter(
+                    or_(
                         Session.secondarily_verified_by == None,
-                        Session.secondarily_verified_by == current_user.id))\
-                    .order_by(Session.verified_by)
+                        Session.secondarily_verified_by == current_user.id
+                    )).order_by(Session.verified_by)
 
                 if available_sessions.count() > 0:
                     # we have an available session
-                    chosen_session = available_sessions[0]
                     is_secondary = True
-                    chosen_session.secondarily_verified_by = current_user.id
+                    if available_sessions[0].secondarily_verified_by == current_user.id:
+                        chosen_session = available_sessions[0]
+                    else:
+                        random_session_index = random.randrange(available_sessions.count())
+                        chosen_session = available_sessions[random_session_index]
+                        chosen_session.secondarily_verified_by = current_user.id
 
     if chosen_session is None:
         # there are no sessions left to verify
@@ -102,7 +115,6 @@ def verify_queue():
 
 
 def check_priority_session():
-
     unverified_sessions = PrioritySession.query.filter(and_(
         PrioritySession.is_verified == False, PrioritySession.is_dev == False))
     chosen_session = None
@@ -256,6 +268,7 @@ def create_verification():
             recording = Recording.query.get(int(form.data['recording']))
             if is_secondary:
                 recording.is_secondarily_verified = True
+                recording.is_verified = True  # Sometimes this is missing for some reason
             else:
                 recording.is_verified = True
             db.session.commit()
@@ -276,7 +289,7 @@ def create_verification():
                     Recording.is_secondarily_verified == True).count():
                 session.is_secondarily_verified = True
                 db.session.commit()
-            elif num_recordings == recordings.filter(
+            if num_recordings == recordings.filter(
                     Recording.is_verified == True).count():
                 session.is_verified = True
                 progression.num_session_verifies += 1

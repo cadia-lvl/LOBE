@@ -10,6 +10,9 @@
                 {{macros.sort_th_a('id')}}
             </th>
             <th>
+                Merkingar
+            </th>
+            <th>
                 Fjöldi upptaka
                 {{macros.sort_th_a('num_recordings')}}
             </th>
@@ -31,9 +34,18 @@
             {% for session in sessions %}
                 <tr>
                     <td>{{session.created_at | datetime(format='low')}}</td>
-                    <td><a href={{session.get_url()}}>{{session.get_printable_id()}}</a>
+                    <td>
+                        <a href={{session.get_url()}}>{{session.get_printable_id()}}</a>
+                    </td>
+                    <td>
                         {% if session.is_dev %}
                             <code>DEV</code>
+                        {% endif %}
+                        {% if session.has_priority %}
+                            <code class="text-info">PRIORITY</code>
+                        {% endif %}
+                        {% if session.collection and session.collection.verify%}
+                            <code class="text-warning">VERIFY</code>
                         {% endif %}
                     </td>
                     <td>{{session.num_recordings}}</td>

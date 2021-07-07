@@ -13,6 +13,10 @@
         {{macros.btn_icon('download', 'r')}}
         Hlaða niður
     </a>
+    <a class='btn btn-secondary float-right mr-2' href='{{url_for("verification.verify_stats")}}'>
+        {{macros.btn_icon('poll', 'r')}}
+        Tölfræði
+    </a>
 {% endblock %}
 {% block table %}
     {% if verifications.total > 0 %}

@@ -1191,6 +1191,20 @@ class Session(BaseModel, db.Model):
         else:
             return 'n/a'
 
+    @property
+    def verifier(self):
+        verifier = None
+        if self.verified_by:
+            verifier = User.query.get(self.verified_by)
+        return verifier
+
+    @property
+    def collection(self):
+        collection = None
+        if self.collection_id:
+            collection = Collection.query.get(self.collection_id)
+        return collection
+
     @hybrid_property
     def get_start_time(self):
         if self.duration is not None:

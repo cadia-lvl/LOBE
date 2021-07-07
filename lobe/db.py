@@ -717,6 +717,13 @@ def get_admins():
     return [u for u in User.query.all()
             if u.is_admin()]
 
+def get_verifiers_and_admins():
+    admins = get_admins()
+    verifiers = get_verifiers()
+    for a in admins:
+        if a not in verifiers:
+            verifiers.append(a)
+    return verifiers
 
 def add_progression_on_user(user):
     if user.progression_id is None:

@@ -1,0 +1,36 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class='row'>
+        <div class='col-xl-6 offset-xl-3 col-md-8 offset-md-2 col-12'>
+            <div class='card card-body'>
+                <form method="POST" action="{{action}}" enctype="multipart/form-data">
+                    <p class="">
+                        Þetta kostar {{social_prices['post_youtube']}} 
+                        <i class="text-danger fas fa-gem mx-1"></i>
+                         svo settu inn eitthvað skemmitlegt! 
+                    </p>
+                    {% include 'forms/_form.jinja' %}
+                    <button type='submit' class='btn btn-success float-right'>
+                        {% if type=='create' %}
+                            Hengja upp
+                        {% else %}
+                            Breyta
+                        {% endif %}
+                        <span class='ml-2'><i class='fa fa-check'></i></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+    <script>
+        $('#zip_fname').on('change',function(){
+            //get the file name
+            var fileName = $(this).val();
+            //replace the "Choose a file" label
+            $(this).next('.custom-file-label').html(fileName);
+        });
+    </script>
+{% endblock %}

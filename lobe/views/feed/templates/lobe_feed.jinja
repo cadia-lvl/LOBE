@@ -1,0 +1,87 @@
+{% extends "__base.jinja" %}
+{% block body %}
+    <div class="mb-4 flex flex-colunm">
+        <p class="h1 rainbow-text">
+            SAMKUNDAN
+        </p>
+        <p class="h4 rainbow-text">
+            {{current_user.progression.equipped_title.title}}
+            {{current_user.name}}
+        </p>
+    </div>
+    <div class="container w-100 d-none d-lg-block">
+        <div class="row my-3">
+            <div class="col-7">
+            </div>
+            <div class="col-5"> 
+                <a href='{{url_for("feed.feed_create_link")}}' class='btn text-success btn-secondary float-right'>
+                    <i class="fab fa-youtube"></i>
+                    Hengja upp myndband
+                </a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="overflow-auto col-9" style="">
+                {% for post in posts %}
+                    {% with post=post%}
+                        {% include 'social_post.jinja'%}
+                    {% endwith %}
+                {% endfor %}
+            </div>
+            <div class="col-3">
+                <div class="" style="">
+                    <img class='img-fluid' src='{{url_for("feed.static", filename="img/banner.png")}}' alt='banner' loading="lazy" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container w-100 d-lg-none">
+        <div class="row my-3">
+            <div class="col-7">
+            </div>
+            <div class="col-5"> 
+                <a href='{{url_for("feed.feed_create_link")}}' class='btn text-success btn-secondary float-right'>
+                    <i class="fab fa-youtube"></i>
+                    Hengja upp myndband
+                </a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="overflow-auto col-12" style="">
+                {% for post in posts %}
+                    {% with post=post%}
+                        {% include 'social_post.jinja'%}
+                    {% endwith %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <script src='{{url_for("main.static", filename="js/listControls.js")}}'></script>
+{% endblock %}
+{% block modals %}
+    {% for verifier in verifiers %}
+        <div class="modal fade" id="userModal-{{verifier.id}}" tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Notandi</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    {{macros.verifier_card(verifier)}}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Loka</button>
+                </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+{% endblock %}
+{% block scripts %}
+    {{super()}}
+{% endblock %}

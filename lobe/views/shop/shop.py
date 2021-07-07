@@ -198,7 +198,7 @@ def loot_box(rarity):
     '/shop/icons/<int:icon_id>/buy/<int:user_id>',
     methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def icon_buy(icon_id, user_id):
     user = User.query.get(user_id)
     icon = VerifierIcon.query.get(icon_id)
@@ -222,7 +222,7 @@ def icon_buy(icon_id, user_id):
 
 @shop.route('/shop/icons/disable/<int:user_id>', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def icon_disable(user_id):
     user = User.query.get(user_id)
     progression = VerifierProgression.query.get(user.progression_id)
@@ -236,7 +236,7 @@ def icon_disable(user_id):
     '/shop/icons/<int:icon_id>/equip/<int:user_id>',
     methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def icon_equip(icon_id, user_id):
     user = User.query.get(user_id)
     icon = VerifierIcon.query.get(icon_id)
@@ -306,7 +306,7 @@ def icon_edit(id):
     '/shop/titles/<int:title_id>/buy/<int:user_id>',
     methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def title_buy(title_id, user_id):
     user = User.query.get(user_id)
     title = VerifierTitle.query.get(title_id)
@@ -331,7 +331,7 @@ def title_buy(title_id, user_id):
 
 @shop.route('/shop/titles/disable/<int:user_id>', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def title_disable(user_id):
     user = User.query.get(user_id)
     progression = VerifierProgression.query.get(user.progression_id)
@@ -345,7 +345,7 @@ def title_disable(user_id):
     '/shop/titles/<int:title_id>/equip/<int:user_id>',
     methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def title_equip(title_id, user_id):
     user = User.query.get(user_id)
     title = VerifierTitle.query.get(title_id)
@@ -413,7 +413,7 @@ def title_edit(id):
     '/shop/quotes/<int:quote_id>/buy/<int:user_id>',
     methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def quote_buy(quote_id, user_id):
     user = User.query.get(user_id)
     quote = VerifierQuote.query.get(quote_id)
@@ -438,7 +438,7 @@ def quote_buy(quote_id, user_id):
 
 @shop.route('/shop/quotes/disable/<int:user_id>', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def quote_disable(user_id):
     user = User.query.get(user_id)
     progression = VerifierProgression.query.get(user.progression_id)
@@ -452,7 +452,7 @@ def quote_disable(user_id):
     '/shop/quotes/<int:quote_id>/equip/<int:user_id>',
     methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def quote_equip(quote_id, user_id):
     user = User.query.get(user_id)
     quote = VerifierQuote.query.get(quote_id)
@@ -520,7 +520,7 @@ def quote_edit(id):
     '/shop/fonts/<int:font_id>/buy/<int:user_id>',
     methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def font_buy(font_id, user_id):
     user = User.query.get(user_id)
     font = VerifierFont.query.get(font_id)
@@ -544,7 +544,7 @@ def font_buy(font_id, user_id):
 
 @shop.route('/shop/fonts/disable/<int:user_id>', methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def font_disable(user_id):
     user = User.query.get(user_id)
     progression = VerifierProgression.query.get(user.progression_id)
@@ -558,7 +558,7 @@ def font_disable(user_id):
     '/shop/fonts/<int:font_id>/equip/<int:user_id>',
     methods=['GET', 'POST'])
 @login_required
-@roles_accepted('Greinir')
+@roles_accepted('Greinir', 'admin')
 def font_equip(font_id, user_id):
     user = User.query.get(user_id)
     font = VerifierFont.query.get(font_id)
@@ -620,3 +620,4 @@ def font_edit(id):
         action=url_for('shop.font_edit', id=id),
         section='verification',
         type='edit')
+

@@ -24,7 +24,7 @@ from lobe.models import (Recording, Token, User, Role, Collection,
                          Configuration, Session, VerifierProgression,
                          VerifierIcon, VerifierQuote, VerifierTitle, db,
                          MosInstance)
-from lobe.db import get_verifiers, get_admins
+from lobe.db import get_verifiers, get_admins, get_verifiers_and_admins
 from lobe.tools.analyze import (load_sample, signal_is_too_high,
                                 signal_is_too_low)
 
@@ -535,7 +535,7 @@ def set_rarity():
 @manager.command
 def initialize_verifiers():
     add_progression_to_verifiers()
-    verifiers = get_verifiers()
+    verifiers = get_verifiers_and_admins()
     for verifier in verifiers:
         progression = verifier.progression
         if progression.verification_level is None:

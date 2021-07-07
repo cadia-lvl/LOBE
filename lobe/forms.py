@@ -588,3 +588,8 @@ class MosUploadForm(FlaskForm):
             FileRequired('Hladdu upp zip skrá')])
 
 
+class PostLinkForm(FlaskForm):
+    link = TextField(
+        'Youtube hlekkur:',
+        [validators.required()])
+        

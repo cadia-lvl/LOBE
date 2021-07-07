@@ -153,7 +153,7 @@ textarea#comment:disabled {
     }
     100% {
         transform: scale(1);
-}
+    }
 }
 
 
@@ -175,6 +175,13 @@ textarea#comment:disabled {
 .accordion-icons .card-header .btn:focus  {
     text-decoration:none;
 }
+
+.rainbow-text {
+    background-image: linear-gradient(to left, violet, indigo, blue, green, yellow, orange, red);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 25% 25%;
+  }
 
 .daterangepicker{
     color:#000 !important;

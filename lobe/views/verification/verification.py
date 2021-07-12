@@ -50,10 +50,8 @@ def verify_queue():
     else:
         # Has the user already started a session?
         unverified_sessions = Session.query.join(Session.collection).filter(
-            and_(
-                Session.is_verified == False,
-                Session.is_dev == False
-            ),
+            Session.is_verified == False,
+            Collection.is_dev == False,
             Collection.verify == True)
         if unverified_sessions.count() > 0:
             available_sessions = unverified_sessions.filter(
@@ -77,9 +75,9 @@ def verify_queue():
             secondarily_unverified_sessions = Session.query.join(Session.collection).filter(
                 and_(
                     Session.is_secondarily_verified == False,
-                    Session.verified_by != current_user.id,
-                    Session.is_dev == False
+                    Session.verified_by != current_user.id
                 ),
+                Collection.is_dev == False,
                 Collection.verify == True)
 
             if secondarily_unverified_sessions.count() > 0:
@@ -87,7 +85,7 @@ def verify_queue():
                     or_(
                         Session.secondarily_verified_by == None,
                         Session.secondarily_verified_by == current_user.id
-                    )).order_by(Session.verified_by)
+                    )).order_by(Session.secondarily_verified_by)
 
                 if available_sessions.count() > 0:
                     # we have an available session

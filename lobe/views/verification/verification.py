@@ -73,7 +73,7 @@ def verify_queue():
                     chosen_session = available_sessions[random_session_index]
                     chosen_session.verified_by = current_user.id
 
-        else:
+        if chosen_session is None:
             # check if we can secondarily verify any sesssions
             secondarily_unverified_sessions = Session.query.join(Session.collection).filter(
                 and_(

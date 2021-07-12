@@ -29,6 +29,9 @@
                     {% if collection.is_dev %}
                         <code>DEV</code>
                     {% endif %}
+                    {% if collection.verify %}
+                        <code class="text-warning">VERIFY</code>
+                    {% endif %}
                 </td>
                 <td>{{collection.created_at | datetime('low')}}</td>
                 <td>{{collection.num_tokens}}</td>

@@ -141,6 +141,13 @@ ECONOMY = {
                 'coin_reward': 1000,
                 'experience_reward': 10000,
                 'fa_id': 'fa fa-user-astronaut',
+            },
+            '6': {
+                'title': 'Út fyrir endimörk alheimsins',
+                'goal': 30000,
+                'coin_reward': 2000,
+                'experience_reward': 20000,
+                'fa_id': 'fa fa-rocket',
             }
         }, 'spy': {
             '0': {

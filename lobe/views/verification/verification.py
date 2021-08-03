@@ -314,14 +314,19 @@ def create_verification():
 
             # check for achivement updates:
             # 1. verification:
-            verification_info = app.config['ECONOMY']['achievements'][
-                'verification'][str(progression.verification_level)]
-            if progression.num_verifies >= verification_info['goal']:
-                progression.verification_level += 1
-                progression.lobe_coins += verification_info['coin_reward']
-                progression.experience += \
-                    verification_info['experience_reward']
-                achievements.append('verification')
+            verification_levels = app.config['ECONOMY']['achievements'][
+                'verification'].keys()
+            if progression.verification_level in verification_levels:
+                verification_info = app.config['ECONOMY']['achievements'][
+                    'verification'][str(progression.verification_level)]
+                if progression.num_verifies >= verification_info['goal']:
+                    progression.verification_level += 1
+                    progression.lobe_coins += verification_info['coin_reward']
+                    progression.experience += \
+                        verification_info['experience_reward']
+                    achievements.append('verification')
+             else:
+                pass
             # 2. bad verifications
             spy_info = app.config['ECONOMY']['achievements']['spy'][
                 str(progression.spy_level)]

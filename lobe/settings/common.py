@@ -191,6 +191,13 @@ ECONOMY = {
                 'coin_reward': 1000,
                 'experience_reward': 5000,
                 'fa_id': 'fa fa-medal'
+            },
+            '5':{
+                'title': 'Drottnari spæjaraheimsins',
+                'goal': 800,
+                'coin_reward': 2500,
+                'experience_reward': 8000,
+                'fa_id': 'fas fa-crown'
             }
         },
         'streak_minimum': 500,

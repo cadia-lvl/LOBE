@@ -325,7 +325,7 @@ def create_verification():
                     progression.experience += \
                         verification_info['experience_reward']
                     achievements.append('verification')
-             else:
+            else:
                 pass
             # 2. bad verifications
             spy_info = app.config['ECONOMY']['achievements']['spy'][

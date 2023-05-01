@@ -11,7 +11,7 @@ Click==7.0
 colour==0.1.5
 cycler==0.10.0
 decorator==4.4.1
-Flask==1.1.1
+Flask==2.3.2
 Flask-BabelEx==0.9.3
 Flask-Executor==0.9.3
 Flask-Login==0.4.1

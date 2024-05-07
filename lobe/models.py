@@ -835,6 +835,9 @@ class Recording(BaseModel, db.Model):
     is_secondarily_verified = db.Column(
         db.Boolean,
         default=False)
+    social_posts = db.relationship(
+        "SocialPost", lazy="joined", back_populates='recording',
+        cascade='all, delete, delete-orphan')
 
     def set_session_id(self, session_id):
         self.session_id = session_id
@@ -2331,6 +2334,7 @@ class SocialPost(BaseModel, db.Model):
     recording_id = db.Column(
         db.Integer,
         db.ForeignKey('Recording.id'))
+    recording = relationship("Recording", back_populates="social_posts")
     link = db.Column(db.String(255))
     text = db.Column(db.String(255))
     awards = db.relationship(
@@ -2342,9 +2346,6 @@ class SocialPost(BaseModel, db.Model):
         self.recording_id = recording_id
         self.link = link
 
-    @property
-    def recording(self):
-        return Recording.query.get(self.recording_id)
 
     @property
     def total_awards(self):

@@ -29,7 +29,7 @@ infinity==1.4
 intervals==0.8.1
 itsdangerous==1.1.0
 Jinja2==2.11.3
-joblib==0.14.1
+joblib==1.2.0
 kiwisolver==1.1.0
 kombu==4.6.7
 librosa==0.7.2
